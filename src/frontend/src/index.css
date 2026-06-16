@@ -1,0 +1,520 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-display: "Space Grotesk";
+    --font-body: "Figtree";
+    --font-mono: "Geist Mono";
+    --radius: 0.5rem;
+
+    --background: 0.12 0 0;
+    --foreground: 0.96 0 0;
+    --card: 0.18 0 0;
+    --card-foreground: 0.96 0 0;
+    --popover: 0.22 0 0;
+    --popover-foreground: 0.96 0 0;
+
+    --primary: 0.7 0.18 70;
+    --primary-foreground: 0.96 0 0;
+
+    --secondary: 0.65 0.15 66;
+    --secondary-foreground: 0.96 0 0;
+    --muted: 0.28 0 0;
+    --muted-foreground: 0.6 0 0;
+
+    --accent: 0.75 0.18 66;
+    --accent-foreground: 0.96 0 0;
+
+    --destructive: 0.62 0.25 29;
+    --destructive-foreground: 0.96 0 0;
+
+    --border: 0.25 0 0;
+    --input: 0.22 0 0;
+    --ring: 0.55 0.22 280;
+
+    --chart-1: 0.55 0.22 280;
+    --chart-2: 0.58 0.18 142;
+    --chart-3: 0.62 0.25 29;
+    --chart-4: 0.75 0.18 66;
+    --chart-5: 0.55 0.18 257;
+
+    --sidebar: 0.15 0 0;
+    --sidebar-foreground: 0.96 0 0;
+    --sidebar-primary: 0.55 0.22 280;
+    --sidebar-primary-foreground: 0.96 0 0;
+    --sidebar-accent: 0.28 0 0;
+    --sidebar-accent-foreground: 0.75 0 0;
+    --sidebar-border: 0.25 0 0;
+    --sidebar-ring: 0.55 0.22 280;
+
+    --success: 0.58 0.18 142;
+    --success-foreground: 0.96 0 0;
+    --input-focused: 0.55 0.22 280;
+    --input-error: 0.62 0.25 29;
+    --tile-correct: 0.62 0.2 142;
+    --tile-present: 0.7 0.18 70;
+    --tile-absent: 0.22 0 0;
+  }
+
+  .dark {
+    --background: 0.12 0 0;
+    --foreground: 0.96 0 0;
+    --card: 0.18 0 0;
+    --card-foreground: 0.96 0 0;
+    --popover: 0.22 0 0;
+    --popover-foreground: 0.96 0 0;
+
+    --primary: 0.7 0.18 70;
+    --primary-foreground: 0.96 0 0;
+
+    --secondary: 0.65 0.15 66;
+    --secondary-foreground: 0.96 0 0;
+    --muted: 0.28 0 0;
+    --muted-foreground: 0.6 0 0;
+
+    --accent: 0.75 0.18 66;
+    --accent-foreground: 0.96 0 0;
+
+    --destructive: 0.62 0.25 29;
+    --destructive-foreground: 0.96 0 0;
+
+    --border: 0.25 0 0;
+    --input: 0.22 0 0;
+    --ring: 0.55 0.22 280;
+
+    --chart-1: 0.55 0.22 280;
+    --chart-2: 0.58 0.18 142;
+    --chart-3: 0.62 0.25 29;
+    --chart-4: 0.75 0.18 66;
+    --chart-5: 0.55 0.18 257;
+
+    --sidebar: 0.15 0 0;
+    --sidebar-foreground: 0.96 0 0;
+    --sidebar-primary: 0.55 0.22 280;
+    --sidebar-primary-foreground: 0.96 0 0;
+    --sidebar-accent: 0.28 0 0;
+    --sidebar-accent-foreground: 0.75 0 0;
+    --sidebar-border: 0.25 0 0;
+    --sidebar-ring: 0.55 0.22 280;
+
+    --success: 0.58 0.18 142;
+    --success-foreground: 0.96 0 0;
+    --input-focused: 0.55 0.22 280;
+    --input-error: 0.62 0.25 29;
+    --tile-correct: 0.62 0.2 142;
+    --tile-present: 0.7 0.18 70;
+    --tile-absent: 0.22 0 0;
+  }
+
+  /* ── Light mode ─────────────────────────────────────────────────────────── */
+  .light {
+    --background: 0.97 0.005 250;
+    --foreground: 0.15 0.01 250;
+    --card: 1 0 0;
+    --card-foreground: 0.15 0.01 250;
+    --popover: 0.98 0.003 250;
+    --popover-foreground: 0.15 0.01 250;
+
+    --primary: 0.65 0.18 70;
+    --primary-foreground: 0.99 0 0;
+
+    --secondary: 0.6 0.15 66;
+    --secondary-foreground: 0.99 0 0;
+    --muted: 0.93 0.005 250;
+    --muted-foreground: 0.45 0.01 250;
+
+    --accent: 0.75 0.18 66;
+    --accent-foreground: 0.99 0 0;
+
+    --destructive: 0.55 0.22 29;
+    --destructive-foreground: 0.99 0 0;
+
+    --border: 0.85 0.01 250;
+    --input: 0.95 0.005 250;
+    --ring: 0.5 0.18 250;
+
+    --chart-1: 0.5 0.18 250;
+    --chart-2: 0.52 0.16 142;
+    --chart-3: 0.55 0.22 29;
+    --chart-4: 0.65 0.18 66;
+    --chart-5: 0.5 0.16 257;
+
+    --sidebar: 0.95 0.005 250;
+    --sidebar-foreground: 0.15 0.01 250;
+    --sidebar-primary: 0.5 0.18 250;
+    --sidebar-primary-foreground: 0.99 0 0;
+    --sidebar-accent: 0.93 0.005 250;
+    --sidebar-accent-foreground: 0.45 0.01 250;
+    --sidebar-border: 0.85 0.01 250;
+    --sidebar-ring: 0.5 0.18 250;
+
+    --success: 0.52 0.16 142;
+    --success-foreground: 0.99 0 0;
+    --input-focused: 0.5 0.18 250;
+    --input-error: 0.55 0.22 29;
+    --tile-correct: 0.55 0.15 145;
+    --tile-present: 0.65 0.16 85;
+    --tile-absent: 0.65 0.01 250;
+  }
+
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("/assets/fonts/SpaceGrotesk.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Figtree";
+  src: url("/assets/fonts/Figtree.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  src: url("/assets/fonts/GeistMono.woff2") format("woff2");
+  font-display: swap;
+}
+
+@layer utilities {
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pl-safe {
+    padding-left: env(safe-area-inset-left);
+  }
+  .pr-safe {
+    padding-right: env(safe-area-inset-right);
+  }
+  .header-safe {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+  }
+
+  .transition-smooth {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .btn-primary {
+    @apply px-4 py-2 rounded-lg font-body font-semibold bg-primary text-primary-foreground transition-smooth hover:scale-102 active:scale-98;
+  }
+  .btn-secondary {
+    @apply px-4 py-2 rounded-lg font-body font-semibold bg-secondary text-secondary-foreground transition-smooth hover:scale-102 active:scale-98;
+  }
+  .btn-destructive {
+    @apply px-4 py-2 rounded-lg font-body font-semibold bg-destructive text-destructive-foreground transition-smooth hover:scale-102 active:scale-98;
+  }
+  .input-base {
+    @apply px-3 py-2 rounded-lg bg-input text-foreground border border-border transition-smooth placeholder:text-muted-foreground focus:outline-none focus:border-input-focused focus:ring-2 focus:ring-primary focus:ring-opacity-30;
+  }
+  .input-error {
+    @apply border-input-error ring-2 ring-input-error ring-opacity-30;
+  }
+  .stat-card {
+    @apply flex flex-col gap-2 p-4 rounded-lg bg-card border border-border;
+  }
+  .stat-value {
+    @apply text-3xl font-display font-bold text-primary;
+  }
+  .stat-label {
+    @apply text-sm font-body text-muted-foreground uppercase tracking-wide;
+  }
+  .admin-badge {
+    @apply px-3 py-1 rounded-full text-xs font-semibold bg-secondary/20 text-secondary border border-secondary;
+  }
+  .reveal-animation {
+    animation: reveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .glow-primary {
+    box-shadow: 0 0 20px oklch(var(--primary) / 0.45), 0 0 40px
+      oklch(var(--primary) / 0.2);
+  }
+  .glow-secondary {
+    box-shadow: 0 0 20px oklch(var(--secondary) / 0.45), 0 0 40px
+      oklch(var(--secondary) / 0.2);
+  }
+  .text-glow {
+    text-shadow: 0 0 16px oklch(var(--primary) / 0.8);
+  }
+  .scanline {
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      oklch(0 0 0 / 0.08) 2px,
+      oklch(0 0 0 / 0.08) 4px
+    );
+    pointer-events: none;
+  }
+  .room-code {
+    @apply px-3 py-1 rounded-md bg-muted/30 border border-border font-mono font-bold text-primary tracking-widest text-base;
+  }
+  .section-header {
+    @apply text-xs font-display font-semibold text-muted-foreground uppercase tracking-wider;
+  }
+  .empty-state {
+    @apply text-center py-8 px-4 text-muted-foreground;
+  }
+  .tile {
+    @apply w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-md border-2 font-display font-bold text-xl select-none transition-all duration-200;
+  }
+  .tile-correct {
+    background-color: oklch(var(--tile-correct));
+    border-color: oklch(var(--tile-correct));
+    @apply text-foreground;
+  }
+  .tile-present {
+    background-color: oklch(var(--tile-present));
+    border-color: oklch(var(--tile-present));
+    @apply text-foreground;
+  }
+  .tile-absent {
+    background-color: oklch(var(--tile-absent));
+    border-color: oklch(var(--tile-absent));
+    @apply text-muted-foreground;
+  }
+  .tile-empty {
+    background-color: oklch(var(--card));
+    border-color: oklch(var(--border) / 0.5);
+    @apply text-foreground;
+  }
+  .tile-input {
+    background-color: oklch(var(--card));
+    border-color: oklch(var(--border));
+    @apply text-foreground;
+  }
+  .tile-input-active {
+    border-color: oklch(var(--primary) / 0.6);
+    @apply scale-105;
+  }
+  .tile-mini {
+    @apply flex items-center justify-center rounded;
+  }
+  .btn-game {
+    @apply px-5 py-3 rounded-full font-display font-bold text-base transition-smooth hover:scale-102 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .result-player-label {
+    @apply text-xs font-display font-semibold text-muted-foreground uppercase tracking-wider;
+  }
+  .shake-feedback {
+    animation: shake-feedback 0.4s ease-in-out;
+  }
+  .invalid-word-error {
+    @apply px-3 py-2 rounded-lg bg-destructive/10 border border-destructive text-destructive text-sm font-body text-center;
+  }
+  .invalid-pulse {
+    animation: invalid-pulse 0.5s ease-in-out;
+  }
+  .loss-screen {
+    @apply flex flex-col items-center justify-center gap-6 py-8 px-4 text-center;
+  }
+  .loss-word-reveal {
+    animation: loss-reveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    @apply text-3xl font-display font-bold text-primary tracking-widest;
+  }
+  .loss-message {
+    @apply text-lg font-body text-muted-foreground;
+  }
+  .coop-turn-indicator {
+    @apply flex items-center justify-center gap-3 px-4 py-3 rounded-lg bg-card border-2 border-primary;
+  }
+  .coop-turn-label {
+    @apply text-sm font-display font-semibold text-muted-foreground uppercase tracking-wider;
+  }
+  .coop-turn-player {
+    @apply text-xl font-display font-bold text-primary;
+  }
+  .coop-turn-dot {
+    @apply w-2.5 h-2.5 rounded-full bg-primary animate-pulse-subtle;
+  }
+  .versus-player-section {
+    @apply flex-1 flex flex-col gap-3;
+  }
+  .versus-player-header {
+    @apply text-sm font-display font-bold text-muted-foreground uppercase tracking-wider mb-2 pb-2 border-b border-border;
+  }
+  .versus-player-grid {
+    @apply gap-2;
+  }
+  .sound-toggle-btn {
+    @apply p-2 rounded-lg transition-smooth hover:bg-card active:scale-95 text-muted-foreground hover:text-foreground;
+  }
+  .game-board-container {
+    @apply flex flex-col gap-4;
+  }
+  .tile-animation-stagger {
+    animation-delay: calc(var(--index, 0) * 0.08s);
+  }
+}
+
+@keyframes reveal {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) rotateY(90deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotateY(0deg);
+  }
+}
+@keyframes tileFlip {
+  0% {
+    transform: scaleY(1) rotateX(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: scaleY(0) rotateX(90deg);
+    opacity: 0;
+  }
+  100% {
+    transform: scaleY(1) rotateX(0deg);
+    opacity: 1;
+  }
+}
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes pulse-subtle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  15% {
+    transform: translateX(-6px);
+  }
+  30% {
+    transform: translateX(6px);
+  }
+  45% {
+    transform: translateX(-5px);
+  }
+  60% {
+    transform: translateX(5px);
+  }
+  75% {
+    transform: translateX(-3px);
+  }
+  90% {
+    transform: translateX(3px);
+  }
+}
+@keyframes confettiFall {
+  0% {
+    transform: translateY(-20px) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+@keyframes floatEmoji {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  60% {
+    transform: translateY(-2.5rem) scale(1.3);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(-4rem) scale(1);
+    opacity: 0;
+  }
+}
+@keyframes worduel-slide-down {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes shake-feedback {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-4px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+@keyframes invalid-pulse {
+  0%,
+  100% {
+    border-color: oklch(var(--input-error));
+  }
+  50% {
+    border-color: oklch(var(--input-error) / 0.5);
+  }
+}
+
+@keyframes loss-reveal {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.versus-board-scale {
+  /* Scale both boards to fit side-by-side on mobile without overflow */
+  transform-origin: top center;
+  /* Tiles are ~48px normally; scale to ~36px on mobile, full size on sm+ */
+  transform: scale(0.72);
+  margin-bottom: calc((1 - 0.72) * -100%);
+}
+
+@media (min-width: 640px) {
+  .versus-board-scale {
+    transform: scale(1);
+    margin-bottom: 0;
+  }
+}

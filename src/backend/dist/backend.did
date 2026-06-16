@@ -1,0 +1,272 @@
+type Timestamp = int;
+type TileState = 
+ variant {
+   absent;
+   correct;
+   present;
+ };
+type SessionToken = text;
+type RoomCode = text;
+type Role = 
+ variant {
+   admin;
+   player;
+ };
+type RematchOffer = 
+ record {
+   joinToken: JoinToken;
+   newGameId: GameId;
+   offeredBy: PlayerName;
+   roomCode: RoomCode;
+ };
+type RegisterResult = 
+ variant {
+   err: text;
+   ok: SessionToken;
+ };
+type PlayerStats = 
+ record {
+   bestStreak: nat;
+   currentStreak: nat;
+   totalLosses: nat;
+   totalWins: nat;
+ };
+type PlayerOutcome = 
+ variant {
+   lost;
+   opponentWon;
+   playing;
+   won;
+ };
+type PlayerName = text;
+type PlayerInfo = 
+ record {
+   createdAt: Timestamp;
+   isDisabled: bool;
+   role: Role;
+   stats: PlayerStats;
+   username: text;
+ };
+type OpponentRecord = 
+ record {
+   losses: nat;
+   wins: nat;
+ };
+type LoginResult = 
+ variant {
+   err: text;
+   ok: SessionToken;
+ };
+type LeaveResult = 
+ variant {
+   err: text;
+   ok;
+ };
+type JoinToken = text;
+type JoinResult = 
+ variant {
+   err: text;
+   ok: GameState;
+ };
+type GuessResultV2 = 
+ variant {
+   err: GuessError;
+   ok: GameState;
+ };
+type GuessError = 
+ variant {
+   gameError: text;
+   notAWord;
+   notYourTurn;
+ };
+type Guess = 
+ record {
+   playerNum: nat;
+   states: vec TileState;
+   timestamp: Timestamp;
+   word: text;
+ };
+type GameSummary = 
+ record {
+   createdAt: Timestamp;
+   id: GameId;
+   isPublic: bool;
+   mode: GameMode;
+   players: vec PlayerName;
+   roomCode: RoomCode;
+   status: GameStatus;
+   waitingForMove: bool;
+ };
+type GameStatus = 
+ variant {
+   expired;
+   lost;
+   playing;
+   waiting;
+   won: nat;
+ };
+type GameStateWithRole = 
+ record {
+   gameState: GameState;
+   isHost: bool;
+ };
+type GameState = 
+ record {
+   answer: opt text;
+   coopGuesses: vec Guess;
+   currentTurn: nat;
+   currentTurnPlayer: opt PlayerName;
+   exitReason: ExitReason;
+   id: GameId;
+   isHost: bool;
+   isPublic: bool;
+   mode: GameMode;
+   myGuesses: vec Guess;
+   myOutcome: PlayerOutcome;
+   opponentGuessCount: nat;
+   opponentGuessTileStates: vec vec TileState;
+   playerNum: nat;
+   players: vec PlayerName;
+   roomCode: RoomCode;
+   status: GameStatus;
+ };
+type GameMode = 
+ variant {
+   coop;
+   versus;
+ };
+type GameId = text;
+type GameHistoryEntry = 
+ record {
+   endedAt: Timestamp;
+   exitReason: ExitReason;
+   gameId: GameId;
+   mode: GameMode;
+   myGuessCount: nat;
+   opponent: PlayerName;
+   roomCode: RoomCode;
+   won: bool;
+ };
+type ExitReason = text;
+type CreatePrivateGameResult = 
+ variant {
+   err: text;
+   ok: record {
+         gameId: GameId;
+         joinToken: JoinToken;
+         roomCode: RoomCode;
+       };
+ };
+type CreateGameResult = 
+ variant {
+   err: text;
+   ok: record {
+         gameId: GameId;
+         joinToken: JoinToken;
+         roomCode: RoomCode;
+       };
+ };
+type AuthResult = 
+ variant {
+   err: text;
+   ok;
+ };
+type AdminSetupInfo = 
+ record {
+   initialPassword: text;
+   username: text;
+ };
+type AcceptRematchResult = 
+ variant {
+   err: text;
+   ok: record {newGameId: GameId;};
+ };
+service : {
+  acceptRematch: (sessionToken: text, originalGameId: GameId) ->
+   (AcceptRematchResult);
+  addWord: (sessionToken: text, word: text) -> (variant {
+                                                  err: text;
+                                                  ok: nat;
+                                                });
+  changePassword: (token: text, oldPassword: text, newPassword: text) ->
+   (AuthResult);
+  checkAndForceTimeouts: () -> ();
+  createPrivateGame: (sessionToken: text, mode: GameMode) ->
+   (CreatePrivateGameResult);
+  createPublicGame: (sessionToken: text, mode: GameMode) ->
+   (CreateGameResult);
+  disablePlayer: (token: text, username: text) -> (AuthResult);
+  enablePlayer: (token: text, username: text) -> (AuthResult);
+  getAdminSetupInfo: () -> (opt AdminSetupInfo) query;
+  getAllPlayerStats: (token: text) -> (vec PlayerInfo);
+  getAllWords: (sessionToken: text) ->
+   (variant {
+      err: text;
+      ok: vec text;
+    }) query;
+  getGameByJoinToken: (joinToken: JoinToken) -> (opt GameId) query;
+  getGameState: (sessionToken: text, gameId: GameId) -> (JoinResult) query;
+  getGameStateWithRole: (gameId: GameId, sessionToken: text) ->
+   (opt GameStateWithRole) query;
+  getMyActiveGames: (sessionToken: text) -> (vec GameSummary) query;
+  getMyGameHistory: (playerName: PlayerName) -> (vec GameHistoryEntry) query;
+  getMyOpponentStats: (token: text) ->
+   (vec record {
+          text;
+          OpponentRecord;
+        }) query;
+  getMyStats: (token: text) -> (opt PlayerStats);
+  getRematchOffer: (originalGameId: GameId) -> (opt RematchOffer) query;
+  getWordCount: () -> (nat) query;
+  importWords: (sessionToken: text, words: vec text) ->
+   (record {
+      added: nat;
+      duplicates: nat;
+      skipped: nat;
+      unauthorized: bool;
+    });
+  joinByToken: (sessionToken: text, joinToken: text, gameIdHint:
+   opt GameId) -> (JoinResult);
+  joinGame: (sessionToken: text, roomCode: RoomCode, joinToken:
+   opt JoinToken) -> (JoinResult);
+  leaveGame: (sessionToken: text, gameId: GameId) -> (LeaveResult);
+  listAllPlayers: (token: text) -> (vec PlayerInfo);
+  listPublicGames: () -> (vec GameSummary) query;
+  login: (username: text, password: text) -> (LoginResult);
+  logout: (token: text) -> ();
+  promoteToAdmin: (username: text, secretKey: text) ->
+   (variant {
+      err: text;
+      ok: record {
+            message: text;
+            newToken: text;
+            role: text;
+          };
+    });
+  recordResult: (token: text, win: bool, opponentName: text, outcome:
+   variant {
+     draw;
+     loss;
+     win;
+   }) -> (AuthResult);
+  register: (username: text, password: text) -> (RegisterResult);
+  removeWord: (sessionToken: text, word: text) ->
+   (variant {
+      err: text;
+      ok: nat;
+    });
+  requestRematch: (sessionToken: text, gameId: GameId) ->
+   (variant {
+      err: text;
+      ok: record {
+            joinToken: text;
+            newGameId: GameId;
+            roomCode: RoomCode;
+          };
+    });
+  resetPlayerPassword: (token: text, username: text, newPassword: text) ->
+   (AuthResult);
+  submitGuess: (sessionToken: text, gameId: GameId, word: text) ->
+   (GuessResultV2);
+  validateGuessWord: (word: text) -> (bool) query;
+}

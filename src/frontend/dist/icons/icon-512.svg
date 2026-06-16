@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="100" fill="#0d0d0d"/>
+  <rect x="40" y="190" width="96" height="96" rx="18" fill="#d97706"/>
+  <rect x="148" y="190" width="96" height="96" rx="18" fill="#b45309"/>
+  <rect x="256" y="190" width="96" height="96" rx="18" fill="#292524"/>
+  <rect x="364" y="190" width="96" height="96" rx="18" fill="#1c1917"/>
+  <rect x="40" y="296" width="96" height="96" rx="18" fill="#1c1917"/>
+  <rect x="148" y="296" width="96" height="96" rx="18" fill="#b45309"/>
+  <rect x="256" y="296" width="96" height="96" rx="18" fill="#d97706"/>
+  <rect x="364" y="296" width="96" height="96" rx="18" fill="#f59e0b"/>
+  <text x="88" y="254" font-family="monospace" font-weight="900" font-size="58" fill="white" text-anchor="middle">W</text>
+  <text x="196" y="254" font-family="monospace" font-weight="900" font-size="58" fill="white" text-anchor="middle">O</text>
+  <text x="304" y="254" font-family="monospace" font-weight="900" font-size="58" fill="#d1d5db" text-anchor="middle">R</text>
+  <text x="412" y="254" font-family="monospace" font-weight="900" font-size="58" fill="#9ca3af" text-anchor="middle">D</text>
+  <text x="88" y="360" font-family="monospace" font-weight="900" font-size="58" fill="#9ca3af" text-anchor="middle">U</text>
+  <text x="196" y="360" font-family="monospace" font-weight="900" font-size="58" fill="white" text-anchor="middle">E</text>
+  <text x="304" y="360" font-family="monospace" font-weight="900" font-size="58" fill="white" text-anchor="middle">L</text>
+</svg>
