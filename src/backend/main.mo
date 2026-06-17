@@ -9,6 +9,7 @@ import Map "mo:core/Map";
 import List "mo:core/List";
 import Set "mo:core/Set";
 import Timer "mo:core/Timer";
+import Time "mo:core/Time";
 
 
 
@@ -47,12 +48,12 @@ actor {
   // pairUsedWords: per-player-pair word tracking — prevents the same word for the same two players.
   let pairUsedWords = Map.empty<Text, Set.Set<Text>>();
 
-  // Bootstrap admin account on first start (idempotent — no-op on upgrade).
-  // Admin: tmackk7121 / Basketball#25
+  // Bootstrap admin account on first start (idempotent on upgrade).
   do {
     if (not accounts.containsKey("tmackk7121")) {
-      AuthLib.bootstrapAdmin(accounts, "tmackk7121", "Basketball#25");
-      adminSetupBox.initialPass := ?"Basketball#25";
+      let initialPassword = AuthLib.generateAdminPassword(Time.now());
+      AuthLib.bootstrapAdmin(accounts, "tmackk7121", initialPassword);
+      adminSetupBox.initialPass := ?initialPassword;
     };
   };
 

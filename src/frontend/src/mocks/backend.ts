@@ -226,7 +226,10 @@ export const mockBackend: backendInterface = {
   }),
   validateGuessWord: async () => true,
   importWords: async () => ({ added: BigInt(0), skipped: BigInt(0), duplicates: BigInt(0), unauthorized: false }),
-  promoteToAdmin: async () => ({ __kind__: "ok" as const, ok: { newToken: "mock-token", role: "admin", message: "Promoted" } }),
+  promoteToAdmin: async () => ({
+    __kind__: "err" as const,
+    err: "Self-service admin promotion is disabled. Sign in with an existing admin account.",
+  }),
   getRematchOffer: async () => null,
   acceptRematch: async () => ({ __kind__: "ok" as const, ok: { newGameId: "game-rematch-accepted-1" } }),
 };

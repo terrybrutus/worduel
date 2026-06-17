@@ -16,7 +16,7 @@ module {
 
   public type PlayerAccount = {
     username         : Text;
-    var passwordHash : Text;    // bcrypt/sha256 hash
+    var passwordHash : Text;    // internal password digest
     role             : Role;
     var isDisabled   : Bool;
     createdAt        : Timestamp;
