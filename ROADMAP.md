@@ -13,6 +13,15 @@ WORDUEL should grow as a competitive and social word game, not as a cash-prize w
 5. Add custom rooms with room-specific word packs, friend/family/class groups, room leaderboards, and recurring challenges.
 6. Test paid Pro Rooms or Tournament Host features after the game has repeat usage.
 
+## Progress Shipped
+
+- Fundamentals: restored backend dictionary validation, preserved frontend/backend checks, and reveal answers once the player has reached a finished outcome.
+- Async challenge links: private invite links are now surfaced as a first-class "Send Challenge" entry point.
+- Daily Duel: added a Daily Duel quick-start entry point for same-day challenge framing.
+- End screens: added answer reveal fallback, word notes, and share-result copy.
+- Custom rooms: added room presets for classic, daily, family, classroom, and tournament framing.
+- Paid path: added Pro Rooms / Tournament Host preview cards for custom packs, leaderboards, and host controls without real-money winner payouts.
+
 ## Features To Preserve For Later
 
 - Player-chosen words: each player picks a valid dictionary word for the opponent to guess.

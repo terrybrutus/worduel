@@ -452,7 +452,7 @@ mixin (
       case null { #err(#gameError("Invalid or expired session")) };
       case (?playerName) {
         let normalized = word.toLower();
-        if (not WordPoolLib.isPlausibleGuess(normalized)) {
+        if (not WordPoolLib.isValidWord(customWords, knownValidWords, normalized)) {
           return #err(#notAWord);
         };
         switch (sessions.get(gameId)) {

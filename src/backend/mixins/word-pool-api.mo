@@ -97,6 +97,6 @@ mixin (
   };
 
   public query func validateGuessWord(word : Text) : async Bool {
-    WordPoolLib.isPlausibleGuess(word);
+    WordPoolLib.isValidWord(customWords, knownValidWords, word);
   };
 };

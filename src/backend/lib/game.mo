@@ -229,11 +229,13 @@ module {
       };
     };
 
+    let myOutcome = computeMyOutcome(session, playerNum);
+
     let revealAnswer = switch (session.status) {
       case (#won(_)) { true };
       case (#lost) { true };
       case (#expired) { true };
-      case _ { false };
+      case _ { myOutcome != #playing };
     };
 
     // co-op: expose which player's turn it is by name
@@ -246,8 +248,6 @@ module {
       };
       case (#versus) { null };
     };
-
-    let myOutcome = computeMyOutcome(session, playerNum);
 
     {
       id = session.id;

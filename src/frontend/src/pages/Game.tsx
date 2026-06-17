@@ -27,6 +27,118 @@ import { getOpponentName } from "../types";
 const MAX_GUESSES = 6;
 const WORD_LENGTH = 5;
 
+const WORD_NOTES: Record<string, string> = {
+  about: "concerning; on the subject of",
+  apple: "a round fruit with firm flesh",
+  audio: "sound, especially recorded or transmitted sound",
+  basic: "forming an essential foundation",
+  brain: "the organ of thought and memory",
+  brave: "ready to face danger or difficulty",
+  bread: "food made from baked dough",
+  chair: "a seat with a back",
+  clean: "free from dirt or unwanted marks",
+  close: "near in space, time, or relationship",
+  court: "a place where legal cases or games are held",
+  crane: "a tall machine for lifting heavy things",
+  dream: "thoughts or images during sleep",
+  earth: "the ground or the planet we live on",
+  faith: "trust or strong belief",
+  flame: "the visible burning part of a fire",
+  fresh: "new, clean, or recently made",
+  ghost: "the spirit of a dead person in stories",
+  grace: "elegance, kindness, or favor",
+  heart: "the organ that pumps blood; also courage or feeling",
+  light: "brightness that makes seeing possible",
+  lucky: "having good fortune",
+  plant: "a living thing that grows in soil or water",
+  proud: "feeling pleased about achievement or identity",
+  quiet: "making little or no noise",
+  round: "shaped like a circle or sphere",
+  share: "to use, enjoy, or divide something with others",
+  smart: "quick to understand or learn",
+  sound: "something heard",
+  trust: "firm belief in someone or something",
+  world: "the earth, or all people and things",
+};
+
+function getWordNote(word: string): string {
+  return WORD_NOTES[word.toLowerCase()] ?? "Definition coming soon.";
+}
+
+function copyText(text: string): boolean {
+  if (
+    navigator.clipboard &&
+    typeof navigator.clipboard.writeText === "function"
+  ) {
+    navigator.clipboard.writeText(text).catch(() => {});
+    return true;
+  }
+  try {
+    const el = document.createElement("textarea");
+    el.value = text;
+    el.setAttribute("readonly", "");
+    el.style.cssText = "position:fixed;top:-9999px;left:-9999px;opacity:0";
+    document.body.appendChild(el);
+    el.focus();
+    el.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(el);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+function ResultExtras({
+  word,
+  won,
+  guessCount,
+  mode,
+}: {
+  word: string;
+  won: boolean;
+  guessCount: number;
+  mode: GameMode;
+}) {
+  const [copied, setCopied] = useState(false);
+  const hasWord = word.trim().length > 0;
+  const shareText = `Worduel ${won ? "win" : "result"}: ${
+    hasWord ? word.toUpperCase() : "answer pending"
+  } in ${guessCount || 0}/${MAX_GUESSES} (${mode === GameMode.coop ? "Co-op" : "Versus"})`;
+
+  const handleCopy = () => {
+    if (copyText(shareText)) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    }
+  };
+
+  return (
+    <div className="w-full max-w-sm rounded-xl border border-border bg-card/80 p-4 text-left">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+            Word note
+          </p>
+          <p className="mt-1 text-sm font-body text-foreground">
+            {hasWord
+              ? getWordNote(word)
+              : "The deployed backend did not send the answer for this finished game."}
+          </p>
+        </div>
+        <button
+          type="button"
+          className="rounded-lg border border-border px-3 py-2 text-xs font-display font-bold text-foreground hover:bg-muted/40"
+          onClick={handleCopy}
+          data-ocid="game.copy_result_button"
+        >
+          {copied ? "Copied" : "Share"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Confetti ─────────────────────────────────────────────────────────────────
 const CONFETTI_COLORS = [
   "oklch(0.65 0.15 66)",
@@ -213,9 +325,16 @@ function WinScreen({
           The word was
         </p>
         <p className="text-3xl font-display font-black text-primary tracking-widest uppercase">
-          {word}
+          {word || "-----"}
         </p>
       </motion.div>
+
+      <ResultExtras
+        word={word}
+        won={!opponentWon}
+        guessCount={guessCount}
+        mode={mode}
+      />
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -254,6 +373,7 @@ function WinScreen({
 // ── Loss Screen ───────────────────────────────────────────────────────────────
 interface LossScreenProps {
   word: string;
+  guessCount: number;
   mode: GameMode;
   onRematch: () => void;
   onLobby: () => void;
@@ -265,6 +385,7 @@ interface LossScreenProps {
 
 function LossScreen({
   word,
+  guessCount,
   mode,
   onRematch,
   onLobby,
@@ -325,6 +446,24 @@ function LossScreen({
           <p className="loss-word-reveal">{word.toUpperCase()}</p>
         </motion.div>
       )}
+
+      {!word && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          className="px-5 py-3 rounded-xl bg-card border border-border text-sm text-muted-foreground"
+        >
+          Answer unavailable from this deployed backend.
+        </motion.div>
+      )}
+
+      <ResultExtras
+        word={word}
+        won={false}
+        guessCount={guessCount}
+        mode={mode}
+      />
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -1054,6 +1193,7 @@ export default function Game() {
               <LossScreen
                 key="loss"
                 word={answer}
+                guessCount={currentGuesses.length}
                 mode={mode}
                 onRematch={handleRematch}
                 onLobby={handleLobby}
