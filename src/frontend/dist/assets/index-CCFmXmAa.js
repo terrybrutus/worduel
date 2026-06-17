@@ -27587,7 +27587,7 @@ function mergeLoginOptions(loginOptions, otherLoginOptions) {
   };
 }
 const ONE_HOUR_IN_NANOSECONDS = BigInt(36e11);
-const DEFAULT_IDENTITY_PROVIDER = "https://id.ai/authorize";
+const DEFAULT_IDENTITY_PROVIDER = "https://identity.internetcomputer.org/";
 const InternetIdentityReactContext = reactExports.createContext(void 0);
 async function createAuthClient(createOptions) {
   const config = await loadConfig();
@@ -35654,6 +35654,7 @@ const VALID_WORDS = new Set(
   )
 );
 function isValidWord(w2) {
+  if (VALID_WORDS.size === 0) return true;
   return VALID_WORDS.has(w2.toLowerCase());
 }
 function PlayerRow({
@@ -35724,7 +35725,7 @@ function PlayerRow({
 }
 function Admin() {
   const navigate = useNavigate();
-  const { user, sessionToken, isAdmin, promoteToAdmin } = useAuth();
+  const { user, sessionToken, isAdmin } = useAuth();
   const [tab, setTab] = reactExports.useState("words");
   const [wordInput, setWordInput] = reactExports.useState("");
   const [wordInputError, setWordInputError] = reactExports.useState("");
@@ -35741,9 +35742,6 @@ function Admin() {
   const [csvParsed, setCsvParsed] = reactExports.useState([]);
   const [csvFilename, setCsvFilename] = reactExports.useState(null);
   const [importProgress, setImportProgress] = reactExports.useState(null);
-  const [setupKey, setSetupKey] = reactExports.useState("");
-  const [setupPending, setSetupPending] = reactExports.useState(false);
-  const [setupFeedback, setSetupFeedback] = reactExports.useState(null);
   const handleCsvSelect = (e) => {
     var _a3;
     const file = (_a3 = e.target.files) == null ? void 0 : _a3[0];
@@ -35846,24 +35844,6 @@ function Admin() {
       setTimeout(() => setFeedback(null), 4e3);
     }
   };
-  const handlePromoteToAdmin = async () => {
-    if (!(user == null ? void 0 : user.username) || !setupKey) return;
-    setSetupPending(true);
-    setSetupFeedback(null);
-    try {
-      await promoteToAdmin(setupKey);
-      setSetupKey("");
-      void navigate({ to: "/admin" });
-    } catch (err) {
-      setSetupFeedback({
-        type: "error",
-        msg: err instanceof Error ? err.message : "Invalid secret key"
-      });
-      setTimeout(() => setSetupFeedback(null), 4e3);
-    } finally {
-      setSetupPending(false);
-    }
-  };
   const enrichedPlayers = (players ?? []).map((p2) => {
     const found = (playerStats ?? []).find((s2) => s2.username === p2.username);
     return {
@@ -35940,51 +35920,7 @@ function Admin() {
               /* @__PURE__ */ jsxRuntimeExports.jsx(Shield, { className: "w-5 h-5 text-primary" }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display font-extrabold text-lg text-foreground", children: "Admin Setup" })
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm text-muted-foreground font-body", children: [
-              "Enter the admin secret key to unlock admin access for",
-              " ",
-              /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: user.username }),
-              "."
-            ] }),
-            setupFeedback && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-              "div",
-              {
-                className: `flex items-center gap-2 text-sm px-3 py-2 rounded-lg border ${setupFeedback.type === "success" ? "bg-success/10 border-success/30 text-success" : "bg-destructive/10 border-destructive/30 text-destructive"}`,
-                "data-ocid": setupFeedback.type === "success" ? "admin.setup.success_state" : "admin.setup.error_state",
-                children: [
-                  setupFeedback.type === "success" ? /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { className: "w-4 h-4 shrink-0" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(TriangleAlert, { className: "w-4 h-4 shrink-0" }),
-                  setupFeedback.msg
-                ]
-              }
-            ),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "input",
-                {
-                  type: "password",
-                  placeholder: "Secret key\\u2026",
-                  value: setupKey,
-                  onChange: (e) => setSetupKey(e.target.value),
-                  onKeyDown: (e) => e.key === "Enter" && void handlePromoteToAdmin(),
-                  className: "input-base flex-1",
-                  "data-ocid": "admin.setup.key_input"
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "button",
-                {
-                  type: "button",
-                  onClick: () => void handlePromoteToAdmin(),
-                  disabled: setupPending || !setupKey,
-                  className: "btn-primary flex items-center gap-1.5 px-4 disabled:opacity-50",
-                  "data-ocid": "admin.setup.submit_button",
-                  children: [
-                    setupPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-4 h-4 animate-spin" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Shield, { className: "w-4 h-4" }),
-                    "Unlock"
-                  ]
-                }
-              )
-            ] })
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground font-body", children: "Self-service admin promotion is disabled. Sign in with an existing admin account to manage words and players." })
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(
             "button",
@@ -45001,33 +44937,26 @@ function OpponentGhostGrid({
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex flex-col gap-1", children: rows.map((rowIdx) => {
           const tileStates = hasTileStates ? opponentGuessTileStates[rowIdx] : void 0;
           const isGuessed = rowIdx < guessCount;
-          return /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "div",
-            {
-              className: "flex gap-1",
-              children: Array.from({ length: WORD_LENGTH }, (_2, colIdx) => {
-                if (tileStates && tileStates[colIdx] !== void 0) {
-                  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    TileCell,
-                    {
-                      letter: "",
-                      state: tileStates[colIdx]
-                    },
-                    colIdx
-                  );
-                }
-                return /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "div",
-                  {
-                    className: `w-8 h-8 sm:w-10 sm:h-10 rounded border-2 transition-all duration-300 ${isGuessed ? "border-chart-1/60 bg-chart-1/35" : "border-border/30 bg-card/40"}`,
-                    "aria-label": isGuessed ? "opponent guessed" : "empty"
-                  },
-                  colIdx
-                );
-              })
-            },
-            rowIdx
-          );
+          return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex gap-1", children: Array.from({ length: WORD_LENGTH }, (_2, colIdx) => {
+            if (tileStates && tileStates[colIdx] !== void 0) {
+              return /* @__PURE__ */ jsxRuntimeExports.jsx(
+                TileCell,
+                {
+                  letter: "",
+                  state: tileStates[colIdx]
+                },
+                colIdx
+              );
+            }
+            return /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "div",
+              {
+                className: `w-8 h-8 sm:w-10 sm:h-10 rounded border-2 transition-all duration-300 ${isGuessed ? "border-chart-1/60 bg-chart-1/35" : "border-border/30 bg-card/40"}`,
+                "aria-label": isGuessed ? "opponent guessed" : "empty"
+              },
+              colIdx
+            );
+          }) }, rowIdx);
         }) }),
         !opponentLeft && guessCount > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-[10px] font-mono text-muted-foreground mt-1 uppercase tracking-wider", children: [
           guessCount,

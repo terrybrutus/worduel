@@ -131,7 +131,7 @@ function PlayerRow({
 
 export default function Admin() {
   const navigate = useNavigate();
-  const { user, sessionToken, isAdmin, promoteToAdmin } = useAuth();
+  const { user, sessionToken, isAdmin } = useAuth();
   const [tab, setTab] = useState<Tab>("words");
   const [wordInput, setWordInput] = useState("");
   const [wordInputError, setWordInputError] = useState("");
@@ -160,14 +160,6 @@ export default function Admin() {
     current: number;
     total: number;
     retrying?: boolean;
-  } | null>(null);
-
-  // Admin setup state
-  const [setupKey, setSetupKey] = useState("");
-  const [setupPending, setSetupPending] = useState(false);
-  const [setupFeedback, setSetupFeedback] = useState<{
-    type: "success" | "error";
-    msg: string;
   } | null>(null);
 
   const handleCsvSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -299,26 +291,6 @@ export default function Admin() {
     }
   };
 
-  const handlePromoteToAdmin = async () => {
-    if (!user?.username || !setupKey) return;
-    setSetupPending(true);
-    setSetupFeedback(null);
-    try {
-      await promoteToAdmin(setupKey);
-      setSetupKey("");
-      // Promotion succeeded — navigate directly into the admin panel (no re-login)
-      void navigate({ to: "/admin" });
-    } catch (err) {
-      setSetupFeedback({
-        type: "error",
-        msg: err instanceof Error ? err.message : "Invalid secret key",
-      });
-      setTimeout(() => setSetupFeedback(null), 4000);
-    } finally {
-      setSetupPending(false);
-    }
-  };
-
   const enrichedPlayers = (players ?? []).map((p) => {
     const found = (playerStats ?? []).find((s) => s.username === p.username);
     return {
@@ -407,57 +379,9 @@ export default function Admin() {
             </h2>
           </div>
           <p className="text-sm text-muted-foreground font-body">
-            Enter the admin secret key to unlock admin access for{" "}
-            <strong>{user.username}</strong>.
+            Self-service admin promotion is disabled. Sign in with an existing
+            admin account to manage words and players.
           </p>
-          {setupFeedback && (
-            <div
-              className={`flex items-center gap-2 text-sm px-3 py-2 rounded-lg border ${
-                setupFeedback.type === "success"
-                  ? "bg-success/10 border-success/30 text-success"
-                  : "bg-destructive/10 border-destructive/30 text-destructive"
-              }`}
-              data-ocid={
-                setupFeedback.type === "success"
-                  ? "admin.setup.success_state"
-                  : "admin.setup.error_state"
-              }
-            >
-              {setupFeedback.type === "success" ? (
-                <CheckCircle2 className="w-4 h-4 shrink-0" />
-              ) : (
-                <AlertTriangle className="w-4 h-4 shrink-0" />
-              )}
-              {setupFeedback.msg}
-            </div>
-          )}
-          <div className="flex gap-2">
-            <input
-              type="password"
-              placeholder="Secret key\u2026"
-              value={setupKey}
-              onChange={(e) => setSetupKey(e.target.value)}
-              onKeyDown={(e) =>
-                e.key === "Enter" && void handlePromoteToAdmin()
-              }
-              className="input-base flex-1"
-              data-ocid="admin.setup.key_input"
-            />
-            <button
-              type="button"
-              onClick={() => void handlePromoteToAdmin()}
-              disabled={setupPending || !setupKey}
-              className="btn-primary flex items-center gap-1.5 px-4 disabled:opacity-50"
-              data-ocid="admin.setup.submit_button"
-            >
-              {setupPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Shield className="w-4 h-4" />
-              )}
-              Unlock
-            </button>
-          </div>
         </div>
         <button
           type="button"

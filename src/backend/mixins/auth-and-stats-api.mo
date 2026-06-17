@@ -45,6 +45,7 @@ mixin (
         if (not AuthLib.verifyPassword(account, password)) {
           return #err("Invalid username or password");
         };
+        AuthLib.upgradePasswordHashIfLegacy(account, password);
         let token = AuthLib.generateToken(username, Time.now());
         AuthLib.createSession(sessions, token, username);
         #ok(token);
@@ -164,24 +165,12 @@ mixin (
     };
   };
 
-  // Self-service admin promotion — requires a shared secret.
-  // Allows any user to promote themselves after account creation.
-  // Returns a fresh session token so the frontend can silently swap without re-login.
-  // NOTE: existing sessions are preserved so outstanding tokens continue to work.
+  // Self-service admin promotion is disabled; admin access should come from an
+  // existing admin account rather than a repo-embedded shared secret.
   public func promoteToAdmin(username : Text, secretKey : Text) : async { #ok : { message : Text; role : Text; newToken : Text }; #err : Text } {
-    if (secretKey != "629591") {
-      return #err("Invalid secret key");
-    };
-    switch (AuthLib.promoteToAdmin(accounts, username)) {
-      case (#ok) {
-        // Do NOT invalidate existing sessions — they keep working for admin calls.
-        // Issue a fresh token as a convenience so the frontend can swap seamlessly.
-        let newToken = AuthLib.generateToken(username, Time.now());
-        AuthLib.createSession(sessions, newToken, username);
-        #ok({ message = "Account '" # username # "' promoted to admin"; role = "admin"; newToken });
-      };
-      case (#err(msg)) { #err(msg) };
-    };
+    ignore username;
+    ignore secretKey;
+    #err("Self-service admin promotion is disabled. Sign in with an existing admin account.");
   };
 
   public query func getAdminSetupInfo() : async ?Types.AdminSetupInfo {

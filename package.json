@@ -7,13 +7,14 @@
     "npm": "please use pnpm"
   },
   "scripts": {
-    "build": "pnpm -r --if-present run build",
-    "typecheck": "pnpm -r --if-present run typecheck",
-    "check": "pnpm -r --if-present run check",
-    "fix": "pnpm -r --if-present run fix",
+    "build": "corepack pnpm -r --if-present run build",
+    "typecheck": "corepack pnpm -r --if-present run typecheck",
+    "check": "corepack pnpm -r --if-present run check",
+    "fix": "corepack pnpm -r --if-present run fix",
     "bindgen": "caffeine-bindgen --did-file ./src/backend/dist/backend.did --out-dir ./src/frontend/src --actor-interface-file --force"
   },
   "devDependencies": {
+    "ic-mops": "^2.14.1",
     "sharp": "^0.34.4"
   },
   "dependencies": {

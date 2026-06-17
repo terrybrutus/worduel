@@ -103,11 +103,7 @@ function OpponentGhostGrid({
           const isGuessed = rowIdx < guessCount;
 
           return (
-            <div
-              // biome-ignore lint/suspicious/noArrayIndexKey: static grid row
-              key={rowIdx}
-              className="flex gap-1"
-            >
+            <div key={rowIdx} className="flex gap-1">
               {Array.from({ length: WORD_LENGTH }, (_, colIdx) => {
                 if (tileStates && tileStates[colIdx] !== undefined) {
                   return (

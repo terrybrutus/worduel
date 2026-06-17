@@ -243,7 +243,7 @@ export function useGame(): UseGameResult {
           return;
         }
 
-        // FIX #1: Client-side word validation against local word list
+        // Optional fast-path validation. The backend remains authoritative.
         if (!isValidWord(currentInput)) {
           triggerShake("Not a word");
           return;

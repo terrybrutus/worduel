@@ -13,16 +13,27 @@ module {
   public type SessionToken = Types.SessionToken;
   public type OpponentRecord = Types.OpponentRecord;
 
-  func hashPassword(password : Text) : Text {
+  func legacyPasswordHash(password : Text) : Text {
     "rpc:" # password;
   };
 
+  func hashPassword(username : Text, password : Text) : Text {
+    "v2:" # Text.hash("worduel:password:" # username # ":" # password).toText();
+  };
+
   public func verifyPassword(account : PlayerAccount, candidate : Text) : Bool {
-    account.passwordHash == hashPassword(candidate);
+    account.passwordHash == hashPassword(account.username, candidate)
+      or account.passwordHash == legacyPasswordHash(candidate);
+  };
+
+  public func upgradePasswordHashIfLegacy(account : PlayerAccount, candidate : Text) {
+    if (account.passwordHash == legacyPasswordHash(candidate)) {
+      account.passwordHash := hashPassword(account.username, candidate);
+    };
   };
 
   public func generateToken(username : Text, now : Int) : SessionToken {
-    username # ":" # now.toText();
+    "tok:" # Text.hash("worduel:session:" # username # ":" # now.toText()).toText() # ":" # now.toText();
   };
 
   public func createAccount(
@@ -39,7 +50,7 @@ module {
     };
     let account : PlayerAccount = {
       username;
-      var passwordHash = hashPassword(password);
+      var passwordHash = hashPassword(username, password);
       role;
       var isDisabled = false;
       createdAt = Time.now();
@@ -59,7 +70,7 @@ module {
     account : PlayerAccount,
     newPassword : Text,
   ) {
-    account.passwordHash := hashPassword(newPassword);
+    account.passwordHash := hashPassword(account.username, newPassword);
   };
 
   public func disableAccount(
@@ -249,7 +260,7 @@ module {
     if (not accounts.containsKey(adminUsername)) {
       let account : PlayerAccount = {
         username = adminUsername;
-        var passwordHash = hashPassword(password);
+        var passwordHash = hashPassword(adminUsername, password);
         role = #admin;
         var isDisabled = false;
         createdAt = Time.now();
