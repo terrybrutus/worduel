@@ -4,6 +4,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "@tanstack/react-router";
 import {
   Bell,
+  BookOpen,
+  CalendarDays,
   ChevronDown,
   ChevronRight,
   ClipboardCheck,
@@ -16,6 +18,8 @@ import {
   Plus,
   Search,
   Shield,
+  Sparkles,
+  Star,
   TrendingUp,
   Trophy,
   Users,
@@ -442,6 +446,39 @@ function ProfileSheet({
 
 // ─── Lobby mode type
 type LobbyMode = null | "new" | "join";
+type RoomPreset = "classic" | "daily" | "family" | "classroom" | "tournament";
+
+const ROOM_PRESETS: Array<{
+  id: RoomPreset;
+  label: string;
+  detail: string;
+}> = [
+  {
+    id: "classic",
+    label: "Classic",
+    detail: "Standard shared word list",
+  },
+  {
+    id: "daily",
+    label: "Daily Duel",
+    detail: "Same-day challenge framing",
+  },
+  {
+    id: "family",
+    label: "Family Pack",
+    detail: "Private room starter",
+  },
+  {
+    id: "classroom",
+    label: "Classroom",
+    detail: "Vocabulary practice starter",
+  },
+  {
+    id: "tournament",
+    label: "Tournament",
+    detail: "Host-ready room framing",
+  },
+];
 
 // ─── Main Lobby
 export default function Lobby() {
@@ -454,6 +491,7 @@ export default function Lobby() {
   const [lobbyMode, setLobbyMode] = useState<LobbyMode>(null);
   const [gameMode, setGameMode] = useState<GameMode>(GameMode.versus);
   const [isPrivate, setIsPrivate] = useState(false);
+  const [roomPreset, setRoomPreset] = useState<RoomPreset>("classic");
   const [inviteData, setInviteData] = useState<{
     gameId: string;
     roomCode: string;
@@ -492,6 +530,37 @@ export default function Lobby() {
       {
         onSuccess: (data) => {
           if (isPrivate && data.joinToken) {
+            setInviteData({
+              gameId: data.gameId,
+              roomCode: data.roomCode,
+              joinToken: data.joinToken,
+            });
+          } else {
+            void navigate({
+              to: "/game/$gameId",
+              params: { gameId: data.gameId },
+            });
+          }
+        },
+        onError: (err) =>
+          toast.error(
+            err instanceof Error ? err.message : "Failed to create game",
+          ),
+      },
+    );
+  };
+
+  const handleQuickCreate = (preset: RoomPreset, privateGame: boolean) => {
+    setRoomPreset(preset);
+    setGameMode(GameMode.versus);
+    setIsPrivate(privateGame);
+    setLobbyMode("new");
+    if (!sessionToken) return;
+    createGame.mutate(
+      { sessionToken, mode: GameMode.versus, isPrivate: privateGame },
+      {
+        onSuccess: (data) => {
+          if (privateGame && data.joinToken) {
             setInviteData({
               gameId: data.gameId,
               roomCode: data.roomCode,
@@ -786,6 +855,90 @@ export default function Lobby() {
           </div>
         )}
 
+        <div
+          className="grid gap-3 sm:grid-cols-2"
+          data-ocid="lobby.progression_cards"
+        >
+          <button
+            type="button"
+            onClick={() => handleQuickCreate("daily", false)}
+            disabled={createGame.isPending}
+            className="rounded-xl border border-primary/40 bg-primary/10 p-4 text-left transition-smooth hover:bg-primary/15 disabled:opacity-50"
+            data-ocid="lobby.daily_duel_button"
+          >
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-primary" />
+              <span className="font-display font-bold text-primary">
+                Daily Duel
+              </span>
+            </div>
+            <p className="mt-2 text-xs font-body text-muted-foreground">
+              Start today&apos;s shared challenge and compare streaks.
+            </p>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleQuickCreate("classic", true)}
+            disabled={createGame.isPending}
+            className="rounded-xl border border-border/60 bg-card p-4 text-left transition-smooth hover:border-primary/40"
+            data-ocid="lobby.async_challenge_button"
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span className="font-display font-bold text-foreground">
+                Send Challenge
+              </span>
+            </div>
+            <p className="mt-2 text-xs font-body text-muted-foreground">
+              Create an invite link your opponent can play later.
+            </p>
+          </button>
+        </div>
+
+        <div
+          className="rounded-xl border border-border/60 bg-card p-4"
+          data-ocid="lobby.pro_rooms_preview"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="font-display text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                Rooms & hosting
+              </p>
+              <p className="mt-1 text-xs font-body text-muted-foreground">
+                Early shape for custom packs, classroom rooms, and tournament
+                host tools.
+              </p>
+            </div>
+            <Badge variant="outline" className="border-primary/40 text-primary">
+              Pro later
+            </Badge>
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {[
+              {
+                label: "Word Packs",
+                icon: <BookOpen className="h-3.5 w-3.5" />,
+              },
+              {
+                label: "Leaderboards",
+                icon: <Trophy className="h-3.5 w-3.5" />,
+              },
+              {
+                label: "Host Controls",
+                icon: <Star className="h-3.5 w-3.5" />,
+              },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="flex items-center justify-center gap-1.5 rounded-lg border border-border/60 bg-muted/10 px-2 py-2 text-[10px] font-display font-semibold text-muted-foreground"
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Two-choice entry: Start New Game / Join a Game */}
         <div className="grid grid-cols-2 gap-3">
           <button
@@ -916,6 +1069,34 @@ export default function Lobby() {
                   <Users className="w-4 h-4" />
                   Co-op
                 </button>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-mono text-muted-foreground uppercase tracking-widest mb-2">
+                Room preset
+              </p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {ROOM_PRESETS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => setRoomPreset(preset.id)}
+                    className={`rounded-xl border p-3 text-left transition-smooth ${
+                      roomPreset === preset.id
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-muted/20 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                    }`}
+                    data-ocid={`lobby.room_preset.${preset.id}`}
+                  >
+                    <span className="block text-xs font-display font-bold">
+                      {preset.label}
+                    </span>
+                    <span className="mt-1 block text-[10px] font-body opacity-80">
+                      {preset.detail}
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
 
