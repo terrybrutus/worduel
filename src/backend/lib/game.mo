@@ -188,6 +188,10 @@ module {
     };
   };
 
+  func hasGuessed(guesses : [Guess], word : Text) : Bool {
+    guesses.find(func(g) { g.word == word }) != null;
+  };
+
   public func toGameState(session : GameSession, playerName : ?Types.PlayerName) : GameState {
     let playerNum = switch (playerName) {
       case (?name) { getPlayerNum(session, name) };
@@ -330,6 +334,9 @@ module {
         if (session.currentTurn != playerNum) {
           return #notYourTurn;
         };
+        if (hasGuessed(session.coopGuesses, word)) {
+          return #err("Already guessed");
+        };
         session.coopGuesses := session.coopGuesses.concat([guess]);
         session.lastMoveAt := now;
         let newStatus : GameStatus = if (word == session.answer) {
@@ -353,6 +360,9 @@ module {
 
         let myGuesses = if (playerNum == 1) { session.p1Guesses } else { session.p2Guesses };
         if (myGuesses.size() >= 6) { return #err("You have no guesses remaining") };
+        if (hasGuessed(myGuesses, word)) {
+          return #err("Already guessed");
+        };
 
         let updated = myGuesses.concat([guess]);
         if (playerNum == 1) { session.p1Guesses := updated }
