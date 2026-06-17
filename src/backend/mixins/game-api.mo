@@ -159,8 +159,6 @@ mixin (
     word;
   };
 
-  let pendingAnswer = "crane";
-
   public func createPublicGame(
     sessionToken : Text,
     mode : Types.GameMode,
@@ -172,7 +170,7 @@ mixin (
         let now = Time.now();
         let gameId = GameLib.generateGameId(counter);
         let roomCode = GameLib.generateRoomCode(counter, now);
-        let session = GameLib.newPublicSession(gameId, roomCode, playerName, mode, pendingAnswer, now);
+        let session = GameLib.newPublicSession(gameId, roomCode, playerName, mode, "crane", now);
         sessions.add(gameId, session);
         #ok({ gameId; roomCode; joinToken = "" });
       };
@@ -192,7 +190,7 @@ mixin (
         let roomCode = GameLib.generateRoomCode(counter, now);
         let salt = now.toNat() % 1_000_000_007;
         let joinToken = GameLib.generateJoinToken(counter, salt);
-        let session = GameLib.newPrivateSession(gameId, roomCode, playerName, mode, pendingAnswer, joinToken, now);
+        let session = GameLib.newPrivateSession(gameId, roomCode, playerName, mode, "crane", joinToken, now);
         sessions.add(gameId, session);
         joinTokens.add(gameId, joinToken);
         #ok({ gameId; roomCode; joinToken });
@@ -524,7 +522,7 @@ mixin (
             let salt = now.toNat() % 1_000_000_007;
             let joinToken = GameLib.generateJoinToken(counter, salt);
             // Create the new session with only the requester (host) — PB joins via acceptRematch
-            let newSession = GameLib.newPrivateSession(newGameId, newRoomCode, playerName, oldSession.mode, pendingAnswer, joinToken, now);
+            let newSession = GameLib.newPrivateSession(newGameId, newRoomCode, playerName, oldSession.mode, "crane", joinToken, now);
             sessions.add(newGameId, newSession);
             joinTokens.add(newGameId, joinToken);
             // Store the offer keyed by the ORIGINAL gameId so PB can find it by polling
