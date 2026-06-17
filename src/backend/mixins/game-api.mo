@@ -450,7 +450,7 @@ mixin (
     };
   };
 
-  // submitGuess: validates word first with NYT-style rejection, then enforces turn rules.
+  // submitGuess: accepts five-letter alphabetic guesses, then enforces turn rules.
   public func submitGuess(
     sessionToken : Text,
     gameId : Types.GameId,
@@ -460,8 +460,7 @@ mixin (
       case null { #err(#gameError("Invalid or expired session")) };
       case (?playerName) {
         let normalized = word.toLower();
-        let isValid = WordPoolLib.isValidWord(customWords, knownValidWords, normalized);
-        if (not isValid) {
+        if (not WordPoolLib.isPlausibleGuess(normalized)) {
           return #err(#notAWord);
         };
         switch (sessions.get(gameId)) {

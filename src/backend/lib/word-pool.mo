@@ -77,6 +77,12 @@ module {
     _knownValidWords.contains(lower);
   };
 
+  public func isPlausibleGuess(word : Text) : Bool {
+    let lower = word.toLower();
+    if (lower.size() != 5) { return false };
+    lower.toArray().all(func(c) = c.isAlphabetic());
+  };
+
   public func cacheValidWord(knownValidWords : Set.Set<Text>, word : Text) {
     let lower = word.toLower();
     if (lower.size() != 5) { return };
