@@ -5,6 +5,7 @@ import { useNavigate } from "@tanstack/react-router";
 import {
   Bell,
   BookOpen,
+  Bot,
   CalendarDays,
   ChevronDown,
   ChevronRight,
@@ -15,6 +16,7 @@ import {
   Globe,
   Lock,
   LogOut,
+  Play,
   Plus,
   Search,
   Shield,
@@ -524,7 +526,10 @@ export default function Lobby() {
   const hasActiveGames = (activeGames ?? []).length > 0;
 
   const handleCreateGame = () => {
-    if (!sessionToken) return;
+    if (!sessionToken) {
+      toast.info("Create an account to start multiplayer games.");
+      return;
+    }
     createGame.mutate(
       { sessionToken, mode: gameMode, isPrivate },
       {
@@ -555,7 +560,10 @@ export default function Lobby() {
     setGameMode(GameMode.versus);
     setIsPrivate(privateGame);
     setLobbyMode("new");
-    if (!sessionToken) return;
+    if (!sessionToken) {
+      toast.info("Play guest practice now, or sign in for multiplayer.");
+      return;
+    }
     createGame.mutate(
       { sessionToken, mode: GameMode.versus, isPrivate: privateGame },
       {
@@ -856,9 +864,25 @@ export default function Lobby() {
         )}
 
         <div
-          className="grid gap-3 sm:grid-cols-2"
+          className="grid gap-3 sm:grid-cols-3"
           data-ocid="lobby.progression_cards"
         >
+          <button
+            type="button"
+            onClick={() => void navigate({ to: "/practice" })}
+            className="rounded-xl border border-primary/50 bg-primary/10 p-4 text-left transition-smooth hover:bg-primary/15"
+            data-ocid="lobby.guest_practice_button"
+          >
+            <div className="flex items-center gap-2">
+              <Bot className="h-4 w-4 text-primary" />
+              <span className="font-display font-bold text-primary">
+                Play Guest
+              </span>
+            </div>
+            <p className="mt-2 text-xs font-body text-muted-foreground">
+              Start a quick computer duel without signing in.
+            </p>
+          </button>
           <button
             type="button"
             onClick={() => handleQuickCreate("daily", false)}
@@ -991,6 +1015,34 @@ export default function Lobby() {
             />
           </button>
         </div>
+
+        {!user && (
+          <div
+            className="rounded-xl border border-border/60 bg-card p-4"
+            data-ocid="lobby.guest_account_prompt"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="font-display text-sm font-bold text-foreground">
+                  Try first, save later
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Guest practice is free. Sign in when you want stats, word
+                  banks, streaks, and multiplayer history.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void navigate({ to: "/practice" })}
+                className="flex min-h-11 items-center gap-2 rounded-lg border border-primary/40 px-3 py-2 text-sm font-display font-bold text-primary hover:bg-primary/10"
+                data-ocid="lobby.guest_prompt_play_button"
+              >
+                <Play className="h-4 w-4" />
+                Play Now
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* START A NEW GAME expanded panel */}
         {lobbyMode === "new" && (

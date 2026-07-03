@@ -8,6 +8,7 @@ import {
   createRoute,
   createRouter,
   redirect,
+  useRouterState,
 } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CrossGameAlert } from "./components/CrossGameAlert";
@@ -18,6 +19,7 @@ import Game from "./pages/Game";
 import JoinByToken from "./pages/JoinByToken";
 import Lobby from "./pages/Lobby";
 import Login, { LoginModal } from "./pages/Login";
+import Practice from "./pages/Practice";
 import Stats from "./pages/Stats";
 
 const queryClient = new QueryClient({
@@ -100,6 +102,17 @@ function AuthModal({ onClose }: { onClose: () => void }) {
       aria-label="Sign in or create account"
     >
       <div className="w-full max-w-md">
+        <button
+          type="button"
+          onClick={() => {
+            onClose();
+            window.location.assign("/practice");
+          }}
+          className="mb-3 w-full rounded-lg border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-display font-bold text-primary hover:bg-primary/15"
+          data-ocid="auth_modal.guest_practice_button"
+        >
+          Play as Guest
+        </button>
         <LoginModal onClose={onClose} />
       </div>
     </div>
@@ -134,9 +147,13 @@ function RootLayout() {
 
 function RootApp() {
   const { user } = useAuth();
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
   const [loadingDone, setLoadingDone] = useState(false);
   const [modalDismissed, setModalDismissed] = useState(false);
-  const showModal = loadingDone && !user && !modalDismissed;
+  const allowGuestRoute = pathname === "/practice" || pathname === "/login";
+  const showModal = loadingDone && !user && !modalDismissed && !allowGuestRoute;
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background">
@@ -194,6 +211,11 @@ const gameRoute = createRoute({
   path: "/game/$gameId",
   component: Game,
 });
+const practiceRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/practice",
+  component: Practice,
+});
 const adminRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/admin",
@@ -217,6 +239,7 @@ const router = createRouter({
     loginRoute,
     joinByTokenRoute,
     gameRoute,
+    practiceRoute,
     adminRoute,
     statsRoute,
   ]),
