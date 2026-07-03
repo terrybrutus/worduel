@@ -8,6 +8,7 @@ import {
   playLossSound,
   playWinSound,
 } from "../components/Keyboard";
+import { LearningRecap } from "../components/LearningRecap";
 import { TileGrid } from "../components/TileGrid";
 import { useAuth } from "../hooks/useAuth";
 import { triggerHaptic, useHapticEnabled } from "../hooks/useHapticEnabled";
@@ -54,40 +55,6 @@ const EXTRA_GUESSES = [
 ];
 
 const VALID_PRACTICE_WORDS = new Set([...ANSWERS, ...EXTRA_GUESSES]);
-
-const WORD_NOTES: Record<string, string> = {
-  about: "concerning; on the subject of",
-  apple: "a round fruit with firm flesh",
-  audio: "sound, especially recorded or transmitted sound",
-  basic: "forming an essential foundation",
-  brain: "the organ of thought and memory",
-  brave: "ready to face danger or difficulty",
-  bread: "food made from baked dough",
-  chair: "a seat with a back",
-  clean: "free from dirt or unwanted marks",
-  close: "near in space, time, or relationship",
-  court: "a place where legal cases or games are held",
-  crane: "a tall machine for lifting heavy things",
-  dream: "thoughts or images during sleep",
-  earth: "the ground or the planet we live on",
-  faith: "trust or strong belief",
-  flame: "the visible burning part of a fire",
-  fresh: "new, clean, or recently made",
-  ghost: "the spirit of a dead person in stories",
-  grace: "elegance, kindness, or favor",
-  heart: "the organ that pumps blood; also courage or feeling",
-  light: "brightness that makes seeing possible",
-  lucky: "having good fortune",
-  plant: "a living thing that grows in soil or water",
-  proud: "feeling pleased about achievement or identity",
-  quiet: "making little or no noise",
-  round: "shaped like a circle or sphere",
-  share: "to use, enjoy, or divide something with others",
-  smart: "quick to understand or learn",
-  sound: "something heard",
-  trust: "firm belief in someone or something",
-  world: "the earth, or all people and things",
-};
 
 type PracticeStatus = "playing" | "won" | "lost" | "opponentWon";
 
@@ -152,7 +119,6 @@ export default function Practice() {
   const [isFlipping, setIsFlipping] = useState(false);
 
   const isFinished = status !== "playing";
-  const note = WORD_NOTES[answer] ?? "Definition coming soon.";
 
   const headline = useMemo(() => {
     if (status === "won") return "You solved it first";
@@ -334,15 +300,13 @@ export default function Practice() {
               </p>
             )}
             {isFinished && (
-              <div className="rounded-lg border border-primary/40 bg-primary/10 p-3 text-left">
-                <p className="text-[10px] font-mono uppercase tracking-widest text-primary">
-                  Answer
-                </p>
-                <p className="mt-1 font-display text-xl font-black uppercase text-foreground">
-                  {answer}
-                </p>
-                <p className="mt-2 text-sm text-muted-foreground">{note}</p>
-              </div>
+              <LearningRecap
+                word={answer}
+                won={status === "won"}
+                guessCount={guesses.length}
+                mode="practice"
+                opponentWon={status === "opponentWon"}
+              />
             )}
             {!user && (
               <button
