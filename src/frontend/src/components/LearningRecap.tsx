@@ -1,7 +1,22 @@
-import { Brain, CheckCircle2, HelpCircle, Share2 } from "lucide-react";
+import {
+  Brain,
+  CheckCircle2,
+  HelpCircle,
+  Share2,
+  Star,
+  StarOff,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { GameMode } from "../backend";
 import { useAuth } from "../hooks/useAuth";
+import {
+  type Confidence,
+  confidenceKey,
+  isWordSaved,
+  removeWord,
+  saveWord,
+  updateSavedWordConfidence,
+} from "../lib/wordBank";
 
 const MAX_GUESSES = 6;
 
@@ -38,8 +53,6 @@ const WORD_NOTES: Record<string, string> = {
   trust: "firm belief in someone or something",
   world: "the earth, or all people and things",
 };
-
-type Confidence = "knew" | "guessed" | "unknown";
 
 const CONFIDENCE_OPTIONS: Array<{
   value: Confidence;
@@ -79,12 +92,6 @@ function copyText(text: string): boolean {
   }
 }
 
-function storageKey(username: string | undefined, word: string): string {
-  return username
-    ? `worduel_confidence_${username}_${word.toLowerCase()}`
-    : `worduel_guest_confidence_${word.toLowerCase()}`;
-}
-
 export interface LearningRecapProps {
   word: string;
   won: boolean;
@@ -103,7 +110,7 @@ export function LearningRecap({
   const { user } = useAuth();
   const normalized = word.toLowerCase();
   const hasWord = normalized.trim().length > 0;
-  const key = hasWord ? storageKey(user?.username, normalized) : "";
+  const key = hasWord ? confidenceKey(user?.username, normalized) : "";
   const [confidence, setConfidence] = useState<Confidence | null>(() => {
     if (!key) return null;
     const saved = localStorage.getItem(key);
@@ -112,6 +119,9 @@ export function LearningRecap({
       : null;
   });
   const [copied, setCopied] = useState(false);
+  const [saved, setSaved] = useState(() =>
+    hasWord ? isWordSaved(user?.username, normalized) : false,
+  );
 
   const modeLabel =
     mode === "practice"
@@ -136,6 +146,7 @@ export function LearningRecap({
   const handleConfidence = (value: Confidence) => {
     setConfidence(value);
     if (key) localStorage.setItem(key, value);
+    if (saved) updateSavedWordConfidence(user?.username, normalized, value);
   };
 
   const handleCopy = () => {
@@ -143,6 +154,17 @@ export function LearningRecap({
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     }
+  };
+
+  const handleSaveWord = () => {
+    if (!hasWord) return;
+    if (saved) {
+      removeWord(user?.username, normalized);
+      setSaved(false);
+      return;
+    }
+    saveWord(user?.username, normalized, getDefinition(normalized), confidence);
+    setSaved(true);
   };
 
   return (
@@ -174,6 +196,21 @@ export function LearningRecap({
         {hasWord ? getDefinition(normalized) : "Answer unavailable."}
       </p>
       <p className="mt-2 text-xs text-muted-foreground">{recap}</p>
+
+      <button
+        type="button"
+        onClick={handleSaveWord}
+        disabled={!hasWord}
+        className={`mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-display font-bold transition-smooth disabled:opacity-50 ${
+          saved
+            ? "border-primary bg-primary/10 text-primary"
+            : "border-border bg-muted/10 text-foreground hover:border-primary/40 hover:bg-primary/10"
+        }`}
+        data-ocid="learning_recap.save_word_button"
+      >
+        {saved ? <StarOff className="h-4 w-4" /> : <Star className="h-4 w-4" />}
+        {saved ? "Saved to Word Bank" : "Save to Word Bank"}
+      </button>
 
       <div className="mt-4">
         <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
