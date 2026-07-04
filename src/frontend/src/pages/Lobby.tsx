@@ -943,38 +943,61 @@ export default function Lobby() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="font-display text-sm font-bold uppercase tracking-widest text-muted-foreground">
-                Rooms & hosting
+                Coming Soon / Pro
               </p>
               <p className="mt-1 text-xs font-body text-muted-foreground">
-                Early shape for custom packs, classroom rooms, and tournament
-                host tools.
+                Paid features will focus on learning value, custom hosting, and
+                group practice instead of cash-prize gameplay.
               </p>
             </div>
             <Badge variant="outline" className="border-primary/40 text-primary">
               Pro later
             </Badge>
           </div>
-          <div className="mt-3 grid grid-cols-3 gap-2">
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
             {[
               {
-                label: "Word Packs",
+                label: "Creator Packs",
+                detail: "Custom and themed vocabulary sets.",
                 icon: <BookOpen className="h-3.5 w-3.5" />,
               },
               {
-                label: "Leaderboards",
+                label: "Private Rooms",
+                detail: "Invite-only practice spaces and leagues.",
+                icon: <Users className="h-3.5 w-3.5" />,
+              },
+              {
+                label: "Classroom Hosting",
+                detail: "Teacher, trainer, and team sessions.",
                 icon: <Trophy className="h-3.5 w-3.5" />,
               },
               {
-                label: "Host Controls",
+                label: "Progress Tracking",
+                detail: "Confidence trends and learning history.",
+                icon: <TrendingUp className="h-3.5 w-3.5" />,
+              },
+              {
+                label: "Spaced Review",
+                detail: "Review saved words at the right time.",
+                icon: <Flame className="h-3.5 w-3.5" />,
+              },
+              {
+                label: "Admin Dashboard",
+                detail: "Reports, branded links, and tournaments.",
                 icon: <Star className="h-3.5 w-3.5" />,
               },
             ].map((item) => (
               <div
                 key={item.label}
-                className="flex items-center justify-center gap-1.5 rounded-lg border border-border/60 bg-muted/10 px-2 py-2 text-[10px] font-display font-semibold text-muted-foreground"
+                className="rounded-lg border border-border/60 bg-muted/10 px-3 py-2"
               >
-                {item.icon}
-                <span>{item.label}</span>
+                <div className="flex items-center gap-1.5 text-[10px] font-display font-bold text-foreground">
+                  {item.icon}
+                  <span>{item.label}</span>
+                </div>
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  {item.detail}
+                </p>
               </div>
             ))}
           </div>

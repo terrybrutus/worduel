@@ -68,6 +68,25 @@ function getDefinition(word: string): string {
   return WORD_NOTES[word.toLowerCase()] ?? "Definition coming soon.";
 }
 
+function makeBluffChoices(word: string): string[] {
+  const normalized = word.toLowerCase();
+  const correct = getDefinition(normalized);
+  const distractors = Object.entries(WORD_NOTES)
+    .filter(([candidate]) => candidate !== normalized)
+    .map(([, definition]) => definition);
+  const seed = normalized
+    .split("")
+    .reduce((total, char) => total + char.charCodeAt(0), 0);
+  const first = distractors[seed % distractors.length];
+  const second = distractors[(seed * 7 + 3) % distractors.length];
+  const choices = [correct, first, second].filter(Boolean);
+  return choices.sort((a, b) => {
+    const aScore = (a.length + seed) % 3;
+    const bScore = (b.length + seed) % 3;
+    return aScore - bScore;
+  });
+}
+
 function copyText(text: string): boolean {
   if (
     navigator.clipboard &&
@@ -122,6 +141,7 @@ export function LearningRecap({
   const [saved, setSaved] = useState(() =>
     hasWord ? isWordSaved(user?.username, normalized) : false,
   );
+  const [bluffChoice, setBluffChoice] = useState<string | null>(null);
 
   const modeLabel =
     mode === "practice"
@@ -142,6 +162,11 @@ export function LearningRecap({
       return "You solved the word. Mark how confident you felt so this can become review data later.";
     return "You saw the answer after the round. Save the meaning mentally for the next duel.";
   }, [hasWord, opponentWon, won]);
+  const bluffChoices = useMemo(
+    () => (hasWord ? makeBluffChoices(normalized) : []),
+    [hasWord, normalized],
+  );
+  const correctDefinition = hasWord ? getDefinition(normalized) : "";
 
   const handleConfidence = (value: Confidence) => {
     setConfidence(value);
@@ -211,6 +236,51 @@ export function LearningRecap({
         {saved ? <StarOff className="h-4 w-4" /> : <Star className="h-4 w-4" />}
         {saved ? "Saved to Word Bank" : "Save to Word Bank"}
       </button>
+
+      {hasWord && (
+        <div
+          className="mt-4 rounded-lg border border-border/60 bg-muted/10 p-3"
+          data-ocid="learning_recap.bluff_definition"
+        >
+          <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+            Bluff definition
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Pick the real meaning before you reveal it to yourself.
+          </p>
+          <div className="mt-3 grid gap-2">
+            {bluffChoices.map((choice) => {
+              const selected = bluffChoice === choice;
+              const isCorrect = choice === correctDefinition;
+              const revealed = bluffChoice !== null;
+              return (
+                <button
+                  key={choice}
+                  type="button"
+                  onClick={() => setBluffChoice(choice)}
+                  className={`rounded-lg border px-3 py-2 text-left text-xs transition-smooth ${
+                    revealed && isCorrect
+                      ? "border-primary bg-primary/10 text-primary"
+                      : selected
+                        ? "border-destructive/50 bg-destructive/10 text-destructive"
+                        : "border-border bg-card/60 text-foreground hover:border-primary/40"
+                  }`}
+                  data-ocid={`learning_recap.bluff_choice.${isCorrect ? "correct" : "distractor"}`}
+                >
+                  {choice}
+                </button>
+              );
+            })}
+          </div>
+          {bluffChoice && (
+            <p className="mt-2 text-xs font-semibold text-muted-foreground">
+              {bluffChoice === correctDefinition
+                ? "Correct. That one sticks a little better now."
+                : "Close, but the highlighted definition is the real one."}
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="mt-4">
         <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">

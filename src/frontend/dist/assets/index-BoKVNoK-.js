@@ -44812,6 +44812,20 @@ const CONFIDENCE_OPTIONS = [
 function getDefinition(word) {
   return WORD_NOTES[word.toLowerCase()] ?? "Definition coming soon.";
 }
+function makeBluffChoices(word) {
+  const normalized = word.toLowerCase();
+  const correct = getDefinition(normalized);
+  const distractors = Object.entries(WORD_NOTES).filter(([candidate]) => candidate !== normalized).map(([, definition]) => definition);
+  const seed = normalized.split("").reduce((total, char) => total + char.charCodeAt(0), 0);
+  const first = distractors[seed % distractors.length];
+  const second = distractors[(seed * 7 + 3) % distractors.length];
+  const choices = [correct, first, second].filter(Boolean);
+  return choices.sort((a2, b2) => {
+    const aScore = (a2.length + seed) % 3;
+    const bScore = (b2.length + seed) % 3;
+    return aScore - bScore;
+  });
+}
 function copyText(text) {
   if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
     navigator.clipboard.writeText(text).catch(() => {
@@ -44853,6 +44867,7 @@ function LearningRecap({
   const [saved, setSaved] = reactExports.useState(
     () => hasWord ? isWordSaved(user == null ? void 0 : user.username, normalized) : false
   );
+  const [bluffChoice, setBluffChoice] = reactExports.useState(null);
   const modeLabel = mode === "practice" ? "Practice" : mode === GameMode.coop ? "Co-op" : "Versus";
   const shareText = `Worduel ${won ? "win" : "result"}: ${hasWord ? normalized.toUpperCase() : "answer pending"} in ${guessCount || 0}/${MAX_GUESSES$3} (${modeLabel})`;
   const recap = reactExports.useMemo(() => {
@@ -44864,6 +44879,11 @@ function LearningRecap({
       return "You solved the word. Mark how confident you felt so this can become review data later.";
     return "You saw the answer after the round. Save the meaning mentally for the next duel.";
   }, [hasWord, opponentWon, won]);
+  const bluffChoices = reactExports.useMemo(
+    () => hasWord ? makeBluffChoices(normalized) : [],
+    [hasWord, normalized]
+  );
+  const correctDefinition = hasWord ? getDefinition(normalized) : "";
   const handleConfidence = (value) => {
     setConfidence(value);
     if (key) localStorage.setItem(key, value);
@@ -44923,6 +44943,34 @@ function LearningRecap({
             children: [
               saved ? /* @__PURE__ */ jsxRuntimeExports.jsx(StarOff, { className: "h-4 w-4" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Star, { className: "h-4 w-4" }),
               saved ? "Saved to Word Bank" : "Save to Word Bank"
+            ]
+          }
+        ),
+        hasWord && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "mt-4 rounded-lg border border-border/60 bg-muted/10 p-3",
+            "data-ocid": "learning_recap.bluff_definition",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[10px] font-mono uppercase tracking-widest text-muted-foreground", children: "Bluff definition" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-xs text-muted-foreground", children: "Pick the real meaning before you reveal it to yourself." }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-3 grid gap-2", children: bluffChoices.map((choice) => {
+                const selected = bluffChoice === choice;
+                const isCorrect = choice === correctDefinition;
+                const revealed = bluffChoice !== null;
+                return /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: () => setBluffChoice(choice),
+                    className: `rounded-lg border px-3 py-2 text-left text-xs transition-smooth ${revealed && isCorrect ? "border-primary bg-primary/10 text-primary" : selected ? "border-destructive/50 bg-destructive/10 text-destructive" : "border-border bg-card/60 text-foreground hover:border-primary/40"}`,
+                    "data-ocid": `learning_recap.bluff_choice.${isCorrect ? "correct" : "distractor"}`,
+                    children: choice
+                  },
+                  choice
+                );
+              }) }),
+              bluffChoice && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-2 text-xs font-semibold text-muted-foreground", children: bluffChoice === correctDefinition ? "Correct. That one sticks a little better now." : "Close, but the highlighted definition is the real one." })
             ]
           }
         ),
@@ -51141,31 +51189,52 @@ function Lobby() {
           children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-3", children: [
               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-sm font-bold uppercase tracking-widest text-muted-foreground", children: "Rooms & hosting" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-xs font-body text-muted-foreground", children: "Early shape for custom packs, classroom rooms, and tournament host tools." })
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-sm font-bold uppercase tracking-widest text-muted-foreground", children: "Coming Soon / Pro" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-xs font-body text-muted-foreground", children: "Paid features will focus on learning value, custom hosting, and group practice instead of cash-prize gameplay." })
               ] }),
               /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { variant: "outline", className: "border-primary/40 text-primary", children: "Pro later" })
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-3 grid grid-cols-3 gap-2", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-3 grid gap-2 sm:grid-cols-3", children: [
               {
-                label: "Word Packs",
+                label: "Creator Packs",
+                detail: "Custom and themed vocabulary sets.",
                 icon: /* @__PURE__ */ jsxRuntimeExports.jsx(BookOpen, { className: "h-3.5 w-3.5" })
               },
               {
-                label: "Leaderboards",
+                label: "Private Rooms",
+                detail: "Invite-only practice spaces and leagues.",
+                icon: /* @__PURE__ */ jsxRuntimeExports.jsx(Users, { className: "h-3.5 w-3.5" })
+              },
+              {
+                label: "Classroom Hosting",
+                detail: "Teacher, trainer, and team sessions.",
                 icon: /* @__PURE__ */ jsxRuntimeExports.jsx(Trophy, { className: "h-3.5 w-3.5" })
               },
               {
-                label: "Host Controls",
+                label: "Progress Tracking",
+                detail: "Confidence trends and learning history.",
+                icon: /* @__PURE__ */ jsxRuntimeExports.jsx(TrendingUp, { className: "h-3.5 w-3.5" })
+              },
+              {
+                label: "Spaced Review",
+                detail: "Review saved words at the right time.",
+                icon: /* @__PURE__ */ jsxRuntimeExports.jsx(Flame, { className: "h-3.5 w-3.5" })
+              },
+              {
+                label: "Admin Dashboard",
+                detail: "Reports, branded links, and tournaments.",
                 icon: /* @__PURE__ */ jsxRuntimeExports.jsx(Star, { className: "h-3.5 w-3.5" })
               }
             ].map((item) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
               "div",
               {
-                className: "flex items-center justify-center gap-1.5 rounded-lg border border-border/60 bg-muted/10 px-2 py-2 text-[10px] font-display font-semibold text-muted-foreground",
+                className: "rounded-lg border border-border/60 bg-muted/10 px-3 py-2",
                 children: [
-                  item.icon,
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: item.label })
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 text-[10px] font-display font-bold text-foreground", children: [
+                    item.icon,
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: item.label })
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-[10px] text-muted-foreground", children: item.detail })
                 ]
               },
               item.label
