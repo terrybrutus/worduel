@@ -35,7 +35,7 @@ function getBestState(guesses: Guess[], letter: string): TileState | null {
 
 function getKeyClass(state: TileState | null, disabled: boolean): string {
   const base =
-    "flex items-center justify-center rounded-md font-display font-bold text-sm select-none transition-smooth cursor-pointer h-14";
+    "flex min-w-0 items-center justify-center rounded-md font-display text-xs font-bold select-none transition-smooth cursor-pointer h-12 sm:h-14 sm:text-sm";
   if (disabled) return `${base} opacity-40 cursor-not-allowed`;
   switch (state) {
     case TileState.correct:
@@ -176,7 +176,7 @@ function KeyButton({
   hapticEnabled,
 }: KeyButtonProps) {
   const isWide = label === "ENTER" || label === "BACKSPACE";
-  const displayLabel = label === "BACKSPACE" ? "⌫" : label;
+  const displayLabel = label === "BACKSPACE" ? "DEL" : label;
 
   const handlePress = () => {
     if (disabled) return;
@@ -188,7 +188,7 @@ function KeyButton({
   return (
     <button
       type="button"
-      className={`${getKeyClass(state, disabled)} ${isWide ? "px-3 min-w-[3.2rem]" : "w-9"}`}
+      className={`${getKeyClass(state, disabled)} ${isWide ? "flex-[1.45] px-1 sm:px-3" : "flex-1"}`}
       onPointerDown={(e) => {
         e.preventDefault();
         handlePress();

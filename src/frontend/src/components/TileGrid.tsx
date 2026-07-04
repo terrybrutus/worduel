@@ -12,6 +12,7 @@ interface TileGridProps {
   shakeRow?: number;
   showPlayerLabels?: boolean;
   label?: string;
+  hideSubmittedLetters?: boolean;
 }
 
 function getTileClass(state: TileState | null): string {
@@ -94,6 +95,7 @@ export function TileGrid({
   shakeRow,
   showPlayerLabels = false,
   label,
+  hideSubmittedLetters = false,
 }: TileGridProps) {
   // isShaking shakes the current input row (the row the player is typing on)
   const inputRowIndex = guesses.length;
@@ -106,7 +108,9 @@ export function TileGrid({
 
   for (let i = 0; i < guesses.length; i++) {
     const guess = guesses[i];
-    const letters = guess.word.split("").slice(0, WORD_LENGTH);
+    const letters = hideSubmittedLetters
+      ? Array(WORD_LENGTH).fill("")
+      : guess.word.split("").slice(0, WORD_LENGTH);
     const states = guess.states.slice(0, WORD_LENGTH) as (TileState | null)[];
     while (letters.length < WORD_LENGTH) letters.push("");
     while (states.length < WORD_LENGTH) states.push(null);
