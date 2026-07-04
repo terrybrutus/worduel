@@ -6,6 +6,7 @@ import {
   FileText,
   Loader2,
   Plus,
+  Search,
   Shield,
   Upload,
   UserCog,
@@ -20,9 +21,11 @@ import {
   useAllPlayerStats,
   useAllWords,
   useDisablePlayer,
+  useDictionaryInfo,
   useEnablePlayer,
   useImportWords,
   useListAllPlayers,
+  useWordValidationDebug,
   useWordCount,
 } from "../hooks/useBackend";
 import { VALID_WORDS } from "../words";
@@ -136,14 +139,20 @@ export default function Admin() {
   const [wordInput, setWordInput] = useState("");
   const [wordInputError, setWordInputError] = useState("");
   const [wordInputWarn, setWordInputWarn] = useState("");
+  const [debugWordInput, setDebugWordInput] = useState("");
+  const [debugWord, setDebugWord] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
     msg: string;
   } | null>(null);
 
   const { data: wordCount } = useWordCount();
-  // True total = baked-in frontend word list + custom backend words
-  const totalWordCount = VALID_WORDS.size + Number(wordCount ?? 0n);
+  const { data: dictionaryInfo } = useDictionaryInfo();
+  const { data: debugResult, isFetching: debugLoading } =
+    useWordValidationDebug(debugWord);
+  const totalWordCount =
+    Number(dictionaryInfo?.guessWordCount ?? 0n) ||
+    VALID_WORDS.size + Number(wordCount ?? 0n);
   const { data: allWords } = useAllWords(sessionToken);
   const { data: players, isLoading: playersLoading } =
     useListAllPlayers(sessionToken);
@@ -483,6 +492,96 @@ export default function Admin() {
             <div className="stat-card">
               <p className="stat-label">Total Words</p>
               <p className="stat-value">{totalWordCount.toLocaleString()}</p>
+            </div>
+
+            <div className="bg-card border border-border/60 rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="section-header">Dictionary Check</h2>
+                {dictionaryInfo && (
+                  <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
+                    {dictionaryInfo.dictionaryVersion}
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Check word..."
+                  maxLength={5}
+                  value={debugWordInput}
+                  onChange={(e) =>
+                    setDebugWordInput(
+                      e.target.value.toLowerCase().replace(/[^a-z]/g, ""),
+                    )
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && debugWordInput.length > 0) {
+                      setDebugWord(debugWordInput);
+                    }
+                  }}
+                  className="input-base flex-1 font-mono uppercase tracking-widest placeholder:normal-case placeholder:tracking-normal"
+                  data-ocid="admin.dictionary_check.input"
+                />
+                <button
+                  type="button"
+                  onClick={() => setDebugWord(debugWordInput)}
+                  disabled={debugWordInput.length === 0 || debugLoading}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-display font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  data-ocid="admin.dictionary_check.button"
+                >
+                  {debugLoading ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Search className="w-3 h-3" />
+                  )}
+                  Check
+                </button>
+              </div>
+              {debugResult && (
+                <div
+                  className="grid grid-cols-2 sm:grid-cols-4 gap-2"
+                  data-ocid="admin.dictionary_check.result"
+                >
+                  <div className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
+                    <p className="stat-label">Word</p>
+                    <p className="font-mono text-sm uppercase text-foreground">
+                      {debugResult.normalized}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
+                    <p className="stat-label">Guess</p>
+                    <p
+                      className={`font-display text-sm ${
+                        debugResult.acceptedAsGuess
+                          ? "text-success"
+                          : "text-destructive"
+                      }`}
+                    >
+                      {debugResult.acceptedAsGuess ? "Accepted" : "Rejected"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
+                    <p className="stat-label">Answer</p>
+                    <p className="font-display text-sm text-foreground">
+                      {debugResult.acceptedAsAnswer ? "Eligible" : "No"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
+                    <p className="stat-label">Source</p>
+                    <p className="font-mono text-xs text-foreground">
+                      {debugResult.source}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {dictionaryInfo && (
+                <p className="text-xs text-muted-foreground font-body">
+                  {Number(dictionaryInfo.guessWordCount).toLocaleString()}{" "}
+                  accepted guesses,{" "}
+                  {Number(dictionaryInfo.answerWordCount).toLocaleString()}{" "}
+                  answer words, build {dictionaryInfo.backendBuild}
+                </p>
+              )}
             </div>
 
             {/* CSV Import */}

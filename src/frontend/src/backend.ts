@@ -17,6 +17,20 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
+export interface WordValidationDebug {
+    word: string;
+    normalized: string;
+    lengthOk: boolean;
+    alphabetic: boolean;
+    acceptedAsGuess: boolean;
+    acceptedAsAnswer: boolean;
+    source: string;
+    guessWordCount: bigint;
+    answerWordCount: bigint;
+    customWordCount: bigint;
+    dictionaryVersion: string;
+    backendBuild: string;
+}
 function some<T>(value: T): Some<T> {
     return {
         __kind__: "Some",
@@ -374,9 +388,11 @@ export interface backendInterface {
     }>;
     resetPlayerPassword(token: string, username: string, newPassword: string): Promise<AuthResult>;
     submitGuess(sessionToken: string, gameId: GameId, word: string): Promise<GuessResultV2>;
+    getDictionaryInfo(): Promise<WordValidationDebug>;
     validateGuessWord(word: string): Promise<boolean>;
+    validateGuessWordDebug(word: string): Promise<WordValidationDebug>;
 }
-import type { AcceptRematchResult as _AcceptRematchResult, AdminSetupInfo as _AdminSetupInfo, AuthResult as _AuthResult, CreateGameResult as _CreateGameResult, CreatePrivateGameResult as _CreatePrivateGameResult, ExitReason as _ExitReason, GameHistoryEntry as _GameHistoryEntry, GameId as _GameId, GameMode as _GameMode, GameState as _GameState, GameStateWithRole as _GameStateWithRole, GameStatus as _GameStatus, GameSummary as _GameSummary, Guess as _Guess, GuessError as _GuessError, GuessResultV2 as _GuessResultV2, JoinResult as _JoinResult, JoinToken as _JoinToken, LeaveResult as _LeaveResult, LoginResult as _LoginResult, PlayerInfo as _PlayerInfo, PlayerName as _PlayerName, PlayerOutcome as _PlayerOutcome, PlayerStats as _PlayerStats, RegisterResult as _RegisterResult, RematchOffer as _RematchOffer, Role as _Role, RoomCode as _RoomCode, SessionToken as _SessionToken, TileState as _TileState, Timestamp as _Timestamp } from "./declarations/backend.did.d.ts";
+import type { AcceptRematchResult as _AcceptRematchResult, AdminSetupInfo as _AdminSetupInfo, AuthResult as _AuthResult, CreateGameResult as _CreateGameResult, CreatePrivateGameResult as _CreatePrivateGameResult, ExitReason as _ExitReason, GameHistoryEntry as _GameHistoryEntry, GameId as _GameId, GameMode as _GameMode, GameState as _GameState, GameStateWithRole as _GameStateWithRole, GameStatus as _GameStatus, GameSummary as _GameSummary, Guess as _Guess, GuessError as _GuessError, GuessResultV2 as _GuessResultV2, JoinResult as _JoinResult, JoinToken as _JoinToken, LeaveResult as _LeaveResult, LoginResult as _LoginResult, PlayerInfo as _PlayerInfo, PlayerName as _PlayerName, PlayerOutcome as _PlayerOutcome, PlayerStats as _PlayerStats, RegisterResult as _RegisterResult, RematchOffer as _RematchOffer, Role as _Role, RoomCode as _RoomCode, SessionToken as _SessionToken, TileState as _TileState, Timestamp as _Timestamp, WordValidationDebug as _WordValidationDebug } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async acceptRematch(arg0: string, arg1: GameId): Promise<AcceptRematchResult> {
@@ -912,6 +928,20 @@ export class Backend implements backendInterface {
             return from_candid_GuessResultV2_n58(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getDictionaryInfo(): Promise<WordValidationDebug> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getDictionaryInfo();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getDictionaryInfo();
+            return result;
+        }
+    }
     async validateGuessWord(arg0: string): Promise<boolean> {
         if (this.processError) {
             try {
@@ -923,6 +953,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.validateGuessWord(arg0);
+            return result;
+        }
+    }
+    async validateGuessWordDebug(arg0: string): Promise<WordValidationDebug> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.validateGuessWordDebug(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.validateGuessWordDebug(arg0);
             return result;
         }
     }

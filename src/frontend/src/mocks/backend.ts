@@ -1,5 +1,20 @@
-import type { backendInterface } from "../backend";
+import type { backendInterface, WordValidationDebug } from "../backend";
 import { GameMode, PlayerOutcome, TileState, Role, Variant_win_draw_loss } from "../backend";
+
+const mockDictionaryDebug = (word = "crane"): WordValidationDebug => ({
+  word,
+  normalized: word.toLowerCase(),
+  lengthOk: word.length === 5,
+  alphabetic: /^[a-z]+$/i.test(word),
+  acceptedAsGuess: word.length === 5 && /^[a-z]+$/i.test(word),
+  acceptedAsAnswer: word.toLowerCase() === "crane",
+  source: word.toLowerCase() === "crane" ? "answer_list" : "guess_list",
+  guessWordCount: BigInt(14856),
+  answerWordCount: BigInt(100),
+  customWordCount: BigInt(0),
+  dictionaryVersion: "worduel-dictionary-2026-07-03-v1",
+  backendBuild: "mock-backend",
+});
 
 export const mockBackend: backendInterface = {
   addWord: async () => ({ __kind__: "ok", ok: BigInt(1) }),
@@ -107,7 +122,9 @@ export const mockBackend: backendInterface = {
     bestStreak: BigInt(7),
     currentStreak: BigInt(3),
   }),
-  getWordCount: async () => BigInt(2309),  getGameByJoinToken: async () => null,
+  getWordCount: async () => BigInt(14856),
+  getDictionaryInfo: async () => mockDictionaryDebug(),
+  getGameByJoinToken: async () => null,
 
   joinByToken: async () => ({
     __kind__: "ok",
@@ -225,6 +242,7 @@ export const mockBackend: backendInterface = {
     },
   }),
   validateGuessWord: async () => true,
+  validateGuessWordDebug: async (word) => mockDictionaryDebug(word),
   importWords: async () => ({ added: BigInt(0), skipped: BigInt(0), duplicates: BigInt(0), unauthorized: false }),
   promoteToAdmin: async () => ({
     __kind__: "err" as const,

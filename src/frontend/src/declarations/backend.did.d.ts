@@ -16,6 +16,20 @@ export interface AdminSetupInfo {
   'initialPassword' : string,
   'username' : string,
 }
+export interface WordValidationDebug {
+  'word' : string,
+  'normalized' : string,
+  'lengthOk' : boolean,
+  'alphabetic' : boolean,
+  'acceptedAsGuess' : boolean,
+  'acceptedAsAnswer' : boolean,
+  'source' : string,
+  'guessWordCount' : bigint,
+  'answerWordCount' : bigint,
+  'customWordCount' : bigint,
+  'dictionaryVersion' : string,
+  'backendBuild' : string,
+}
 export type AuthResult = { 'ok' : null } |
   { 'err' : string };
 export type CreateGameResult = {
@@ -154,6 +168,7 @@ export interface _SERVICE {
     { 'ok' : Array<string> } |
       { 'err' : string }
   >,
+  'getDictionaryInfo' : ActorMethod<[], WordValidationDebug>,
   'getGameByJoinToken' : ActorMethod<[JoinToken], [] | [GameId]>,
   'getGameState' : ActorMethod<[string, GameId], JoinResult>,
   'getGameStateWithRole' : ActorMethod<
@@ -218,6 +233,7 @@ export interface _SERVICE {
   'resetPlayerPassword' : ActorMethod<[string, string, string], AuthResult>,
   'submitGuess' : ActorMethod<[string, GameId, string], GuessResultV2>,
   'validateGuessWord' : ActorMethod<[string], boolean>,
+  'validateGuessWordDebug' : ActorMethod<[string], WordValidationDebug>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

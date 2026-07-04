@@ -99,4 +99,12 @@ mixin (
   public query func validateGuessWord(word : Text) : async Bool {
     WordPoolLib.isValidWord(customWords, knownValidWords, word);
   };
+
+  public query func validateGuessWordDebug(word : Text) : async WordPoolTypes.WordValidationDebug {
+    WordPoolLib.validateWordDebug(customWords, knownValidWords, word);
+  };
+
+  public query func getDictionaryInfo() : async WordPoolTypes.WordValidationDebug {
+    WordPoolLib.validateWordDebug(customWords, knownValidWords, "crane");
+  };
 };

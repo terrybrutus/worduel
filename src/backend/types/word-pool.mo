@@ -26,6 +26,21 @@ module {
     #invalid : Text;  // reason string e.g. "not a word"
   };
 
+  public type WordValidationDebug = {
+    word              : Text;
+    normalized        : Text;
+    lengthOk          : Bool;
+    alphabetic        : Bool;
+    acceptedAsGuess   : Bool;
+    acceptedAsAnswer  : Bool;
+    source            : Text;
+    guessWordCount    : Nat;
+    answerWordCount   : Nat;
+    customWordCount   : Nat;
+    dictionaryVersion : Text;
+    backendBuild      : Text;
+  };
+
   // Full word pool state stored in the canister
   public type WordPoolState = {
     embedded             : [Text];          // baked-in word list (immutable at runtime)
