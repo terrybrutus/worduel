@@ -9,6 +9,7 @@ import type {
   PlayerInfo,
   PlayerStats,
   RematchOffer,
+  WordValidationDebug,
 } from "../backend";
 import { GameMode } from "../backend";
 
@@ -445,6 +446,30 @@ export function useAllWords(token: string | null) {
       return result.ok;
     },
     enabled: !!actor && !isFetching && !!token,
+  });
+}
+
+export function useDictionaryInfo() {
+  const { actor, isFetching } = useBackendActor();
+  return useQuery<WordValidationDebug | null>({
+    queryKey: ["dictionaryInfo"],
+    queryFn: async () => {
+      if (!actor) return null;
+      return actor.getDictionaryInfo();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useWordValidationDebug(word: string | null) {
+  const { actor, isFetching } = useBackendActor();
+  return useQuery<WordValidationDebug | null>({
+    queryKey: ["wordValidationDebug", word],
+    queryFn: async () => {
+      if (!actor || !word) return null;
+      return actor.validateGuessWordDebug(word);
+    },
+    enabled: !!actor && !isFetching && !!word,
   });
 }
 

@@ -20,6 +20,20 @@ export interface AdminSetupInfo {
     initialPassword: string;
     username: string;
 }
+export interface WordValidationDebug {
+    word: string;
+    normalized: string;
+    lengthOk: boolean;
+    alphabetic: boolean;
+    acceptedAsGuess: boolean;
+    acceptedAsAnswer: boolean;
+    source: string;
+    guessWordCount: bigint;
+    answerWordCount: bigint;
+    customWordCount: bigint;
+    dictionaryVersion: string;
+    backendBuild: string;
+}
 export interface GameStateWithRole {
     isHost: boolean;
     gameState: GameState;
@@ -292,5 +306,7 @@ export interface backendInterface {
     }>;
     resetPlayerPassword(token: string, username: string, newPassword: string): Promise<AuthResult>;
     submitGuess(sessionToken: string, gameId: GameId, word: string): Promise<GuessResultV2>;
+    getDictionaryInfo(): Promise<WordValidationDebug>;
     validateGuessWord(word: string): Promise<boolean>;
+    validateGuessWordDebug(word: string): Promise<WordValidationDebug>;
 }

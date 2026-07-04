@@ -37,6 +37,20 @@ export const AdminSetupInfo = IDL.Record({
   'initialPassword' : IDL.Text,
   'username' : IDL.Text,
 });
+export const WordValidationDebug = IDL.Record({
+  'word' : IDL.Text,
+  'normalized' : IDL.Text,
+  'lengthOk' : IDL.Bool,
+  'alphabetic' : IDL.Bool,
+  'acceptedAsGuess' : IDL.Bool,
+  'acceptedAsAnswer' : IDL.Bool,
+  'source' : IDL.Text,
+  'guessWordCount' : IDL.Nat,
+  'answerWordCount' : IDL.Nat,
+  'customWordCount' : IDL.Nat,
+  'dictionaryVersion' : IDL.Text,
+  'backendBuild' : IDL.Text,
+});
 export const Timestamp = IDL.Int;
 export const Role = IDL.Variant({ 'admin' : IDL.Null, 'player' : IDL.Null });
 export const PlayerStats = IDL.Record({
@@ -197,6 +211,7 @@ export const idlService = IDL.Service({
   'getMyStats' : IDL.Func([IDL.Text], [IDL.Opt(PlayerStats)], []),
   'getRematchOffer' : IDL.Func([GameId], [IDL.Opt(RematchOffer)], ['query']),
   'getWordCount' : IDL.Func([], [IDL.Nat], ['query']),
+  'getDictionaryInfo' : IDL.Func([], [WordValidationDebug], ['query']),
   'importWords' : IDL.Func(
       [IDL.Text, IDL.Vec(IDL.Text)],
       [
@@ -275,6 +290,7 @@ export const idlService = IDL.Service({
     ),
   'submitGuess' : IDL.Func([IDL.Text, GameId, IDL.Text], [GuessResultV2], []),
   'validateGuessWord' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
+  'validateGuessWordDebug' : IDL.Func([IDL.Text], [WordValidationDebug], ['query']),
 });
 
 export const idlInitArgs = [];
@@ -308,6 +324,20 @@ export const idlFactory = ({ IDL }) => {
   const AdminSetupInfo = IDL.Record({
     'initialPassword' : IDL.Text,
     'username' : IDL.Text,
+  });
+  const WordValidationDebug = IDL.Record({
+    'word' : IDL.Text,
+    'normalized' : IDL.Text,
+    'lengthOk' : IDL.Bool,
+    'alphabetic' : IDL.Bool,
+    'acceptedAsGuess' : IDL.Bool,
+    'acceptedAsAnswer' : IDL.Bool,
+    'source' : IDL.Text,
+    'guessWordCount' : IDL.Nat,
+    'answerWordCount' : IDL.Nat,
+    'customWordCount' : IDL.Nat,
+    'dictionaryVersion' : IDL.Text,
+    'backendBuild' : IDL.Text,
   });
   const Timestamp = IDL.Int;
   const Role = IDL.Variant({ 'admin' : IDL.Null, 'player' : IDL.Null });
@@ -465,6 +495,7 @@ export const idlFactory = ({ IDL }) => {
     'getMyStats' : IDL.Func([IDL.Text], [IDL.Opt(PlayerStats)], []),
     'getRematchOffer' : IDL.Func([GameId], [IDL.Opt(RematchOffer)], ['query']),
     'getWordCount' : IDL.Func([], [IDL.Nat], ['query']),
+    'getDictionaryInfo' : IDL.Func([], [WordValidationDebug], ['query']),
     'importWords' : IDL.Func(
         [IDL.Text, IDL.Vec(IDL.Text)],
         [
@@ -547,6 +578,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'submitGuess' : IDL.Func([IDL.Text, GameId, IDL.Text], [GuessResultV2], []),
     'validateGuessWord' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
+    'validateGuessWordDebug' : IDL.Func([IDL.Text], [WordValidationDebug], ['query']),
   });
 };
 

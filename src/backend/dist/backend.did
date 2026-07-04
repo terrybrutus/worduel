@@ -1,3 +1,18 @@
+type WordValidationDebug = 
+ record {
+   acceptedAsAnswer: bool;
+   acceptedAsGuess: bool;
+   alphabetic: bool;
+   answerWordCount: nat;
+   backendBuild: text;
+   customWordCount: nat;
+   dictionaryVersion: text;
+   guessWordCount: nat;
+   lengthOk: bool;
+   normalized: text;
+   source: text;
+   word: text;
+ };
 type Timestamp = int;
 type TileState = 
  variant {
@@ -204,6 +219,7 @@ service : {
       err: text;
       ok: vec text;
     }) query;
+  getDictionaryInfo: () -> (WordValidationDebug) query;
   getGameByJoinToken: (joinToken: JoinToken) -> (opt GameId) query;
   getGameState: (sessionToken: text, gameId: GameId) -> (JoinResult) query;
   getGameStateWithRole: (gameId: GameId, sessionToken: text) ->
@@ -269,4 +285,5 @@ service : {
   submitGuess: (sessionToken: text, gameId: GameId, word: text) ->
    (GuessResultV2);
   validateGuessWord: (word: text) -> (bool) query;
+  validateGuessWordDebug: (word: text) -> (WordValidationDebug) query;
 }

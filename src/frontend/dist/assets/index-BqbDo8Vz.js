@@ -33830,6 +33830,20 @@ const AdminSetupInfo = Record({
   "initialPassword": Text,
   "username": Text
 });
+const WordValidationDebug = Record({
+  "word": Text,
+  "normalized": Text,
+  "lengthOk": Bool,
+  "alphabetic": Bool,
+  "acceptedAsGuess": Bool,
+  "acceptedAsAnswer": Bool,
+  "source": Text,
+  "guessWordCount": Nat,
+  "answerWordCount": Nat,
+  "customWordCount": Nat,
+  "dictionaryVersion": Text,
+  "backendBuild": Text
+});
 const Timestamp = Int;
 const Role$1 = Variant({ "admin": Null, "player": Null });
 const PlayerStats = Record({
@@ -33989,6 +34003,7 @@ Service({
   "getMyStats": Func([Text], [Opt(PlayerStats)], []),
   "getRematchOffer": Func([GameId], [Opt(RematchOffer)], ["query"]),
   "getWordCount": Func([], [Nat], ["query"]),
+  "getDictionaryInfo": Func([], [WordValidationDebug], ["query"]),
   "importWords": Func(
     [Text, Vec(Text)],
     [
@@ -34066,7 +34081,8 @@ Service({
     []
   ),
   "submitGuess": Func([Text, GameId, Text], [GuessResultV2], []),
-  "validateGuessWord": Func([Text], [Bool], ["query"])
+  "validateGuessWord": Func([Text], [Bool], ["query"]),
+  "validateGuessWordDebug": Func([Text], [WordValidationDebug], ["query"])
 });
 const idlFactory = ({ IDL: IDL2 }) => {
   const GameId2 = IDL2.Text;
@@ -34097,6 +34113,20 @@ const idlFactory = ({ IDL: IDL2 }) => {
   const AdminSetupInfo2 = IDL2.Record({
     "initialPassword": IDL2.Text,
     "username": IDL2.Text
+  });
+  const WordValidationDebug2 = IDL2.Record({
+    "word": IDL2.Text,
+    "normalized": IDL2.Text,
+    "lengthOk": IDL2.Bool,
+    "alphabetic": IDL2.Bool,
+    "acceptedAsGuess": IDL2.Bool,
+    "acceptedAsAnswer": IDL2.Bool,
+    "source": IDL2.Text,
+    "guessWordCount": IDL2.Nat,
+    "answerWordCount": IDL2.Nat,
+    "customWordCount": IDL2.Nat,
+    "dictionaryVersion": IDL2.Text,
+    "backendBuild": IDL2.Text
   });
   const Timestamp2 = IDL2.Int;
   const Role2 = IDL2.Variant({ "admin": IDL2.Null, "player": IDL2.Null });
@@ -34253,6 +34283,7 @@ const idlFactory = ({ IDL: IDL2 }) => {
     "getMyStats": IDL2.Func([IDL2.Text], [IDL2.Opt(PlayerStats2)], []),
     "getRematchOffer": IDL2.Func([GameId2], [IDL2.Opt(RematchOffer2)], ["query"]),
     "getWordCount": IDL2.Func([], [IDL2.Nat], ["query"]),
+    "getDictionaryInfo": IDL2.Func([], [WordValidationDebug2], ["query"]),
     "importWords": IDL2.Func(
       [IDL2.Text, IDL2.Vec(IDL2.Text)],
       [
@@ -34334,7 +34365,8 @@ const idlFactory = ({ IDL: IDL2 }) => {
       []
     ),
     "submitGuess": IDL2.Func([IDL2.Text, GameId2, IDL2.Text], [GuessResultV22], []),
-    "validateGuessWord": IDL2.Func([IDL2.Text], [IDL2.Bool], ["query"])
+    "validateGuessWord": IDL2.Func([IDL2.Text], [IDL2.Bool], ["query"]),
+    "validateGuessWordDebug": IDL2.Func([IDL2.Text], [WordValidationDebug2], ["query"])
   });
 };
 function candid_some(value) {
@@ -34868,6 +34900,20 @@ class Backend {
       return from_candid_GuessResultV2_n58(this._uploadFile, this._downloadFile, result);
     }
   }
+  async getDictionaryInfo() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.getDictionaryInfo();
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.getDictionaryInfo();
+      return result;
+    }
+  }
   async validateGuessWord(arg0) {
     if (this.processError) {
       try {
@@ -34879,6 +34925,20 @@ class Backend {
       }
     } else {
       const result = await this.actor.validateGuessWord(arg0);
+      return result;
+    }
+  }
+  async validateGuessWordDebug(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.validateGuessWordDebug(arg0);
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.validateGuessWordDebug(arg0);
       return result;
     }
   }
@@ -35636,6 +35696,28 @@ function useAllWords(token) {
     enabled: !!actor && !isFetching && !!token
   });
 }
+function useDictionaryInfo() {
+  const { actor, isFetching } = useBackendActor$1();
+  return useQuery({
+    queryKey: ["dictionaryInfo"],
+    queryFn: async () => {
+      if (!actor) return null;
+      return actor.getDictionaryInfo();
+    },
+    enabled: !!actor && !isFetching
+  });
+}
+function useWordValidationDebug(word) {
+  const { actor, isFetching } = useBackendActor$1();
+  return useQuery({
+    queryKey: ["wordValidationDebug", word],
+    queryFn: async () => {
+      if (!actor || !word) return null;
+      return actor.validateGuessWordDebug(word);
+    },
+    enabled: !!actor && !isFetching && !!word
+  });
+}
 function useAddWord() {
   const { actor } = useBackendActor$1();
   const qc = useQueryClient();
@@ -35931,9 +36013,13 @@ function Admin() {
   const [wordInput, setWordInput] = reactExports.useState("");
   const [wordInputError, setWordInputError] = reactExports.useState("");
   const [wordInputWarn, setWordInputWarn] = reactExports.useState("");
+  const [debugWordInput, setDebugWordInput] = reactExports.useState("");
+  const [debugWord, setDebugWord] = reactExports.useState(null);
   const [feedback, setFeedback] = reactExports.useState(null);
   const { data: wordCount } = useWordCount();
-  const totalWordCount = VALID_WORDS.size + Number(wordCount ?? 0n);
+  const { data: dictionaryInfo } = useDictionaryInfo();
+  const { data: debugResult, isFetching: debugLoading } = useWordValidationDebug(debugWord);
+  const totalWordCount = Number((dictionaryInfo == null ? void 0 : dictionaryInfo.guessWordCount) ?? 0n) || VALID_WORDS.size + Number(wordCount ?? 0n);
   const { data: allWords } = useAllWords(sessionToken);
   const { data: players, isLoading: playersLoading } = useListAllPlayers(sessionToken);
   const { data: playerStats } = useAllPlayerStats(sessionToken);
@@ -36199,6 +36285,88 @@ function Admin() {
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "stat-card", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "stat-label", children: "Total Words" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "stat-value", children: totalWordCount.toLocaleString() })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-card border border-border/60 rounded-xl p-4 space-y-3", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-3", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "section-header", children: "Dictionary Check" }),
+            dictionaryInfo && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[10px] font-mono text-muted-foreground uppercase tracking-wider", children: dictionaryInfo.dictionaryVersion })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "input",
+              {
+                type: "text",
+                placeholder: "Check word...",
+                maxLength: 5,
+                value: debugWordInput,
+                onChange: (e) => setDebugWordInput(
+                  e.target.value.toLowerCase().replace(/[^a-z]/g, "")
+                ),
+                onKeyDown: (e) => {
+                  if (e.key === "Enter" && debugWordInput.length > 0) {
+                    setDebugWord(debugWordInput);
+                  }
+                },
+                className: "input-base flex-1 font-mono uppercase tracking-widest placeholder:normal-case placeholder:tracking-normal",
+                "data-ocid": "admin.dictionary_check.input"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "button",
+              {
+                type: "button",
+                onClick: () => setDebugWord(debugWordInput),
+                disabled: debugWordInput.length === 0 || debugLoading,
+                className: "flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-display font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50",
+                "data-ocid": "admin.dictionary_check.button",
+                children: [
+                  debugLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-3 h-3 animate-spin" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Search, { className: "w-3 h-3" }),
+                  "Check"
+                ]
+              }
+            )
+          ] }),
+          debugResult && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              className: "grid grid-cols-2 sm:grid-cols-4 gap-2",
+              "data-ocid": "admin.dictionary_check.result",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "rounded-lg border border-border/50 bg-muted/20 px-3 py-2", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "stat-label", children: "Word" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-mono text-sm uppercase text-foreground", children: debugResult.normalized })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "rounded-lg border border-border/50 bg-muted/20 px-3 py-2", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "stat-label", children: "Guess" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "p",
+                    {
+                      className: `font-display text-sm ${debugResult.acceptedAsGuess ? "text-success" : "text-destructive"}`,
+                      children: debugResult.acceptedAsGuess ? "Accepted" : "Rejected"
+                    }
+                  )
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "rounded-lg border border-border/50 bg-muted/20 px-3 py-2", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "stat-label", children: "Answer" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-sm text-foreground", children: debugResult.acceptedAsAnswer ? "Eligible" : "No" })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "rounded-lg border border-border/50 bg-muted/20 px-3 py-2", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "stat-label", children: "Source" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-mono text-xs text-foreground", children: debugResult.source })
+                ] })
+              ]
+            }
+          ),
+          dictionaryInfo && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground font-body", children: [
+            Number(dictionaryInfo.guessWordCount).toLocaleString(),
+            " ",
+            "accepted guesses,",
+            " ",
+            Number(dictionaryInfo.answerWordCount).toLocaleString(),
+            " ",
+            "answer words, build ",
+            dictionaryInfo.backendBuild
+          ] })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-card border border-border/60 rounded-xl p-4 space-y-3", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "section-header", children: "Import from CSV / TXT" }),

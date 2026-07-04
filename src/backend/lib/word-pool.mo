@@ -1,6 +1,7 @@
 import Types "../types/word-pool";
 import Common "../types/common";
 import WordListData "word-list-data";
+import GuessWordListData "guess-word-list-data";
 import List "mo:core/List";
 import Set "mo:core/Set";
 
@@ -8,20 +9,27 @@ module {
   public type WordPoolEntry = Types.WordPoolEntry;
   public type PlayerName = Common.PlayerName;
   public type Timestamp = Common.Timestamp;
+  public type WordValidationDebug = Types.WordValidationDebug;
 
-  // ── WORD LIST ──────────────────────────────────────────────────────────────
-  // The full word list is defined in word-list-data.mo, split into 40 chunks
-  // to stay within Motoko instruction limits. Each chunk returns a [Text] array.
-  //
-  // ANSWER_WORDS: used for random word selection (chunk01 is a broad, common set)
+  public let DICTIONARY_VERSION : Text = "worduel-dictionary-2026-07-03-v1";
+  public let BACKEND_BUILD : Text = "worduel-backend-2026-07-03-dictionary-v1";
+
+  // Keep answers curated, but accept a much broader set of real guesses.
   public func getAnswerWords() : [Text] { WordListData.chunk01() };
-  public let VALID_GUESSES_EXTRA : [Text] = [];
 
-  // Pure helper: build a dedup Set from all word-list chunks.
-  // Called only during validation — not on every canister heartbeat.
-  public func _makeWordSet() : Set.Set<Text> {
+  public func _makeAnswerWordSet() : Set.Set<Text> {
     let s = Set.empty<Text>();
-    for (arr in WordListData.getAllChunks().values()) {
+    for (w in getAnswerWords().values()) {
+      if (w.size() == 5) {
+        s.add(w);
+      };
+    };
+    s;
+  };
+
+  public func _makeGuessWordSet() : Set.Set<Text> {
+    let s = Set.empty<Text>();
+    for (arr in GuessWordListData.getAllChunks().values()) {
       for (w in arr.values()) {
         if (w.size() == 5) {
           s.add(w);
@@ -31,11 +39,14 @@ module {
     s;
   };
 
-  // Pure helper: build a dedup List preserving insertion order.
-  func _makeWordList() : List.List<Text> {
+  public func _makeWordSet() : Set.Set<Text> {
+    _makeGuessWordSet();
+  };
+
+  func _makeGuessWordList() : List.List<Text> {
     let s = Set.empty<Text>();
     let l = List.empty<Text>();
-    for (arr in WordListData.getAllChunks().values()) {
+    for (arr in GuessWordListData.getAllChunks().values()) {
       for (w in arr.values()) {
         if (w.size() == 5 and not s.contains(w)) {
           s.add(w);
@@ -47,13 +58,13 @@ module {
   };
 
   public func getAllWords(custom : List.List<WordPoolEntry>) : [Text] {
-    let wordList = _makeWordList();
+    let wordList = _makeGuessWordList();
     let customWords = custom.map(func(e) { e.word });
     wordList.toArray().concat(customWords.toArray());
   };
 
   public func getRandomWord(_custom : List.List<WordPoolEntry>, seed : Nat) : Text {
-    let words = WordListData.chunk01();
+    let words = getAnswerWords();
     let total = words.size();
     if (total == 0) { return "crane" };
     words[seed % total];
@@ -61,20 +72,57 @@ module {
 
   public func isValidWord(
     custom : List.List<WordPoolEntry>,
-    _knownValidWords : Set.Set<Text>,
+    knownValidWords : Set.Set<Text>,
     word : Text,
   ) : Bool {
+    validateWordDebug(custom, knownValidWords, word).acceptedAsGuess;
+  };
+
+  public func validateWordDebug(
+    custom : List.List<WordPoolEntry>,
+    knownValidWords : Set.Set<Text>,
+    word : Text,
+  ) : WordValidationDebug {
     let lower = word.toLower();
-    let wordSet = _makeWordSet();
-    if (wordSet.contains(lower)) { return true };
-    // Check custom admin words
-    let inCustom = custom.find(func(e) = e.word == lower);
-    switch (inCustom) {
-      case (?_) { return true };
+    let lengthOk = lower.size() == 5;
+    let alphabetic = lower.toArray().all(func(c) = c.isAlphabetic());
+    let guessWordSet = _makeGuessWordSet();
+    let answerWordSet = _makeAnswerWordSet();
+    let acceptedAsAnswer = answerWordSet.contains(lower);
+    let baseDebug = func(acceptedAsGuess : Bool, source : Text) : WordValidationDebug {
+      {
+        word;
+        normalized = lower;
+        lengthOk;
+        alphabetic;
+        acceptedAsGuess;
+        acceptedAsAnswer;
+        source;
+        guessWordCount = GuessWordListData.WORD_COUNT;
+        answerWordCount = getAnswerWords().size();
+        customWordCount = custom.size();
+        dictionaryVersion = DICTIONARY_VERSION;
+        backendBuild = BACKEND_BUILD;
+      };
+    };
+
+    if (lengthOk and alphabetic and guessWordSet.contains(lower)) {
+      return baseDebug(true, if (acceptedAsAnswer) { "answer_list" } else { "guess_list" });
+    };
+
+    switch (custom.find(func(e) = e.word == lower)) {
+      case (?_) { return baseDebug(true, "admin_custom") };
       case null {};
     };
-    // Check runtime-cached valid words (admin-imported)
-    _knownValidWords.contains(lower);
+
+    if (knownValidWords.contains(lower)) {
+      return baseDebug(true, "runtime_cache");
+    };
+
+    baseDebug(
+      false,
+      if (not lengthOk) { "invalid_length" } else if (not alphabetic) { "invalid_characters" } else { "not_found" },
+    );
   };
 
   public func isPlausibleGuess(word : Text) : Bool {
