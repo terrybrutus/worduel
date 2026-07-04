@@ -13,54 +13,34 @@ import { TileGrid } from "../components/TileGrid";
 import { useAuth } from "../hooks/useAuth";
 import { triggerHaptic, useHapticEnabled } from "../hooks/useHapticEnabled";
 import { useSoundEnabled } from "../hooks/useSoundEnabled";
+import { PRACTICE_ANSWERS, PRACTICE_GUESSES } from "../lib/practiceDictionary";
 
 const WORD_LENGTH = 5;
 const MAX_GUESSES = 6;
 
-const ANSWERS = [
-  "crane",
-  "brave",
-  "plant",
-  "flame",
-  "trust",
-  "smart",
-  "quiet",
-  "grace",
-  "light",
-  "world",
-  "fresh",
-  "dream",
-];
-
-const EXTRA_GUESSES = [
-  "about",
-  "apple",
-  "audio",
-  "basic",
-  "brain",
-  "bread",
-  "chair",
-  "clean",
-  "close",
-  "court",
-  "earth",
-  "faith",
-  "ghost",
-  "heart",
-  "lucky",
-  "proud",
-  "round",
-  "share",
-  "sound",
-];
-
-const VALID_PRACTICE_WORDS = new Set([...ANSWERS, ...EXTRA_GUESSES]);
-
 type PracticeStatus = "playing" | "won" | "lost" | "opponentWon";
 
-function pickAnswer(): string {
-  const daySeed = Math.floor(Date.now() / 86_400_000);
-  return ANSWERS[daySeed % ANSWERS.length];
+function randomIndex(max: number): number {
+  if (max <= 1) return 0;
+  const cryptoApi = globalThis.crypto;
+  if (cryptoApi?.getRandomValues) {
+    const buffer = new Uint32Array(1);
+    cryptoApi.getRandomValues(buffer);
+    return buffer[0] % max;
+  }
+  return Math.floor(Math.random() * max);
+}
+
+function pickAnswer(previous?: string): string {
+  const answers: readonly string[] = PRACTICE_ANSWERS;
+  if (answers.length === 0) return "crane";
+  if (answers.length === 1) return answers[0];
+  let next = answers[randomIndex(answers.length)];
+  if (next === previous) {
+    next =
+      answers[(answers.indexOf(next) + 1) % answers.length];
+  }
+  return next;
 }
 
 function evaluateGuess(guess: string, answer: string): TileState[] {
@@ -99,7 +79,10 @@ function makeGuess(word: string, answer: string, playerNum: bigint): Guess {
 }
 
 function pickBotGuess(answer: string, turn: number): string {
-  const script = ["crane", "light", "sound", "plant", "brave", answer];
+  const script = ["crane", "light", "sound", "plant", "brave", answer].filter(
+    (word) => word !== answer,
+  );
+  if (turn >= MAX_GUESSES - 1) return answer;
   return script[Math.min(turn, script.length - 1)] ?? answer;
 }
 
@@ -128,7 +111,7 @@ export default function Practice() {
   }, [status]);
 
   const reset = useCallback(() => {
-    const nextAnswer = ANSWERS[(ANSWERS.indexOf(answer) + 1) % ANSWERS.length];
+    const nextAnswer = pickAnswer(answer);
     setAnswer(nextAnswer);
     setCurrentInput("");
     setGuesses([]);
@@ -169,8 +152,8 @@ export default function Practice() {
         }
 
         const normalized = currentInput.toLowerCase();
-        if (!VALID_PRACTICE_WORDS.has(normalized)) {
-          rejectInput("Not in the practice word list");
+        if (!PRACTICE_GUESSES.has(normalized)) {
+          rejectInput("Not a word");
           return;
         }
 
@@ -226,9 +209,12 @@ export default function Practice() {
   );
 
   return (
-    <div className="flex-1 bg-background px-4 py-5" data-ocid="practice.page">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
-        <header className="flex flex-wrap items-center justify-between gap-3">
+    <div
+      className="flex-1 bg-background px-3 py-3 sm:px-4 sm:py-5"
+      data-ocid="practice.page"
+    >
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 sm:gap-5">
+        <header className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
           <button
             type="button"
             onClick={() => void navigate({ to: "/lobby" })}
@@ -250,7 +236,7 @@ export default function Practice() {
           </div>
         </header>
 
-        <section className="rounded-xl border border-border/60 bg-card p-4">
+        <section className="rounded-xl border border-border/60 bg-card p-3 sm:p-4">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="font-display text-2xl font-black text-foreground">
@@ -273,8 +259,8 @@ export default function Practice() {
           </div>
         </section>
 
-        <main className="grid gap-5 lg:grid-cols-[1fr_18rem_1fr]">
-          <section className="rounded-xl border border-border/60 bg-card/80 p-4">
+        <main className="grid gap-3 lg:grid-cols-[1fr_18rem_1fr] lg:gap-5">
+          <section className="order-1 rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4">
             <TileGrid
               guesses={guesses}
               currentInput={currentInput}
@@ -284,7 +270,15 @@ export default function Practice() {
             />
           </section>
 
-          <aside className="flex flex-col gap-3 rounded-xl border border-border/60 bg-card p-4 text-center">
+          <div className="order-2 sticky bottom-0 z-20 -mx-3 border-t border-border/60 bg-background/95 px-3 py-2 backdrop-blur lg:static lg:col-span-3 lg:mx-0 lg:border-t-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+            <Keyboard
+              guesses={guesses}
+              onKey={handleKey}
+              disabled={isFinished}
+            />
+          </div>
+
+          <aside className="order-3 flex flex-col gap-3 rounded-xl border border-border/60 bg-card p-3 text-center sm:p-4 lg:order-2">
             <Trophy className="mx-auto h-6 w-6 text-primary" />
             <div>
               <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
@@ -321,12 +315,15 @@ export default function Practice() {
             )}
           </aside>
 
-          <section className="rounded-xl border border-border/60 bg-card/80 p-4">
-            <TileGrid guesses={botGuesses} currentInput="" label="Computer" />
+          <section className="order-4 rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4 lg:order-3">
+            <TileGrid
+              guesses={botGuesses}
+              currentInput=""
+              label="Computer"
+              hideSubmittedLetters
+            />
           </section>
         </main>
-
-        <Keyboard guesses={guesses} onKey={handleKey} disabled={isFinished} />
       </div>
     </div>
   );
