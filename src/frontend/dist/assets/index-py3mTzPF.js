@@ -66953,6 +66953,19 @@ const PRACTICE_GUESS_WORDS = [
 const PRACTICE_GUESSES = new Set(PRACTICE_GUESS_WORDS);
 const WORD_LENGTH = 5;
 const MAX_GUESSES = 6;
+function getMiniTileClass(state) {
+  const base = "h-5 w-5 rounded border";
+  switch (state) {
+    case TileState.correct:
+      return `${base} tile-correct`;
+    case TileState.present:
+      return `${base} tile-present`;
+    case TileState.absent:
+      return `${base} tile-absent`;
+    default:
+      return `${base} border-border/60 bg-muted/30`;
+  }
+}
 function randomIndex(max) {
   if (max <= 1) return 0;
   const cryptoApi = globalThis.crypto;
@@ -67024,6 +67037,7 @@ function Practice() {
   const [isShaking, setIsShaking] = reactExports.useState(false);
   const [isFlipping, setIsFlipping] = reactExports.useState(false);
   const isFinished = status !== "playing";
+  const lastBotGuess = botGuesses[botGuesses.length - 1];
   const headline = reactExports.useMemo(() => {
     if (status === "won") return "You solved it first";
     if (status === "opponentWon") return "Computer solved it first";
@@ -67159,18 +67173,42 @@ function Practice() {
             }
           )
         ] }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("main", { className: "grid gap-3 lg:grid-cols-[1fr_18rem_1fr] lg:gap-5", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: "order-1 rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-            TileGrid,
-            {
-              guesses,
-              currentInput,
-              isFlipping,
-              isShaking,
-              label: "You"
-            }
-          ) }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "order-2 sticky bottom-0 z-20 -mx-3 border-t border-border/60 bg-background/95 px-3 py-2 backdrop-blur lg:static lg:col-span-3 lg:mx-0 lg:border-t-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("main", { className: "grid gap-3 lg:grid-cols-[minmax(0,1fr)_17rem_minmax(0,1fr)] lg:items-start lg:gap-5", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: "order-1 rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4 lg:col-start-1 lg:row-start-1", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              TileGrid,
+              {
+                guesses,
+                currentInput,
+                isFlipping,
+                isShaking,
+                label: "You"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "div",
+              {
+                className: "mt-3 flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/50 px-3 py-2",
+                "data-ocid": "practice.computer_inline_status",
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[10px] font-mono uppercase tracking-widest text-muted-foreground", children: "Computer move" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs font-semibold text-foreground", children: lastBotGuess ? `Move ${botGuesses.length} submitted` : "Waiting for your first guess" })
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex gap-1", "aria-label": "Computer color result", children: Array.from({ length: WORD_LENGTH }).map((_2, index2) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "span",
+                    {
+                      className: getMiniTileClass(
+                        (lastBotGuess == null ? void 0 : lastBotGuess.states[index2]) ?? null
+                      )
+                    },
+                    index2
+                  )) })
+                ]
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "order-2 sticky bottom-0 z-20 -mx-3 border-t border-border/60 bg-background/95 px-3 py-2 backdrop-blur lg:static lg:col-start-1 lg:row-start-2 lg:mx-0 lg:border-t-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
             Keyboard,
             {
               guesses,
@@ -67178,7 +67216,7 @@ function Practice() {
               disabled: isFinished
             }
           ) }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("aside", { className: "order-3 flex flex-col gap-3 rounded-xl border border-border/60 bg-card p-3 text-center sm:p-4 lg:order-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("aside", { className: "order-3 flex flex-col gap-3 rounded-xl border border-border/60 bg-card p-3 text-center sm:p-4 lg:col-start-2 lg:row-span-2 lg:row-start-1", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx(Trophy, { className: "mx-auto h-6 w-6 text-primary" }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs font-mono uppercase tracking-widest text-muted-foreground", children: "Score" }),
@@ -67213,7 +67251,7 @@ function Practice() {
               }
             )
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: "order-4 rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4 lg:order-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: "order-4 rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4 lg:col-start-3 lg:row-span-2 lg:row-start-1", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
             TileGrid,
             {
               guesses: botGuesses,
@@ -67785,24 +67823,28 @@ function AuthModal({ onClose }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
     "div",
     {
-      className: "fixed inset-0 z-40 flex items-center justify-center bg-background/95 backdrop-blur-sm px-4",
+      className: "fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-background/95 px-4 py-6 backdrop-blur-sm",
       "data-ocid": "auth_modal.dialog",
       "aria-modal": "true",
       "aria-label": "Sign in or create account",
-      children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "w-full max-w-md", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            type: "button",
-            onClick: () => {
-              onClose();
-              window.location.assign("/practice");
-            },
-            className: "mb-3 w-full rounded-lg border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-display font-bold text-primary hover:bg-primary/15",
-            "data-ocid": "auth_modal.guest_practice_button",
-            children: "Play as Guest"
-          }
-        ),
+      children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex w-full max-w-md flex-col gap-3", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "rounded-xl border border-primary/50 bg-primary/10 p-4", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-base font-black text-foreground", children: "Want to try it first?" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-xs text-muted-foreground", children: "Start a free computer duel now. Sign in later to save stats and words." }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              type: "button",
+              onClick: () => {
+                onClose();
+                window.location.assign("/practice");
+              },
+              className: "mt-3 flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-display font-bold text-primary-foreground hover:bg-primary/90",
+              "data-ocid": "auth_modal.guest_practice_button",
+              children: "Play as Guest"
+            }
+          )
+        ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(LoginModal, { onClose })
       ] })
     }
