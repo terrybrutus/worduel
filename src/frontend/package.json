@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "@caffeineai/core-infrastructure": "^0.3.0",
+    "@caffeineai/object-storage": "0.1.1",
     "@dfinity/agent": "~3.3.0",
     "@dfinity/identity": "~3.3.0",
     "@dfinity/auth-client": "~3.3.0",
