@@ -4,6 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "@tanstack/react-router";
 import {
   Bell,
+  BookMarked,
   BookOpen,
   Bot,
   CalendarDays,
@@ -864,7 +865,7 @@ export default function Lobby() {
         )}
 
         <div
-          className="grid gap-3 sm:grid-cols-3"
+          className="grid gap-3 sm:grid-cols-4"
           data-ocid="lobby.progression_cards"
         >
           <button
@@ -915,6 +916,22 @@ export default function Lobby() {
             </div>
             <p className="mt-2 text-xs font-body text-muted-foreground">
               Create an invite link your opponent can play later.
+            </p>
+          </button>
+          <button
+            type="button"
+            onClick={() => void navigate({ to: "/word-bank" })}
+            className="rounded-xl border border-border/60 bg-card p-4 text-left transition-smooth hover:border-primary/40"
+            data-ocid="lobby.word_bank_button"
+          >
+            <div className="flex items-center gap-2">
+              <BookMarked className="h-4 w-4 text-primary" />
+              <span className="font-display font-bold text-foreground">
+                Word Bank
+              </span>
+            </div>
+            <p className="mt-2 text-xs font-body text-muted-foreground">
+              Review saved words and confidence notes.
             </p>
           </button>
         </div>

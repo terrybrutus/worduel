@@ -21,6 +21,7 @@ import Lobby from "./pages/Lobby";
 import Login, { LoginModal } from "./pages/Login";
 import Practice from "./pages/Practice";
 import Stats from "./pages/Stats";
+import WordBank from "./pages/WordBank";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 2, staleTime: 1000 } },
@@ -152,7 +153,10 @@ function RootApp() {
   });
   const [loadingDone, setLoadingDone] = useState(false);
   const [modalDismissed, setModalDismissed] = useState(false);
-  const allowGuestRoute = pathname === "/practice" || pathname === "/login";
+  const allowGuestRoute =
+    pathname === "/practice" ||
+    pathname === "/word-bank" ||
+    pathname === "/login";
   const showModal = loadingDone && !user && !modalDismissed && !allowGuestRoute;
 
   return (
@@ -226,6 +230,11 @@ const statsRoute = createRoute({
   path: "/stats",
   component: Stats,
 });
+const wordBankRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/word-bank",
+  component: WordBank,
+});
 const joinByTokenRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/game/join/$joinToken",
@@ -242,6 +251,7 @@ const router = createRouter({
     practiceRoute,
     adminRoute,
     statsRoute,
+    wordBankRoute,
   ]),
   defaultErrorComponent: ({ error }) => (
     <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-4 bg-background px-6 text-center">
