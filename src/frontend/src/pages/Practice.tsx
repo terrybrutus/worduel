@@ -112,6 +112,7 @@ export default function Practice() {
   const [message, setMessage] = useState<string | null>(null);
   const [isShaking, setIsShaking] = useState(false);
   const [isFlipping, setIsFlipping] = useState(false);
+  const [roundId, setRoundId] = useState(0);
 
   const isFinished = status !== "playing";
   const lastBotGuess = botGuesses[botGuesses.length - 1];
@@ -132,6 +133,7 @@ export default function Practice() {
     setMessage(null);
     setIsShaking(false);
     setIsFlipping(false);
+    setRoundId((current) => current + 1);
   }, [answer]);
 
   const rejectInput = useCallback(
@@ -250,8 +252,8 @@ export default function Practice() {
               </h1>
               <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
                 Solve the word, learn the meaning, and keep useful words for
-                later. The computer pace is a light benchmark, not the main
-                event.
+                later. The pace marker adds an automatic sample guess after
+                each turn so the round feels active.
               </p>
             </div>
             <button
@@ -269,6 +271,7 @@ export default function Practice() {
         <main className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_17rem_minmax(0,1fr)] lg:items-start lg:gap-5">
           <section className="order-1 rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4 lg:col-start-1 lg:row-start-1">
             <TileGrid
+              key={`player-${roundId}`}
               guesses={guesses}
               currentInput={currentInput}
               isFlipping={isFlipping}
@@ -288,6 +291,9 @@ export default function Practice() {
                     ? `Pace move ${botGuesses.length}`
                     : "Starts after your first guess"}
                 </p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  Automatic sample guess, not your letters.
+                </p>
               </div>
               <div className="flex gap-1" aria-label="Computer color result">
                 {Array.from({ length: WORD_LENGTH }).map((_, index) => (
@@ -306,6 +312,7 @@ export default function Practice() {
 
           <div className="order-2 sticky bottom-0 z-20 -mx-3 border-t border-border/60 bg-background/95 px-3 py-2 backdrop-blur lg:static lg:col-start-1 lg:row-start-2 lg:mx-0 lg:border-t-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
             <Keyboard
+              key={`keyboard-${roundId}`}
               guesses={guesses}
               onKey={handleKey}
               disabled={isFinished}
@@ -337,8 +344,8 @@ export default function Practice() {
                 </div>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                The pace only gives the round motion. Your puzzle is the one
-                that counts.
+                The pace uses its own sample guesses against the same answer.
+                Your puzzle is the one that counts.
               </p>
             </div>
             {message && (
@@ -348,6 +355,7 @@ export default function Practice() {
             )}
             {isFinished && (
               <LearningRecap
+                key={`recap-${roundId}`}
                 word={answer}
                 won={status === "won"}
                 guessCount={guesses.length}
@@ -369,6 +377,7 @@ export default function Practice() {
 
           <section className="order-4 hidden rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4 lg:col-start-3 lg:row-span-2 lg:row-start-1 lg:block">
             <TileGrid
+              key={`computer-${roundId}`}
               guesses={botGuesses}
               currentInput=""
               label="Computer"

@@ -946,8 +946,8 @@ export default function Lobby() {
                 Coming Soon / Pro
               </p>
               <p className="mt-1 text-xs font-body text-muted-foreground">
-                Paid features will focus on learning value, custom hosting, and
-                group practice instead of cash-prize gameplay.
+                Build custom word packs, host private rooms, and track learning
+                progress with groups.
               </p>
             </div>
             <Badge variant="outline" className="border-primary/40 text-primary">
