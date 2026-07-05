@@ -44943,6 +44943,7 @@ const WORD_NOTES = {
   about: "concerning; on the subject of",
   apple: "a round fruit with firm flesh",
   audio: "sound, especially recorded or transmitted sound",
+  banks: "land along the sides of a river; also financial institutions",
   basic: "forming an essential foundation",
   brain: "the organ of thought and memory",
   brave: "ready to face danger or difficulty",
@@ -44963,12 +44964,16 @@ const WORD_NOTES = {
   light: "brightness that makes seeing possible",
   lucky: "having good fortune",
   plant: "a living thing that grows in soil or water",
+  pride: "a feeling of self-respect or satisfaction in achievement",
+  prune: "a dried plum; also to trim branches or cut something back",
   proud: "feeling pleased about achievement or identity",
   quiet: "making little or no noise",
   round: "shaped like a circle or sphere",
   share: "to use, enjoy, or divide something with others",
   smart: "quick to understand or learn",
   sound: "something heard",
+  talks: "conversations or formal discussions",
+  tests: "checks or trials used to measure knowledge, quality, or performance",
   trust: "firm belief in someone or something",
   world: "the earth, or all people and things"
 };
@@ -44979,6 +44984,17 @@ const CONFIDENCE_OPTIONS = [
 ];
 function getDefinition(word) {
   return WORD_NOTES[word.toLowerCase()] ?? "Definition coming soon.";
+}
+function getOutcomeLabel(won, opponentWon) {
+  if (opponentWon) return "Computer solved first";
+  if (won) return "Solved";
+  return "Revealed after round";
+}
+function getReviewPrompt(confidence) {
+  if (confidence === "knew") return "Low review priority";
+  if (confidence === "guessed") return "Review once soon";
+  if (confidence === "unknown") return "Save and review again";
+  return "Mark confidence to set review priority";
 }
 function makeBluffChoices(word) {
   const normalized = word.toLowerCase();
@@ -45100,6 +45116,16 @@ function LearningRecap({
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-3 text-sm font-body text-foreground", children: hasWord ? getDefinition(normalized) : "Answer unavailable." }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-2 text-xs text-muted-foreground", children: recap }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-4 grid grid-cols-2 gap-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "rounded-lg border border-border/60 bg-muted/10 px-3 py-2", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[10px] font-mono uppercase tracking-widest text-muted-foreground", children: "Result" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-xs font-display font-bold text-foreground", children: getOutcomeLabel(won, opponentWon) })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "rounded-lg border border-border/60 bg-muted/10 px-3 py-2", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[10px] font-mono uppercase tracking-widest text-muted-foreground", children: "Review" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-xs font-display font-bold text-foreground", children: getReviewPrompt(confidence) })
+          ] })
+        ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "button",
           {
