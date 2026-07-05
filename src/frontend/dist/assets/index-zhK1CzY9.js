@@ -27587,7 +27587,7 @@ function mergeLoginOptions(loginOptions, otherLoginOptions) {
   };
 }
 const ONE_HOUR_IN_NANOSECONDS = BigInt(36e11);
-const DEFAULT_IDENTITY_PROVIDER = "https://identity.internetcomputer.org/";
+const DEFAULT_IDENTITY_PROVIDER = "https://id.ai/authorize";
 const InternetIdentityReactContext = reactExports.createContext(void 0);
 async function createAuthClient(createOptions) {
   const config = await loadConfig();
@@ -33830,20 +33830,6 @@ const AdminSetupInfo = Record({
   "initialPassword": Text,
   "username": Text
 });
-const WordValidationDebug = Record({
-  "word": Text,
-  "normalized": Text,
-  "lengthOk": Bool,
-  "alphabetic": Bool,
-  "acceptedAsGuess": Bool,
-  "acceptedAsAnswer": Bool,
-  "source": Text,
-  "guessWordCount": Nat,
-  "answerWordCount": Nat,
-  "customWordCount": Nat,
-  "dictionaryVersion": Text,
-  "backendBuild": Text
-});
 const Timestamp = Int;
 const Role$1 = Variant({ "admin": Null, "player": Null });
 const PlayerStats = Record({
@@ -33858,6 +33844,20 @@ const PlayerInfo = Record({
   "role": Role$1,
   "stats": PlayerStats,
   "isDisabled": Bool
+});
+const WordValidationDebug = Record({
+  "lengthOk": Bool,
+  "acceptedAsAnswer": Bool,
+  "source": Text,
+  "alphabetic": Bool,
+  "backendBuild": Text,
+  "guessWordCount": Nat,
+  "dictionaryVersion": Text,
+  "word": Text,
+  "customWordCount": Nat,
+  "answerWordCount": Nat,
+  "acceptedAsGuess": Bool,
+  "normalized": Text
 });
 const GameStatus = Variant({
   "won": Nat,
@@ -33982,6 +33982,7 @@ Service({
     [Variant({ "ok": Vec(Text), "err": Text })],
     ["query"]
   ),
+  "getDictionaryInfo": Func([], [WordValidationDebug], ["query"]),
   "getGameByJoinToken": Func([JoinToken], [Opt(GameId)], ["query"]),
   "getGameState": Func([Text, GameId], [JoinResult], ["query"]),
   "getGameStateWithRole": Func(
@@ -34003,7 +34004,6 @@ Service({
   "getMyStats": Func([Text], [Opt(PlayerStats)], []),
   "getRematchOffer": Func([GameId], [Opt(RematchOffer)], ["query"]),
   "getWordCount": Func([], [Nat], ["query"]),
-  "getDictionaryInfo": Func([], [WordValidationDebug], ["query"]),
   "importWords": Func(
     [Text, Vec(Text)],
     [
@@ -34082,7 +34082,11 @@ Service({
   ),
   "submitGuess": Func([Text, GameId, Text], [GuessResultV2], []),
   "validateGuessWord": Func([Text], [Bool], ["query"]),
-  "validateGuessWordDebug": Func([Text], [WordValidationDebug], ["query"])
+  "validateGuessWordDebug": Func(
+    [Text],
+    [WordValidationDebug],
+    ["query"]
+  )
 });
 const idlFactory = ({ IDL: IDL2 }) => {
   const GameId2 = IDL2.Text;
@@ -34114,20 +34118,6 @@ const idlFactory = ({ IDL: IDL2 }) => {
     "initialPassword": IDL2.Text,
     "username": IDL2.Text
   });
-  const WordValidationDebug2 = IDL2.Record({
-    "word": IDL2.Text,
-    "normalized": IDL2.Text,
-    "lengthOk": IDL2.Bool,
-    "alphabetic": IDL2.Bool,
-    "acceptedAsGuess": IDL2.Bool,
-    "acceptedAsAnswer": IDL2.Bool,
-    "source": IDL2.Text,
-    "guessWordCount": IDL2.Nat,
-    "answerWordCount": IDL2.Nat,
-    "customWordCount": IDL2.Nat,
-    "dictionaryVersion": IDL2.Text,
-    "backendBuild": IDL2.Text
-  });
   const Timestamp2 = IDL2.Int;
   const Role2 = IDL2.Variant({ "admin": IDL2.Null, "player": IDL2.Null });
   const PlayerStats2 = IDL2.Record({
@@ -34142,6 +34132,20 @@ const idlFactory = ({ IDL: IDL2 }) => {
     "role": Role2,
     "stats": PlayerStats2,
     "isDisabled": IDL2.Bool
+  });
+  const WordValidationDebug2 = IDL2.Record({
+    "lengthOk": IDL2.Bool,
+    "acceptedAsAnswer": IDL2.Bool,
+    "source": IDL2.Text,
+    "alphabetic": IDL2.Bool,
+    "backendBuild": IDL2.Text,
+    "guessWordCount": IDL2.Nat,
+    "dictionaryVersion": IDL2.Text,
+    "word": IDL2.Text,
+    "customWordCount": IDL2.Nat,
+    "answerWordCount": IDL2.Nat,
+    "acceptedAsGuess": IDL2.Bool,
+    "normalized": IDL2.Text
   });
   const GameStatus2 = IDL2.Variant({
     "won": IDL2.Nat,
@@ -34258,6 +34262,7 @@ const idlFactory = ({ IDL: IDL2 }) => {
       [IDL2.Variant({ "ok": IDL2.Vec(IDL2.Text), "err": IDL2.Text })],
       ["query"]
     ),
+    "getDictionaryInfo": IDL2.Func([], [WordValidationDebug2], ["query"]),
     "getGameByJoinToken": IDL2.Func([JoinToken2], [IDL2.Opt(GameId2)], ["query"]),
     "getGameState": IDL2.Func([IDL2.Text, GameId2], [JoinResult2], ["query"]),
     "getGameStateWithRole": IDL2.Func(
@@ -34283,7 +34288,6 @@ const idlFactory = ({ IDL: IDL2 }) => {
     "getMyStats": IDL2.Func([IDL2.Text], [IDL2.Opt(PlayerStats2)], []),
     "getRematchOffer": IDL2.Func([GameId2], [IDL2.Opt(RematchOffer2)], ["query"]),
     "getWordCount": IDL2.Func([], [IDL2.Nat], ["query"]),
-    "getDictionaryInfo": IDL2.Func([], [WordValidationDebug2], ["query"]),
     "importWords": IDL2.Func(
       [IDL2.Text, IDL2.Vec(IDL2.Text)],
       [
@@ -34366,7 +34370,11 @@ const idlFactory = ({ IDL: IDL2 }) => {
     ),
     "submitGuess": IDL2.Func([IDL2.Text, GameId2, IDL2.Text], [GuessResultV22], []),
     "validateGuessWord": IDL2.Func([IDL2.Text], [IDL2.Bool], ["query"]),
-    "validateGuessWordDebug": IDL2.Func([IDL2.Text], [WordValidationDebug2], ["query"])
+    "validateGuessWordDebug": IDL2.Func(
+      [IDL2.Text],
+      [WordValidationDebug2],
+      ["query"]
+    )
   });
 };
 function candid_some(value) {
@@ -34562,6 +34570,20 @@ class Backend {
     } else {
       const result = await this.actor.getAllWords(arg0);
       return from_candid_variant_n17(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async getDictionaryInfo() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.getDictionaryInfo();
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.getDictionaryInfo();
+      return result;
     }
   }
   async getGameByJoinToken(arg0) {
@@ -34898,20 +34920,6 @@ class Backend {
     } else {
       const result = await this.actor.submitGuess(arg0, arg1, arg2);
       return from_candid_GuessResultV2_n58(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async getDictionaryInfo() {
-    if (this.processError) {
-      try {
-        const result = await this.actor.getDictionaryInfo();
-        return result;
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.getDictionaryInfo();
-      return result;
     }
   }
   async validateGuessWord(arg0) {
@@ -44943,7 +44951,6 @@ const WORD_NOTES = {
   about: "concerning; on the subject of",
   apple: "a round fruit with firm flesh",
   audio: "sound, especially recorded or transmitted sound",
-  banks: "land along the sides of a river; also financial institutions",
   basic: "forming an essential foundation",
   brain: "the organ of thought and memory",
   brave: "ready to face danger or difficulty",
@@ -44964,16 +44971,12 @@ const WORD_NOTES = {
   light: "brightness that makes seeing possible",
   lucky: "having good fortune",
   plant: "a living thing that grows in soil or water",
-  pride: "a feeling of self-respect or satisfaction in achievement",
-  prune: "a dried plum; also to trim branches or cut something back",
   proud: "feeling pleased about achievement or identity",
   quiet: "making little or no noise",
   round: "shaped like a circle or sphere",
   share: "to use, enjoy, or divide something with others",
   smart: "quick to understand or learn",
   sound: "something heard",
-  talks: "conversations or formal discussions",
-  tests: "checks or trials used to measure knowledge, quality, or performance",
   trust: "firm belief in someone or something",
   world: "the earth, or all people and things"
 };
@@ -44984,17 +44987,6 @@ const CONFIDENCE_OPTIONS = [
 ];
 function getDefinition(word) {
   return WORD_NOTES[word.toLowerCase()] ?? "Definition coming soon.";
-}
-function getOutcomeLabel(won, opponentWon) {
-  if (opponentWon) return "Computer solved first";
-  if (won) return "Solved";
-  return "Revealed after round";
-}
-function getReviewPrompt(confidence) {
-  if (confidence === "knew") return "Low review priority";
-  if (confidence === "guessed") return "Review once soon";
-  if (confidence === "unknown") return "Save and review again";
-  return "Mark confidence to set review priority";
 }
 function makeBluffChoices(word) {
   const normalized = word.toLowerCase();
@@ -45116,16 +45108,6 @@ function LearningRecap({
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-3 text-sm font-body text-foreground", children: hasWord ? getDefinition(normalized) : "Answer unavailable." }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-2 text-xs text-muted-foreground", children: recap }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-4 grid grid-cols-2 gap-2", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "rounded-lg border border-border/60 bg-muted/10 px-3 py-2", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[10px] font-mono uppercase tracking-widest text-muted-foreground", children: "Result" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-xs font-display font-bold text-foreground", children: getOutcomeLabel(won, opponentWon) })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "rounded-lg border border-border/60 bg-muted/10 px-3 py-2", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[10px] font-mono uppercase tracking-widest text-muted-foreground", children: "Review" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-xs font-display font-bold text-foreground", children: getReviewPrompt(confidence) })
-          ] })
-        ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "button",
           {
@@ -66979,19 +66961,6 @@ const PRACTICE_GUESS_WORDS = [
 const PRACTICE_GUESSES = new Set(PRACTICE_GUESS_WORDS);
 const WORD_LENGTH = 5;
 const MAX_GUESSES = 6;
-function getMiniTileClass(state) {
-  const base = "h-5 w-5 rounded border";
-  switch (state) {
-    case TileState.correct:
-      return `${base} tile-correct`;
-    case TileState.present:
-      return `${base} tile-present`;
-    case TileState.absent:
-      return `${base} tile-absent`;
-    default:
-      return `${base} border-border/60 bg-muted/30`;
-  }
-}
 function randomIndex(max) {
   if (max <= 1) return 0;
   const cryptoApi = globalThis.crypto;
@@ -67063,7 +67032,6 @@ function Practice() {
   const [isShaking, setIsShaking] = reactExports.useState(false);
   const [isFlipping, setIsFlipping] = reactExports.useState(false);
   const isFinished = status !== "playing";
-  const lastBotGuess = botGuesses[botGuesses.length - 1];
   const headline = reactExports.useMemo(() => {
     if (status === "won") return "You solved it first";
     if (status === "opponentWon") return "Computer solved it first";
@@ -67199,42 +67167,18 @@ function Practice() {
             }
           )
         ] }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("main", { className: "grid gap-3 lg:grid-cols-[minmax(0,1fr)_17rem_minmax(0,1fr)] lg:items-start lg:gap-5", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: "order-1 rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4 lg:col-start-1 lg:row-start-1", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              TileGrid,
-              {
-                guesses,
-                currentInput,
-                isFlipping,
-                isShaking,
-                label: "You"
-              }
-            ),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs(
-              "div",
-              {
-                className: "mt-3 flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/50 px-3 py-2",
-                "data-ocid": "practice.computer_inline_status",
-                children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[10px] font-mono uppercase tracking-widest text-muted-foreground", children: "Computer move" }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs font-semibold text-foreground", children: lastBotGuess ? `Move ${botGuesses.length} submitted` : "Waiting for your first guess" })
-                  ] }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex gap-1", "aria-label": "Computer color result", children: Array.from({ length: WORD_LENGTH }).map((_2, index2) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    "span",
-                    {
-                      className: getMiniTileClass(
-                        (lastBotGuess == null ? void 0 : lastBotGuess.states[index2]) ?? null
-                      )
-                    },
-                    index2
-                  )) })
-                ]
-              }
-            )
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "order-2 sticky bottom-0 z-20 -mx-3 border-t border-border/60 bg-background/95 px-3 py-2 backdrop-blur lg:static lg:col-start-1 lg:row-start-2 lg:mx-0 lg:border-t-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("main", { className: "grid gap-3 lg:grid-cols-[1fr_18rem_1fr] lg:gap-5", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: "order-1 rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+            TileGrid,
+            {
+              guesses,
+              currentInput,
+              isFlipping,
+              isShaking,
+              label: "You"
+            }
+          ) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "order-2 sticky bottom-0 z-20 -mx-3 border-t border-border/60 bg-background/95 px-3 py-2 backdrop-blur lg:static lg:col-span-3 lg:mx-0 lg:border-t-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
             Keyboard,
             {
               guesses,
@@ -67242,7 +67186,7 @@ function Practice() {
               disabled: isFinished
             }
           ) }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("aside", { className: "order-3 flex flex-col gap-3 rounded-xl border border-border/60 bg-card p-3 text-center sm:p-4 lg:col-start-2 lg:row-span-2 lg:row-start-1", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("aside", { className: "order-3 flex flex-col gap-3 rounded-xl border border-border/60 bg-card p-3 text-center sm:p-4 lg:order-2", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx(Trophy, { className: "mx-auto h-6 w-6 text-primary" }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs font-mono uppercase tracking-widest text-muted-foreground", children: "Score" }),
@@ -67277,7 +67221,7 @@ function Practice() {
               }
             )
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: "order-4 rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4 lg:col-start-3 lg:row-span-2 lg:row-start-1", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: "order-4 rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4 lg:order-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
             TileGrid,
             {
               guesses: botGuesses,
@@ -67849,28 +67793,24 @@ function AuthModal({ onClose }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
     "div",
     {
-      className: "fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-background/95 px-4 py-6 backdrop-blur-sm",
+      className: "fixed inset-0 z-40 flex items-center justify-center bg-background/95 backdrop-blur-sm px-4",
       "data-ocid": "auth_modal.dialog",
       "aria-modal": "true",
       "aria-label": "Sign in or create account",
-      children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex w-full max-w-md flex-col gap-3", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "rounded-xl border border-primary/50 bg-primary/10 p-4", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-base font-black text-foreground", children: "Want to try it first?" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-xs text-muted-foreground", children: "Start a free computer duel now. Sign in later to save stats and words." }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "button",
-            {
-              type: "button",
-              onClick: () => {
-                onClose();
-                window.location.assign("/practice");
-              },
-              className: "mt-3 flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-display font-bold text-primary-foreground hover:bg-primary/90",
-              "data-ocid": "auth_modal.guest_practice_button",
-              children: "Play as Guest"
-            }
-          )
-        ] }),
+      children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "w-full max-w-md", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              onClose();
+              window.location.assign("/practice");
+            },
+            className: "mb-3 w-full rounded-lg border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-display font-bold text-primary hover:bg-primary/15",
+            "data-ocid": "auth_modal.guest_practice_button",
+            children: "Play as Guest"
+          }
+        ),
         /* @__PURE__ */ jsxRuntimeExports.jsx(LoginModal, { onClose })
       ] })
     }

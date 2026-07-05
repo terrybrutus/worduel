@@ -173,6 +173,7 @@ actor {
       var root : Node__46230540<Text, Set__532252804<Text>>;
       var size : Nat__490723111
     };
+  stable pendingAnswer : Text;
   stable rematchOffers :
     {
       var root : Node__46230540<GameId__54718739, RematchOffer__540615130>;

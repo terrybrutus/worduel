@@ -20,20 +20,6 @@ const MAX_GUESSES = 6;
 
 type PracticeStatus = "playing" | "won" | "lost" | "opponentWon";
 
-function getMiniTileClass(state: TileState | null): string {
-  const base = "h-5 w-5 rounded border";
-  switch (state) {
-    case TileState.correct:
-      return `${base} tile-correct`;
-    case TileState.present:
-      return `${base} tile-present`;
-    case TileState.absent:
-      return `${base} tile-absent`;
-    default:
-      return `${base} border-border/60 bg-muted/30`;
-  }
-}
-
 function randomIndex(max: number): number {
   if (max <= 1) return 0;
   const cryptoApi = globalThis.crypto;
@@ -116,7 +102,6 @@ export default function Practice() {
   const [isFlipping, setIsFlipping] = useState(false);
 
   const isFinished = status !== "playing";
-  const lastBotGuess = botGuesses[botGuesses.length - 1];
 
   const headline = useMemo(() => {
     if (status === "won") return "You solved it first";
@@ -274,8 +259,8 @@ export default function Practice() {
           </div>
         </section>
 
-        <main className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_17rem_minmax(0,1fr)] lg:items-start lg:gap-5">
-          <section className="order-1 rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4 lg:col-start-1 lg:row-start-1">
+        <main className="grid gap-3 lg:grid-cols-[1fr_18rem_1fr] lg:gap-5">
+          <section className="order-1 rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4">
             <TileGrid
               guesses={guesses}
               currentInput={currentInput}
@@ -283,36 +268,9 @@ export default function Practice() {
               isShaking={isShaking}
               label="You"
             />
-            <div
-              className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/50 px-3 py-2"
-              data-ocid="practice.computer_inline_status"
-            >
-              <div>
-                <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                  Computer move
-                </p>
-                <p className="text-xs font-semibold text-foreground">
-                  {lastBotGuess
-                    ? `Move ${botGuesses.length} submitted`
-                    : "Waiting for your first guess"}
-                </p>
-              </div>
-              <div className="flex gap-1" aria-label="Computer color result">
-                {Array.from({ length: WORD_LENGTH }).map((_, index) => (
-                  <span
-                    // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length result preview
-                    key={index}
-                    className={getMiniTileClass(
-                      (lastBotGuess?.states[index] as TileState | undefined) ??
-                        null,
-                    )}
-                  />
-                ))}
-              </div>
-            </div>
           </section>
 
-          <div className="order-2 sticky bottom-0 z-20 -mx-3 border-t border-border/60 bg-background/95 px-3 py-2 backdrop-blur lg:static lg:col-start-1 lg:row-start-2 lg:mx-0 lg:border-t-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+          <div className="order-2 sticky bottom-0 z-20 -mx-3 border-t border-border/60 bg-background/95 px-3 py-2 backdrop-blur lg:static lg:col-span-3 lg:mx-0 lg:border-t-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
             <Keyboard
               guesses={guesses}
               onKey={handleKey}
@@ -320,7 +278,7 @@ export default function Practice() {
             />
           </div>
 
-          <aside className="order-3 flex flex-col gap-3 rounded-xl border border-border/60 bg-card p-3 text-center sm:p-4 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+          <aside className="order-3 flex flex-col gap-3 rounded-xl border border-border/60 bg-card p-3 text-center sm:p-4 lg:order-2">
             <Trophy className="mx-auto h-6 w-6 text-primary" />
             <div>
               <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
@@ -357,7 +315,7 @@ export default function Practice() {
             )}
           </aside>
 
-          <section className="order-4 rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4 lg:col-start-3 lg:row-span-2 lg:row-start-1">
+          <section className="order-4 rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4 lg:order-3">
             <TileGrid
               guesses={botGuesses}
               currentInput=""
