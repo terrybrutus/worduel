@@ -13,7 +13,7 @@ main = "src/backend/main.mo"
 path = ".old/src/backend/dist/backend.most"
 
 [toolchain]
-moc = "1.7.0"
+moc = "1.10.1"
 lintoko = "0.10.0"
 
 [lint]
@@ -25,9 +25,18 @@ args = [
   "--actor-idl=src/backend/system-idl",
   "--implicit-package=core",
   "-no-check-ir",
-  "-E=M0236,M0235,M0223,M0237",
-  "-A=M0198",
+  "-E=M0254",
+  "-W=M0235,M0223,M0236,M0237",
+  "-A=M0241",
+  "--generate-view-queries"
 ]
 
 [dependencies]
-core = "2.2.0"
+core = "2.5.0"
+caffeineai-data-viewer = "0.1.0"
+caffeineai-authorization = "1.0.0"
+caffeineai-lints = "0.1.0"
+
+[canisters.backend.migrations]
+chain = "src/backend/migrations"
+check-limit = 1

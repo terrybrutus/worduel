@@ -1,25 +1,18 @@
 {
-  "overview": "WORDUEL is a multiplayer Wordle-style word game where two players can compete head-to-head (versus mode) or cooperate to guess the same word together (co-op mode). Features private invite links, player stats, custom word pools, tile animations, and sound effects.",
+  "overview": "A fast single-player word unscramble game where you race against a countdown timer to rearrange letters, build streaks, and beat your best score.",
   "features": [
-    "Co-op and versus multiplayer modes",
-    "Private game invite links",
-    "Word validation with shake animation",
-    "Tile flip animations on guess reveal",
-    "Player stats and win streaks",
-    "Custom word pool management",
-    "Sound effects (toggleable)",
-    "Loss screen with correct answer reveal",
-    "Active games lobby",
-    "Admin panel for word pool"
+    "Race against a countdown timer to unscramble each word",
+    "Click letter tiles to build your answer and submit for instant feedback",
+    "Streak multiplier rewards consecutive correct answers",
+    "Best score saved and loaded across reloads",
+    "Play again to restart with a fresh word set"
   ],
-  "category": "games",
+  "category": "game",
   "tags": [
     "word-game",
-    "multiplayer",
-    "wordle",
-    "co-op",
-    "versus",
-    "puzzle"
+    "puzzle",
+    "single-player",
+    "score-tracking"
   ],
-  "last_updated": "2026-05-04T00:21:18.136Z"
+  "last_updated": "2026-07-04T16:06:37.748Z"
 }

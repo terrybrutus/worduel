@@ -1,355 +1,272 @@
-import { useActor } from "@caffeineai/core-infrastructure";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useParams, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createActor } from "../backend";
-import type { GameState, Guess } from "../backend";
-import { GameMode, PlayerOutcome, type TileState } from "../backend";
-import { SESSION_KEY } from "../types";
-import { isValidWord } from "../words";
 
-function useBackendActor() {
-  return useActor((canisterId, uploadFile, downloadFile, options) =>
-    createActor(canisterId, uploadFile, downloadFile, options),
+import { pickWords, scramble } from "@/lib/words";
+
+export type GamePhase = "start" | "playing" | "end";
+
+export type RoundOutcome =
+  | "correct"
+  | "incorrect"
+  | "skipped"
+  | "timeout"
+  | null;
+
+export interface RoundState {
+  target: string;
+  pool: string[]; // letters available to tap (with stable ids)
+  placed: (string | null)[]; // answer slots
+  outcome: RoundOutcome;
+}
+
+export interface GameState {
+  phase: GamePhase;
+  roundIndex: number; // 0-based current round
+  score: number;
+  streak: number;
+  bestStreak: number;
+  timeLeft: number;
+  rounds: RoundState[];
+  lastOutcome: RoundOutcome;
+}
+
+export interface UseGameOptions {
+  totalRounds?: number;
+  roundSeconds?: number;
+  bestScore?: number;
+  onSubmitScore?: (score: number) => void;
+}
+
+export const DEFAULT_TOTAL_ROUNDS = 10;
+export const DEFAULT_ROUND_SECONDS = 30;
+export const POINTS_PER_SECOND = 10;
+export const STREAK_BONUS = 25;
+
+interface PoolLetter {
+  id: number;
+  char: string;
+}
+
+interface InternalRound {
+  target: string;
+  pool: PoolLetter[];
+  placed: (number | null)[]; // pool id at each slot, or null
+  outcome: RoundOutcome;
+}
+
+function buildRound(target: string): InternalRound {
+  const scrambled = scramble(target);
+  return {
+    target,
+    pool: scrambled.map((char, i) => ({ id: i, char })),
+    placed: target.split("").map(() => null),
+    outcome: null,
+  };
+}
+
+function buildRounds(count: number): InternalRound[] {
+  return pickWords(count).map((w) => buildRound(w));
+}
+
+export function useGame(options: UseGameOptions = {}) {
+  const {
+    totalRounds = DEFAULT_TOTAL_ROUNDS,
+    roundSeconds = DEFAULT_ROUND_SECONDS,
+    bestScore = 0,
+    onSubmitScore,
+  } = options;
+
+  const [phase, setPhase] = useState<GamePhase>("start");
+  const [roundIndex, setRoundIndex] = useState(0);
+  const [rounds, setRounds] = useState<InternalRound[]>(() =>
+    buildRounds(totalRounds),
   );
-}
+  const [score, setScore] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(roundSeconds);
+  const [lastOutcome, setLastOutcome] = useState<RoundOutcome>(null);
 
-function getStoredSessionToken(): string {
-  return localStorage.getItem(SESSION_KEY) ?? "";
-}
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const submittedRef = useRef(false);
 
-function getStoredPlayerName(): string {
-  try {
-    const raw = localStorage.getItem("__worduel_user__");
-    if (!raw) return "";
-    const parsed = JSON.parse(raw) as { username?: string };
-    return parsed.username ?? "";
-  } catch {
-    return "";
-  }
-}
+  const currentRound = rounds[roundIndex];
 
-function isOpponentLeft(gameState: GameState | null | undefined): boolean {
-  if (!gameState?.exitReason) return false;
-  const reason = gameState.exitReason.toLowerCase();
-  return reason === "opponent_left" || reason.includes("opponent_left");
-}
+  // Derived: placed letters as characters for display
+  const placedChars = useMemo(() => {
+    if (!currentRound) return [];
+    return currentRound.placed.map((id) =>
+      id == null
+        ? null
+        : (currentRound.pool.find((p) => p.id === id)?.char ?? null),
+    );
+  }, [currentRound]);
 
-function isForfeitTimeout(gameState: GameState | null | undefined): boolean {
-  if (!gameState?.exitReason) return false;
-  const reason = gameState.exitReason.toLowerCase();
-  return (
-    reason === "forfeit_timeout" ||
-    reason.includes("forfeit") ||
-    reason.includes("timeout")
+  const usedIds = useMemo(
+    () =>
+      new Set(currentRound?.placed.filter((id): id is number => id != null)),
+    [currentRound],
   );
-}
 
-const WORD_LENGTH = 5;
-const MAX_GUESSES = 6;
-
-export type JoinStatus = "idle" | "joining" | "error";
-
-export interface UseGameResult {
-  // Remote state
-  gameState: GameState | null | undefined;
-  isLoading: boolean;
-  joinStatus: JoinStatus;
-  joinError: string | null;
-  playerName: string;
-  isMyTurn: boolean;
-  currentGuesses: Guess[];
-  opponentGuessCount: bigint;
-  opponentGuessTileStates: TileState[][];
-  opponentLeft: boolean;
-  forfeitTimeout: boolean;
-  myOutcome: PlayerOutcome;
-  isHost: boolean;
-  hostToken: string | null;
-  // Local input state
-  currentInput: string;
-  invalidWordMessage: string | null;
-  isShaking: boolean;
-  isFlipping: boolean;
-  isSubmitting: boolean;
-  handleKey: (key: string) => void;
-  forceRefresh: () => void;
-}
-
-export function useGame(): UseGameResult {
-  const { gameId } = useParams({ from: "/game/$gameId" });
-  const search = useSearch({ strict: false }) as Record<string, string>;
-  const joinToken = search.join ?? null;
-
-  const { actor, isFetching } = useBackendActor();
-  const qc = useQueryClient();
-
-  const sessionToken = getStoredSessionToken();
-  const playerName = getStoredPlayerName();
-
-  // Input state
-  const [currentInput, setCurrentInput] = useState("");
-  const [invalidWordMessage, setInvalidWordMessage] = useState<string | null>(
-    null,
+  const isAnswerComplete = useMemo(
+    () => currentRound?.placed.every((id) => id != null) ?? false,
+    [currentRound],
   );
-  const [isShaking, setIsShaking] = useState(false);
-  // isFlipping triggers only after the server confirms a new guess (via guess count delta)
-  const [isFlipping, setIsFlipping] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const flipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Track guess count so we fire flip animation when the server confirms a new entry
-  const prevGuessCountRef = useRef<number>(-1);
-
-  const triggerShake = useCallback((message: string) => {
-    setIsShaking(true);
-    setInvalidWordMessage(message);
-    if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
-    shakeTimerRef.current = setTimeout(() => {
-      setIsShaking(false);
-      setInvalidWordMessage(null);
-    }, 1500);
+  const clearTimer = useCallback(() => {
+    if (timerRef.current != null) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
   }, []);
 
-  // Join token handling
-  const joinAttemptedRef = useRef(false);
-  const joinStatusRef = useRef<JoinStatus>("idle");
-  const joinErrorRef = useRef<string | null>(null);
-  const hostToken = (search.hostToken as string) ?? null;
-  const urlCleanedRef = useRef(false);
+  const finalizeRound = useCallback(
+    (outcome: Exclude<RoundOutcome, null>) => {
+      if (submittedRef.current) return;
+      submittedRef.current = true;
+      clearTimer();
 
-  useEffect(() => {
-    if (!hostToken || urlCleanedRef.current) return;
-    urlCleanedRef.current = true;
-    const url = new URL(window.location.href);
-    url.searchParams.delete("hostToken");
-    window.history.replaceState({}, "", url.toString());
-  }, [hostToken]);
-
-  useEffect(() => {
-    if (!joinToken || !actor || isFetching || joinAttemptedRef.current) return;
-    if (!sessionToken) return;
-    joinAttemptedRef.current = true;
-    joinStatusRef.current = "joining";
-
-    actor
-      .joinByToken(sessionToken, joinToken, null)
-      .then((result) => {
-        if (result.__kind__ === "err") {
-          joinStatusRef.current = "error";
-          joinErrorRef.current = result.err;
-        } else {
-          joinStatusRef.current = "idle";
-          const url = new URL(window.location.href);
-          url.searchParams.delete("join");
-          window.history.replaceState({}, "", url.toString());
-          void qc.invalidateQueries({ queryKey: ["game", gameId] });
-        }
-      })
-      .catch(() => {
-        joinStatusRef.current = "error";
-        joinErrorRef.current =
-          "This join link has expired. Ask your partner for the room code.";
+      setRounds((prev) => {
+        const next = [...prev];
+        next[roundIndex] = { ...next[roundIndex], outcome };
+        return next;
       });
-  }, [joinToken, actor, isFetching, gameId, sessionToken, qc]);
+      setLastOutcome(outcome);
 
-  const { data: gameState, isLoading } = useQuery<GameState | null>({
-    queryKey: ["game", gameId, sessionToken],
-    queryFn: async () => {
-      if (!actor || !gameId || !sessionToken) return null;
-      const result = await actor.getGameState(sessionToken, gameId);
-      if (result.__kind__ === "err") return null;
-      return result.ok;
-    },
-    enabled:
-      !!actor &&
-      !isFetching &&
-      !!gameId &&
-      !!sessionToken &&
-      joinStatusRef.current !== "joining",
-    refetchInterval: (query) => {
-      const data = query.state.data as GameState | null | undefined;
-      if (!data) return 2000;
-      const s = data.status.__kind__;
-      // Stop polling for fully resolved terminal states
-      if (s === "expired") return false;
-      if (s === "won") return false;
-      // FIX #3: keep polling after opponentWon so versus resolution arrives promptly
-      if (s === "lost" && data.myOutcome !== PlayerOutcome.opponentWon)
-        return false;
-      return 2000;
-    },
-  });
-
-  const forceRefresh = useCallback(() => {
-    void qc.invalidateQueries({ queryKey: ["game", gameId] });
-  }, [qc, gameId]);
-
-  const isMyTurn = useMemo(() => {
-    if (!gameState) return false;
-    if (gameState.mode === GameMode.coop) {
-      return gameState.currentTurn === gameState.playerNum;
-    }
-    // In versus: turn is yours as long as you're still playing
-    if (gameState.myOutcome !== PlayerOutcome.playing) return false;
-    const s = gameState.status.__kind__;
-    if (s === "won" || s === "lost" || s === "expired" || s === "waiting")
-      return false;
-    return true;
-  }, [gameState]);
-
-  const currentGuesses = useMemo((): Guess[] => {
-    if (!gameState) return [];
-    if (gameState.mode === GameMode.coop) return gameState.coopGuesses;
-    return gameState.myGuesses;
-  }, [gameState]);
-
-  // Trigger flip animation when the server confirms a new guess was added
-  useEffect(() => {
-    if (!gameState) return;
-    const guesses =
-      gameState.mode === GameMode.coop
-        ? gameState.coopGuesses
-        : gameState.myGuesses;
-    const count = guesses.length;
-    if (prevGuessCountRef.current >= 0 && count > prevGuessCountRef.current) {
-      setIsFlipping(true);
-      if (flipTimerRef.current) clearTimeout(flipTimerRef.current);
-      // 5 tiles * 80ms stagger + 600ms flip duration = ~1000ms total
-      flipTimerRef.current = setTimeout(() => setIsFlipping(false), 1100);
-    }
-    prevGuessCountRef.current = count;
-  }, [gameState]);
-
-  const handleKey = useCallback(
-    async (key: string) => {
-      if (!isMyTurn || isSubmitting || !actor || !sessionToken || !gameId)
-        return;
-      const guesses =
-        gameState?.mode === GameMode.coop
-          ? (gameState?.coopGuesses ?? [])
-          : (gameState?.myGuesses ?? []);
-      if (guesses.length >= MAX_GUESSES) return;
-
-      if (key === "BACKSPACE") {
-        setCurrentInput((prev) => prev.slice(0, -1));
-        return;
-      }
-
-      if (key === "ENTER") {
-        if (currentInput.length < WORD_LENGTH) {
-          triggerShake("Not enough letters");
-          return;
-        }
-
-        // Optional fast-path validation. The backend remains authoritative.
-        if (!isValidWord(currentInput)) {
-          triggerShake("Not a word");
-          return;
-        }
-
-        // FIX #1: Reject already-submitted duplicate guesses
-        const alreadyGuessed = guesses.some(
-          (g) => g.word.toLowerCase() === currentInput.toLowerCase(),
-        );
-        if (alreadyGuessed) {
-          triggerShake("Already guessed");
-          return;
-        }
-
-        setIsSubmitting(true);
-        try {
-          const result = await actor.submitGuess(
-            sessionToken,
-            gameId,
-            currentInput.toLowerCase(),
-          );
-
-          if (result.__kind__ === "err") {
-            const errKind = result.err.__kind__;
-            if (errKind === "notAWord") {
-              triggerShake("Not a word");
-            } else if (errKind === "notYourTurn") {
-              triggerShake("Wait for your turn");
-            } else if (errKind === "gameError") {
-              triggerShake(
-                (result.err as { __kind__: "gameError"; gameError: string })
-                  .gameError,
-              );
-            } else {
-              triggerShake("Could not submit guess");
-            }
-            return;
-          }
-
-          // Success: clear input and refresh; flip animation fires via guess count effect
-          setCurrentInput("");
-          void qc.invalidateQueries({ queryKey: ["game", gameId] });
-        } catch {
-          triggerShake("Connection error, try again");
-        } finally {
-          setIsSubmitting(false);
-        }
-        return;
-      }
-
-      // Regular letter
-      if (/^[A-Z]$/.test(key) && currentInput.length < WORD_LENGTH) {
-        setCurrentInput((prev) => prev + key);
+      if (outcome === "correct") {
+        const gained = timeLeft * POINTS_PER_SECOND + streak * STREAK_BONUS;
+        setScore((s) => s + gained);
+        setStreak((s) => {
+          const ns = s + 1;
+          setBestStreak((b) => Math.max(b, ns));
+          return ns;
+        });
+      } else {
+        setStreak(0);
       }
     },
-    [
-      isMyTurn,
-      isSubmitting,
-      actor,
-      sessionToken,
-      gameId,
-      currentInput,
-      gameState,
-      triggerShake,
-      qc,
-    ],
+    [clearTimer, roundIndex, timeLeft, streak],
   );
 
-  // Reset input when turn changes (coop: opponent just played)
-  const prevTurnRef = useRef<bigint | null>(null);
-  useEffect(() => {
-    if (!gameState) return;
-    if (
-      prevTurnRef.current !== null &&
-      prevTurnRef.current !== gameState.currentTurn
-    ) {
-      setCurrentInput("");
+  const advance = useCallback(() => {
+    submittedRef.current = false;
+    setLastOutcome(null);
+    if (roundIndex + 1 >= totalRounds) {
+      setPhase("end");
+      return;
     }
-    prevTurnRef.current = gameState.currentTurn;
-  }, [gameState]);
+    setRoundIndex((i) => i + 1);
+    setTimeLeft(roundSeconds);
+  }, [roundIndex, totalRounds, roundSeconds]);
 
-  const opponentGuessCount = gameState?.opponentGuessCount ?? BigInt(0);
-  const opponentGuessTileStates: TileState[][] =
-    gameState?.opponentGuessTileStates ?? [];
+  // Timer effect — only runs while playing and restarts each round.
+  // roundIndex is intentionally a dependency so the timer resets per round.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: roundIndex restarts the timer each round
+  useEffect(() => {
+    if (phase !== "playing") return;
+    if (submittedRef.current) return;
+    clearTimer();
+    timerRef.current = setInterval(() => {
+      setTimeLeft((t) => {
+        if (t <= 1) {
+          clearTimer();
+          finalizeRound("timeout");
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+    return clearTimer;
+  }, [phase, roundIndex, clearTimer, finalizeRound]);
+
+  // Submit final score to backend when game ends.
+  useEffect(() => {
+    if (phase !== "end") return;
+    if (score > bestScore && onSubmitScore) {
+      onSubmitScore(score);
+    }
+  }, [phase, score, bestScore, onSubmitScore]);
+
+  const start = useCallback(() => {
+    setRounds(buildRounds(totalRounds));
+    setRoundIndex(0);
+    setScore(0);
+    setStreak(0);
+    setBestStreak(0);
+    setTimeLeft(roundSeconds);
+    setLastOutcome(null);
+    submittedRef.current = false;
+    setPhase("playing");
+  }, [totalRounds, roundSeconds]);
+
+  const placeLetter = useCallback(
+    (poolId: number) => {
+      if (submittedRef.current) return;
+      setRounds((prev) => {
+        const round = prev[roundIndex];
+        if (round == null) return prev;
+        const firstEmpty = round.placed.findIndex((id) => id == null);
+        if (firstEmpty === -1) return prev;
+        const next = [...prev];
+        next[roundIndex] = {
+          ...round,
+          placed: round.placed.map((id, i) => (i === firstEmpty ? poolId : id)),
+        };
+        return next;
+      });
+    },
+    [roundIndex],
+  );
+
+  const removeLetter = useCallback(
+    (slotIndex: number) => {
+      if (submittedRef.current) return;
+      setRounds((prev) => {
+        const round = prev[roundIndex];
+        if (round == null) return prev;
+        if (round.placed[slotIndex] == null) return prev;
+        const next = [...prev];
+        next[roundIndex] = {
+          ...round,
+          placed: round.placed.map((id, i) => (i === slotIndex ? null : id)),
+        };
+        return next;
+      });
+    },
+    [roundIndex],
+  );
+
+  const submit = useCallback(() => {
+    if (submittedRef.current) return;
+    if (!isAnswerComplete) return;
+    const guess = placedChars.join("");
+    finalizeRound(guess === currentRound.target ? "correct" : "incorrect");
+  }, [isAnswerComplete, placedChars, currentRound, finalizeRound]);
+
+  const skip = useCallback(() => {
+    if (submittedRef.current) return;
+    finalizeRound("skipped");
+  }, [finalizeRound]);
 
   return {
-    gameState: gameState ?? null,
-    isLoading,
-    joinStatus: joinStatusRef.current,
-    joinError: joinErrorRef.current,
-    playerName,
-    isMyTurn,
-    currentGuesses,
-    opponentGuessCount,
-    opponentGuessTileStates,
-    opponentLeft: isOpponentLeft(gameState),
-    forfeitTimeout: isForfeitTimeout(gameState),
-    myOutcome: gameState?.myOutcome ?? PlayerOutcome.playing,
-    isHost: Number(gameState?.playerNum ?? 1) === 1,
-    hostToken,
-    currentInput,
-    invalidWordMessage,
-    isShaking,
-    isFlipping,
-    isSubmitting,
-    handleKey,
-    forceRefresh,
+    phase,
+    roundIndex,
+    totalRounds,
+    score,
+    streak,
+    bestStreak,
+    timeLeft,
+    roundSeconds,
+    bestScore,
+    currentRound,
+    placedChars,
+    usedIds,
+    isAnswerComplete,
+    lastOutcome,
+    start,
+    placeLetter,
+    removeLetter,
+    submit,
+    skip,
+    advance,
   };
 }

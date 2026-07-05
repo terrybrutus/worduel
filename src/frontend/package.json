@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node ./scripts/copy-env.mjs",
-    "copy:env": "node ./scripts/copy-env.mjs",
+    "build": "vite build && pnpm copy:env",
+    "copy:env": "cp env.json dist/",
     "typecheck": "tsc --noEmit",
     "check": "biome check src",
     "fix": "biome check --write src"
@@ -31,14 +31,10 @@
     "vite-plugin-environment": "^1.1.3"
   },
   "dependencies": {
-    "@caffeineai/core-infrastructure": "^0.3.0",
-    "@caffeineai/object-storage": "0.1.1",
-    "@dfinity/agent": "~3.3.0",
-    "@dfinity/identity": "~3.3.0",
-    "@dfinity/auth-client": "~3.3.0",
-    "@dfinity/candid": "~3.3.0",
-    "@dfinity/principal": "~3.3.0",
-    "@icp-sdk/core": "~4.1.0",
+    "@caffeineai/core-infrastructure": "^1.0.0",
+    "@caffeineai/object-storage": "^1.0.0",
+    "@icp-sdk/auth": "^7.1.0",
+    "@icp-sdk/core": "^5.3.0",
     "@react-three/cannon": "~6.6.0",
     "@react-three/drei": "~10.0.8",
     "@react-three/fiber": "~9.1.2",

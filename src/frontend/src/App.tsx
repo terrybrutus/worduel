@@ -1,309 +1,133 @@
-import { Toaster } from "@/components/ui/sonner";
-import { InternetIdentityProvider } from "@caffeineai/core-infrastructure";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  Outlet,
-  RouterProvider,
-  createRootRoute,
-  createRoute,
-  createRouter,
-  redirect,
-  useRouterState,
-} from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { CrossGameAlert } from "./components/CrossGameAlert";
-import { LoadingSpinner } from "./components/LoadingSpinner";
-import { AuthProvider, useAuth } from "./hooks/useAuth";
-import Admin from "./pages/Admin";
-import Game from "./pages/Game";
-import JoinByToken from "./pages/JoinByToken";
-import Lobby from "./pages/Lobby";
-import Login, { LoginModal } from "./pages/Login";
-import Practice from "./pages/Practice";
-import Stats from "./pages/Stats";
-import WordBank from "./pages/WordBank";
+import { useActor } from "@caffeineai/core-infrastructure";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo } from "react";
 
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 2, staleTime: 1000 } },
-});
+import { createActor } from "@/backend";
+import { EndScreen } from "@/components/EndScreen";
+import { GameScreen } from "@/components/GameScreen";
+import { Hud } from "@/components/Hud";
+import { StartScreen } from "@/components/StartScreen";
+import { useGame } from "@/hooks/useGame";
 
-// ─── Loading splash ─────────────────────────────────────────────────────────
-const TILES = ["W", "O", "R", "D", "U", "E", "L"];
-
-function LoadingScreen({ onDone }: { onDone: () => void }) {
-  const [flipped, setFlipped] = useState<boolean[]>(TILES.map(() => false));
-  const [done, setDone] = useState(false);
-
-  useEffect(() => {
-    TILES.forEach((_, i) => {
-      setTimeout(() => {
-        setFlipped((prev) => {
-          const next = [...prev];
-          next[i] = true;
-          return next;
-        });
-      }, i * 180);
-    });
-    const totalDelay = TILES.length * 180 + 600;
-    const timer = setTimeout(() => {
-      setDone(true);
-      setTimeout(onDone, 400);
-    }, totalDelay);
-    return () => clearTimeout(timer);
-  }, [onDone]);
-
-  return (
-    <div
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-background transition-opacity duration-400 ${
-        done ? "opacity-0 pointer-events-none" : "opacity-100"
-      }`}
-      aria-label="Loading Worduel"
-      aria-busy="true"
-    >
-      <div className="flex flex-col items-center gap-8">
-        <div className="flex gap-2">
-          {TILES.map((letter, i) => (
-            <div
-              key={letter}
-              className={`w-11 h-11 sm:w-14 sm:h-14 flex items-center justify-center rounded-md border-2 font-display font-black text-xl sm:text-2xl select-none transition-all duration-300 ${
-                flipped[i]
-                  ? i % 3 === 0
-                    ? "tile-correct border-[oklch(0.55_0.18_142)] bg-[oklch(0.55_0.18_142)]"
-                    : i % 3 === 1
-                      ? "tile-present border-[oklch(0.65_0.15_66)] bg-[oklch(0.65_0.15_66)]"
-                      : "bg-muted border-muted-foreground/30 text-foreground"
-                  : "bg-card border-border/60 text-foreground"
-              }`}
-              style={{
-                transform: flipped[i] ? "rotateX(0deg)" : "rotateX(90deg)",
-                transitionDelay: `${i * 0.05}s`,
-              }}
-            >
-              {letter}
-            </div>
-          ))}
-        </div>
-        <div className="text-center space-y-2">
-          <p className="font-body text-muted-foreground text-sm animate-pulse">
-            Multiplayer Word Game
-          </p>
-        </div>
-        <LoadingSpinner size="sm" />
-      </div>
-    </div>
-  );
-}
-
-function AuthModal({ onClose }: { onClose: () => void }) {
-  return (
-    <div
-      className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-background/95 px-4 py-6 backdrop-blur-sm"
-      data-ocid="auth_modal.dialog"
-      aria-modal="true"
-      aria-label="Sign in or create account"
-    >
-      <div className="flex w-full max-w-md flex-col gap-3">
-        <div className="rounded-xl border border-primary/50 bg-primary/10 p-4">
-          <p className="font-display text-base font-black text-foreground">
-            Want to try it first?
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Start a free computer duel now. Sign in later to save stats and
-            words.
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              onClose();
-              window.location.assign("/practice");
-            }}
-            className="mt-3 flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-display font-bold text-primary-foreground hover:bg-primary/90"
-            data-ocid="auth_modal.guest_practice_button"
-          >
-            Play as Guest
-          </button>
-        </div>
-        <LoginModal onClose={onClose} />
-      </div>
-    </div>
-  );
-}
-
-// ─── RootLayout ────────────────────────────────────────────────────────────
-//
-// ARCHITECTURE CONTRACT — READ BEFORE MODIFYING:
-//
-// RootLayout is the component for the root TanStack Router route.
-// It renders INSIDE <RouterProvider>, meaning:
-//   - All TanStack Router hooks (useRouterState, useNavigate, etc.) are SAFE here.
-//   - CrossGameAlert (which calls useRouterState) MUST live here, never above.
-//
-// InternetIdentityProvider and AuthProvider are mounted HERE (inside router)
-// so they can never call router hooks before RouterProvider is ready.
-// This is the permanent fix for the "Cannot read properties of null (__store)" crash.
-//
-// DO NOT move InternetIdentityProvider or AuthProvider above RouterProvider.
-// DO NOT move CrossGameAlert above RouterProvider.
-//
-function RootLayout() {
-  return (
-    <InternetIdentityProvider>
-      <AuthProvider>
-        <RootApp />
-      </AuthProvider>
-    </InternetIdentityProvider>
-  );
-}
-
-function RootApp() {
-  const { user } = useAuth();
-  const pathname = useRouterState({
-    select: (state) => state.location.pathname,
+function useBestScore() {
+  const { actor, isFetching } = useActor(createActor);
+  const query = useQuery<number>({
+    queryKey: ["bestScore"],
+    queryFn: async () => {
+      if (!actor) return 0;
+      const result = await actor.getBestScore();
+      return Number(result);
+    },
+    enabled: !!actor && !isFetching,
+    initialData: 0,
   });
-  const [loadingDone, setLoadingDone] = useState(false);
-  const [modalDismissed, setModalDismissed] = useState(false);
-  const allowGuestRoute =
-    pathname === "/practice" ||
-    pathname === "/word-bank" ||
-    pathname === "/login";
-  const showModal = loadingDone && !user && !modalDismissed && !allowGuestRoute;
+  return query;
+}
+
+function useSubmitScore() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (score: number) => {
+      if (!actor) return 0;
+      const result = await actor.submitScore(BigInt(score));
+      return Number(result);
+    },
+    onSuccess: (newBest) => {
+      queryClient.setQueryData(["bestScore"], newBest);
+    },
+  });
+}
+
+export default function App() {
+  const bestScoreQuery = useBestScore();
+  const submitScoreMutation = useSubmitScore();
+  const bestScore = bestScoreQuery.data ?? 0;
+
+  const handleSubmitScore = useCallback(
+    (score: number) => {
+      if (!submitScoreMutation.isPending) {
+        submitScoreMutation.mutate(score);
+      }
+    },
+    [submitScoreMutation],
+  );
+
+  const game = useGame({
+    bestScore,
+    onSubmitScore: handleSubmitScore,
+  });
+
+  const isNewBest = useMemo(
+    () => game.phase === "end" && game.score > bestScore,
+    [game.phase, game.score, bestScore],
+  );
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-background">
-      {/* Loading splash overlay — pure visual, never blocks RouterProvider */}
-      {!loadingDone && <LoadingScreen onDone={() => setLoadingDone(true)} />}
-
-      {/* Auth modal for unauthenticated users after splash */}
-      {showModal && <AuthModal onClose={() => setModalDismissed(true)} />}
-
-      {/*
-       * CrossGameAlert calls useRouterState() internally.
-       * It is SAFE here because RootApp is inside RouterProvider.
-       * NEVER move this above <RouterProvider>.
-       */}
-      {user && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-xl">
-          <CrossGameAlert />
-        </div>
+    <div className="flex min-h-dvh flex-col bg-background text-foreground">
+      {game.phase === "playing" && (
+        <Hud
+          score={game.score}
+          streak={game.streak}
+          roundIndex={game.roundIndex}
+          totalRounds={game.totalRounds}
+          timeLeft={game.timeLeft}
+          roundSeconds={game.roundSeconds}
+          bestScore={bestScore}
+        />
       )}
 
-      {/* Toaster: always mounted, inside router context */}
-      <Toaster
-        position="top-center"
-        toastOptions={{ className: "font-body text-sm" }}
-      />
+      <main className="flex flex-1 flex-col">
+        {game.phase === "start" && (
+          <StartScreen bestScore={bestScore} onStart={game.start} />
+        )}
 
-      {/* Page outlet */}
-      <Outlet />
+        {game.phase === "playing" && game.currentRound != null && (
+          <GameScreen
+            target={game.currentRound.target}
+            pool={game.currentRound.pool}
+            placedChars={game.placedChars}
+            usedIds={game.usedIds}
+            isAnswerComplete={game.isAnswerComplete}
+            lastOutcome={game.lastOutcome}
+            timeLeft={game.timeLeft}
+            onPlace={game.placeLetter}
+            onRemove={game.removeLetter}
+            onSubmit={game.submit}
+            onSkip={game.skip}
+            onAdvance={game.advance}
+          />
+        )}
+
+        {game.phase === "end" && (
+          <EndScreen
+            score={game.score}
+            bestStreak={game.bestStreak}
+            bestScore={bestScore}
+            isNewBest={isNewBest}
+            onPlayAgain={game.start}
+          />
+        )}
+      </main>
+
+      <footer className="border-t-2 border-border bg-card px-4 py-3 text-center">
+        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+          © {new Date().getFullYear()}. Built with love using{" "}
+          <a
+            href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(
+              typeof window !== "undefined"
+                ? window.location.hostname
+                : "worduel",
+            )}`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary hover:underline"
+            data-ocid="worduel.footer.link"
+          >
+            caffeine.ai
+          </a>
+        </span>
+      </footer>
     </div>
-  );
-}
-
-// ─── Routes ──────────────────────────────────────────────────────────────────
-const rootRoute = createRootRoute({ component: RootLayout });
-
-const indexRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/",
-  beforeLoad: () => {
-    throw redirect({ to: "/lobby" });
-  },
-});
-const lobbyRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/lobby",
-  component: Lobby,
-});
-const loginRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/login",
-  component: Login,
-});
-const gameRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/game/$gameId",
-  component: Game,
-});
-const practiceRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/practice",
-  component: Practice,
-});
-const adminRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/admin",
-  component: Admin,
-});
-const statsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/stats",
-  component: Stats,
-});
-const wordBankRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/word-bank",
-  component: WordBank,
-});
-const joinByTokenRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/game/join/$joinToken",
-  component: JoinByToken,
-});
-
-const router = createRouter({
-  routeTree: rootRoute.addChildren([
-    indexRoute,
-    lobbyRoute,
-    loginRoute,
-    joinByTokenRoute,
-    gameRoute,
-    practiceRoute,
-    adminRoute,
-    statsRoute,
-    wordBankRoute,
-  ]),
-  defaultErrorComponent: ({ error }) => (
-    <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-4 bg-background px-6 text-center">
-      <div className="text-4xl">⚠️</div>
-      <p className="font-display font-bold text-foreground text-xl">
-        Something went wrong
-      </p>
-      <p className="text-muted-foreground font-body text-sm max-w-xs">
-        {error instanceof Error ? error.message : String(error)}
-      </p>
-      <button
-        type="button"
-        className="btn-primary"
-        onClick={() => window.location.reload()}
-      >
-        Refresh
-      </button>
-    </div>
-  ),
-});
-
-declare module "@tanstack/react-router" {
-  interface Register {
-    router: typeof router;
-  }
-}
-
-// ─── App entry point ─────────────────────────────────────────────────────────
-//
-// Final provider hierarchy (outermost → innermost):
-//   QueryClientProvider        — React Query cache (no router deps)
-//     RouterProvider           — TanStack router context mounts FIRST
-//       RootLayout             — root route component (inside router ✓)
-//         InternetIdentityProvider  — ICP identity (inside router ✓)
-//           AuthProvider            — session/user state (inside router ✓)
-//             CrossGameAlert        — useRouterState() safe here ✓
-//             Toaster               — inside router ✓
-//             Outlet                — page components ✓
-//
-export default function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
   );
 }
