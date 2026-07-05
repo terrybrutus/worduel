@@ -18,7 +18,7 @@ import { PRACTICE_ANSWERS, PRACTICE_GUESSES } from "../lib/practiceDictionary";
 const WORD_LENGTH = 5;
 const MAX_GUESSES = 6;
 
-type PracticeStatus = "playing" | "won" | "lost" | "opponentWon";
+type PracticeStatus = "playing" | "won" | "lost";
 
 function getMiniTileClass(state: TileState | null): string {
   const base = "h-5 w-5 rounded border";
@@ -51,8 +51,7 @@ function pickAnswer(previous?: string): string {
   if (answers.length === 1) return answers[0];
   let next = answers[randomIndex(answers.length)];
   if (next === previous) {
-    next =
-      answers[(answers.indexOf(next) + 1) % answers.length];
+    next = answers[(answers.indexOf(next) + 1) % answers.length];
   }
   return next;
 }
@@ -93,11 +92,10 @@ function makeGuess(word: string, answer: string, playerNum: bigint): Guess {
 }
 
 function pickBotGuess(answer: string, turn: number): string {
-  const script = ["crane", "light", "sound", "plant", "brave", answer].filter(
+  const script = ["crane", "light", "sound", "plant", "brave", "trust"].filter(
     (word) => word !== answer,
   );
-  if (turn >= MAX_GUESSES - 1) return answer;
-  return script[Math.min(turn, script.length - 1)] ?? answer;
+  return script[Math.min(turn, script.length - 1)] ?? "crane";
 }
 
 export default function Practice() {
@@ -119,10 +117,9 @@ export default function Practice() {
   const lastBotGuess = botGuesses[botGuesses.length - 1];
 
   const headline = useMemo(() => {
-    if (status === "won") return "You solved it first";
-    if (status === "opponentWon") return "Computer solved it first";
+    if (status === "won") return "You solved it";
     if (status === "lost") return "Round complete";
-    return "Guest Practice Duel";
+    return "Guest Word Practice";
   }, [status]);
 
   const reset = useCallback(() => {
@@ -195,12 +192,6 @@ export default function Practice() {
         const nextBotGuesses = [...botGuesses, nextBotGuess];
         setBotGuesses(nextBotGuesses);
 
-        if (botWord === answer) {
-          setStatus("opponentWon");
-          if (soundEnabled) playLossSound();
-          return;
-        }
-
         if (nextGuesses.length >= MAX_GUESSES) {
           setStatus("lost");
           if (soundEnabled) playLossSound();
@@ -258,8 +249,9 @@ export default function Practice() {
                 {headline}
               </h1>
               <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-                Play a fast vocabulary duel against the computer. No account
-                required.
+                Solve the word, learn the meaning, and keep useful words for
+                later. The computer pace is a light benchmark, not the main
+                event.
               </p>
             </div>
             <button
@@ -289,12 +281,12 @@ export default function Practice() {
             >
               <div>
                 <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                  Computer move
+                  Computer pace
                 </p>
                 <p className="text-xs font-semibold text-foreground">
                   {lastBotGuess
-                    ? `Move ${botGuesses.length} submitted`
-                    : "Waiting for your first guess"}
+                    ? `Pace move ${botGuesses.length}`
+                    : "Starts after your first guess"}
                 </p>
               </div>
               <div className="flex gap-1" aria-label="Computer color result">
@@ -324,10 +316,29 @@ export default function Practice() {
             <Trophy className="mx-auto h-6 w-6 text-primary" />
             <div>
               <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
-                Score
+                Round pace
               </p>
-              <p className="mt-1 font-display text-lg font-black text-foreground">
-                {guesses.length} - {botGuesses.length}
+              <div className="mt-3 grid grid-cols-2 gap-2 text-left">
+                <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-2">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                    You
+                  </p>
+                  <p className="mt-1 font-display text-lg font-black text-foreground">
+                    {guesses.length}/{MAX_GUESSES}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-2">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                    Pace
+                  </p>
+                  <p className="mt-1 font-display text-lg font-black text-foreground">
+                    {botGuesses.length}/{MAX_GUESSES}
+                  </p>
+                </div>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                The pace only gives the round motion. Your puzzle is the one
+                that counts.
               </p>
             </div>
             {message && (
@@ -341,7 +352,6 @@ export default function Practice() {
                 won={status === "won"}
                 guessCount={guesses.length}
                 mode="practice"
-                opponentWon={status === "opponentWon"}
               />
             )}
             {!user && (
@@ -352,12 +362,12 @@ export default function Practice() {
                 data-ocid="practice.create_account_button"
               >
                 <UserPlus className="h-4 w-4" />
-                Save progress later
+                Sign in to keep words
               </button>
             )}
           </aside>
 
-          <section className="order-4 rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4 lg:col-start-3 lg:row-span-2 lg:row-start-1">
+          <section className="order-4 hidden rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4 lg:col-start-3 lg:row-span-2 lg:row-start-1 lg:block">
             <TileGrid
               guesses={botGuesses}
               currentInput=""

@@ -97,19 +97,20 @@ function LoadingScreen({ onDone }: { onDone: () => void }) {
 function AuthModal({ onClose }: { onClose: () => void }) {
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-background/95 px-4 py-6 backdrop-blur-sm"
+      className="fixed inset-0 z-40 overflow-y-auto bg-background/95 px-4 py-8 backdrop-blur-sm"
       data-ocid="auth_modal.dialog"
       aria-modal="true"
       aria-label="Sign in or create account"
     >
-      <div className="flex w-full max-w-md flex-col gap-3">
+      <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center gap-4">
+        <LoginModal onClose={onClose} />
         <div className="rounded-xl border border-primary/50 bg-primary/10 p-4">
           <p className="font-display text-base font-black text-foreground">
-            Want to try it first?
+            Try without an account
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Start a free computer duel now. Sign in later to save stats and
-            words.
+            Practice words as a guest. Anything you save stays on this device
+            until you sign in.
           </p>
           <button
             type="button"
@@ -120,10 +121,9 @@ function AuthModal({ onClose }: { onClose: () => void }) {
             className="mt-3 flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-display font-bold text-primary-foreground hover:bg-primary/90"
             data-ocid="auth_modal.guest_practice_button"
           >
-            Play as Guest
+            Start Guest Practice
           </button>
         </div>
-        <LoginModal onClose={onClose} />
       </div>
     </div>
   );

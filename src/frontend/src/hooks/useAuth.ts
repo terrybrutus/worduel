@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { Role, createActor } from "../backend";
+import { mergeGuestWordBankIntoUser } from "../lib/wordBank";
 import { SESSION_KEY } from "../types";
 
 export interface AuthUser {
@@ -91,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           username,
           role: promoted ? Role.admin : Role.player,
         };
+        mergeGuestWordBankIntoUser(username);
         localStorage.setItem(USER_KEY, JSON.stringify(authUser));
         setUser(authUser);
         setAdminPromoted(promoted);
@@ -112,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(SESSION_KEY, token);
         setSessionToken(token);
         const authUser: AuthUser = { username, role: Role.player };
+        mergeGuestWordBankIntoUser(username);
         localStorage.setItem(USER_KEY, JSON.stringify(authUser));
         setUser(authUser);
         setAdminPromoted(false);

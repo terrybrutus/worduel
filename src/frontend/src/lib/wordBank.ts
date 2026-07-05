@@ -48,6 +48,52 @@ export function saveWordBank(
   localStorage.setItem(wordBankKey(username), JSON.stringify(entries));
 }
 
+export function mergeGuestWordBankIntoUser(username: string): number {
+  const guestEntries = loadWordBank(undefined);
+  if (guestEntries.length === 0) return 0;
+
+  const userEntries = loadWordBank(username);
+  const mergedByWord = new Map<string, SavedWordEntry>();
+
+  for (const entry of userEntries) {
+    mergedByWord.set(entry.word, entry);
+  }
+
+  for (const guestEntry of guestEntries) {
+    const existing = mergedByWord.get(guestEntry.word);
+    mergedByWord.set(guestEntry.word, {
+      ...guestEntry,
+      confidence: guestEntry.confidence ?? existing?.confidence ?? null,
+      savedAt: existing
+        ? Math.min(existing.savedAt, guestEntry.savedAt)
+        : guestEntry.savedAt,
+      lastSeenAt: existing
+        ? Math.max(existing.lastSeenAt, guestEntry.lastSeenAt)
+        : guestEntry.lastSeenAt,
+    });
+
+    const guestConfidence = localStorage.getItem(
+      confidenceKey(undefined, guestEntry.word),
+    );
+    if (guestConfidence) {
+      localStorage.setItem(
+        confidenceKey(username, guestEntry.word),
+        guestConfidence,
+      );
+      localStorage.removeItem(confidenceKey(undefined, guestEntry.word));
+    }
+  }
+
+  saveWordBank(
+    username,
+    Array.from(mergedByWord.values()).sort(
+      (a, b) => b.lastSeenAt - a.lastSeenAt,
+    ),
+  );
+  localStorage.removeItem(wordBankKey(undefined));
+  return guestEntries.length;
+}
+
 export function isWordSaved(
   username: string | undefined,
   word: string,

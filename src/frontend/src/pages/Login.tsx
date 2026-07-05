@@ -7,10 +7,11 @@ type Mode = "login" | "signup";
 
 interface LoginFormProps {
   onSuccess?: () => void;
+  compact?: boolean;
 }
 
 /** Core login/signup form — no router hooks. Safe to render anywhere. */
-function LoginForm({ onSuccess }: LoginFormProps) {
+function LoginForm({ onSuccess, compact = false }: LoginFormProps) {
   const { login, register, isLoading, isConnecting } = useAuth();
 
   const [mode, setMode] = useState<Mode>("login");
@@ -76,11 +77,17 @@ function LoginForm({ onSuccess }: LoginFormProps) {
 
   return (
     <div
-      className="flex-1 flex items-center justify-center px-4 py-16 bg-background"
+      className={
+        compact
+          ? "w-full"
+          : "flex-1 flex items-center justify-center px-4 py-16 bg-background"
+      }
       data-ocid="login.page"
     >
       <div className="w-full max-w-md">
-        <div className="flex flex-col items-center gap-3 mb-8">
+        <div
+          className={`flex flex-col items-center gap-3 ${compact ? "mb-4" : "mb-8"}`}
+        >
           <div className="p-3 rounded-xl bg-primary/10 border border-primary/30 glow-primary">
             <BookOpen className="h-8 w-8 text-primary" />
           </div>
@@ -92,7 +99,11 @@ function LoginForm({ onSuccess }: LoginFormProps) {
           </p>
         </div>
 
-        <div className="bg-card border border-border/60 rounded-xl p-8 shadow-[0_4px_32px_oklch(0_0_0/0.4)]">
+        <div
+          className={`bg-card border border-border/60 rounded-xl shadow-[0_4px_32px_oklch(0_0_0/0.4)] ${
+            compact ? "p-5" : "p-8"
+          }`}
+        >
           <div
             className="flex rounded-lg bg-muted/60 p-1 mb-6"
             data-ocid="login.tab"
@@ -297,5 +308,5 @@ export default function Login() {
  * Does NOT call any router hooks.
  */
 export function LoginModal({ onClose }: { onClose: () => void }) {
-  return <LoginForm onSuccess={onClose} />;
+  return <LoginForm onSuccess={onClose} compact />;
 }
