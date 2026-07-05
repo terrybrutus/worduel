@@ -97,23 +97,32 @@ function LoadingScreen({ onDone }: { onDone: () => void }) {
 function AuthModal({ onClose }: { onClose: () => void }) {
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-background/95 backdrop-blur-sm px-4"
+      className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-background/95 px-4 py-6 backdrop-blur-sm"
       data-ocid="auth_modal.dialog"
       aria-modal="true"
       aria-label="Sign in or create account"
     >
-      <div className="w-full max-w-md">
-        <button
-          type="button"
-          onClick={() => {
-            onClose();
-            window.location.assign("/practice");
-          }}
-          className="mb-3 w-full rounded-lg border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-display font-bold text-primary hover:bg-primary/15"
-          data-ocid="auth_modal.guest_practice_button"
-        >
-          Play as Guest
-        </button>
+      <div className="flex w-full max-w-md flex-col gap-3">
+        <div className="rounded-xl border border-primary/50 bg-primary/10 p-4">
+          <p className="font-display text-base font-black text-foreground">
+            Want to try it first?
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Start a free computer duel now. Sign in later to save stats and
+            words.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              window.location.assign("/practice");
+            }}
+            className="mt-3 flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-display font-bold text-primary-foreground hover:bg-primary/90"
+            data-ocid="auth_modal.guest_practice_button"
+          >
+            Play as Guest
+          </button>
+        </div>
         <LoginModal onClose={onClose} />
       </div>
     </div>
