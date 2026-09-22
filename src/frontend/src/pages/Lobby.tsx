@@ -881,7 +881,7 @@ export default function Lobby() {
               </span>
             </div>
             <p className="mt-2 text-xs font-body text-muted-foreground">
-              Start a quick computer duel without signing in.
+              Try classic guessing or meaning practice without signing in.
             </p>
           </button>
           <button
