@@ -1,6 +1,6 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { AlertCircle, BookOpen, Eye, EyeOff, UserX } from "lucide-react";
-import { useRef, useState } from "react";
+import { AlertCircle, BookOpen, Eye, EyeOff, ShieldCheck, UserX } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 
 type Mode = "login" | "signup";
@@ -12,7 +12,14 @@ interface LoginFormProps {
 
 /** Core login/signup form — no router hooks. Safe to render anywhere. */
 function LoginForm({ onSuccess, compact = false }: LoginFormProps) {
-  const { login, register, isLoading, isConnecting } = useAuth();
+  const {
+    user,
+    login,
+    loginWithProvider,
+    register,
+    isLoading,
+    isConnecting,
+  } = useAuth();
 
   const [mode, setMode] = useState<Mode>("login");
   const [username, setUsername] = useState("");
@@ -22,6 +29,22 @@ function LoginForm({ onSuccess, compact = false }: LoginFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [isUsernameTaken, setIsUsernameTaken] = useState(false);
   const usernameRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (user && onSuccess) {
+      onSuccess();
+    }
+  }, [onSuccess, user]);
+
+  const handleProviderSignIn = async () => {
+    setError(null);
+    setIsUsernameTaken(false);
+    try {
+      await loginWithProvider(username.trim() || undefined);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Provider sign-in failed.");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,6 +127,36 @@ function LoginForm({ onSuccess, compact = false }: LoginFormProps) {
             compact ? "p-5" : "p-8"
           }`}
         >
+          <div className="mb-5 rounded-lg border border-primary/30 bg-primary/10 p-4">
+            <div className="flex items-start gap-3">
+              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <div>
+                <p className="font-display text-sm font-bold text-foreground">
+                  Recommended sign-in
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  Use secure Caffeine identity sign-in. Your email is handled by
+                  the provider; Worduel only keeps your public username.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleProviderSignIn}
+              disabled={isLoading || isConnecting}
+              className="btn-primary mt-4 flex w-full items-center justify-center gap-2 py-3 text-base disabled:cursor-not-allowed disabled:opacity-60"
+              data-ocid="login.provider_button"
+            >
+              <ShieldCheck className="h-4 w-4" />
+              {isLoading || isConnecting
+                ? "Connecting..."
+                : "Continue with Email or Google"}
+            </button>
+            <p className="mt-2 text-center text-[11px] text-muted-foreground">
+              Enter a username below first if you want a specific public name.
+            </p>
+          </div>
+
           <div
             className="flex rounded-lg bg-muted/60 p-1 mb-6"
             data-ocid="login.tab"

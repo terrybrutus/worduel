@@ -180,6 +180,7 @@ export interface _SERVICE {
   'getMyOpponentStats' : ActorMethod<[string], Array<[string, OpponentRecord]>>,
   'getMyStats' : ActorMethod<[string], [] | [PlayerStats]>,
   'getRematchOffer' : ActorMethod<[GameId], [] | [RematchOffer]>,
+  'getUsernameForSession' : ActorMethod<[string], [] | [string]>,
   'getWordCount' : ActorMethod<[], bigint>,
   'importWords' : ActorMethod<
     [string, Array<string>],
@@ -196,6 +197,7 @@ export interface _SERVICE {
   'listAllPlayers' : ActorMethod<[string], Array<PlayerInfo>>,
   'listPublicGames' : ActorMethod<[], Array<GameSummary>>,
   'login' : ActorMethod<[string, string], LoginResult>,
+  'loginWithIdentity' : ActorMethod<[string], LoginResult>,
   'logout' : ActorMethod<[string], undefined>,
   'promoteToAdmin' : ActorMethod<
     [string, string],

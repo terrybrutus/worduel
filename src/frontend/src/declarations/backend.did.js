@@ -210,6 +210,7 @@ export const idlService = IDL.Service({
     ),
   'getMyStats' : IDL.Func([IDL.Text], [IDL.Opt(PlayerStats)], []),
   'getRematchOffer' : IDL.Func([GameId], [IDL.Opt(RematchOffer)], ['query']),
+  'getUsernameForSession' : IDL.Func([IDL.Text], [IDL.Opt(IDL.Text)], ['query']),
   'getWordCount' : IDL.Func([], [IDL.Nat], ['query']),
   'getDictionaryInfo' : IDL.Func([], [WordValidationDebug], ['query']),
   'importWords' : IDL.Func(
@@ -238,6 +239,7 @@ export const idlService = IDL.Service({
   'listAllPlayers' : IDL.Func([IDL.Text], [IDL.Vec(PlayerInfo)], []),
   'listPublicGames' : IDL.Func([], [IDL.Vec(GameSummary)], ['query']),
   'login' : IDL.Func([IDL.Text, IDL.Text], [LoginResult], []),
+  'loginWithIdentity' : IDL.Func([IDL.Text], [LoginResult], []),
   'logout' : IDL.Func([IDL.Text], [], []),
   'promoteToAdmin' : IDL.Func(
       [IDL.Text, IDL.Text],
@@ -494,6 +496,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getMyStats' : IDL.Func([IDL.Text], [IDL.Opt(PlayerStats)], []),
     'getRematchOffer' : IDL.Func([GameId], [IDL.Opt(RematchOffer)], ['query']),
+    'getUsernameForSession' : IDL.Func([IDL.Text], [IDL.Opt(IDL.Text)], ['query']),
     'getWordCount' : IDL.Func([], [IDL.Nat], ['query']),
     'getDictionaryInfo' : IDL.Func([], [WordValidationDebug], ['query']),
     'importWords' : IDL.Func(
@@ -522,6 +525,7 @@ export const idlFactory = ({ IDL }) => {
     'listAllPlayers' : IDL.Func([IDL.Text], [IDL.Vec(PlayerInfo)], []),
     'listPublicGames' : IDL.Func([], [IDL.Vec(GameSummary)], ['query']),
     'login' : IDL.Func([IDL.Text, IDL.Text], [LoginResult], []),
+    'loginWithIdentity' : IDL.Func([IDL.Text], [LoginResult], []),
     'logout' : IDL.Func([IDL.Text], [], []),
     'promoteToAdmin' : IDL.Func(
         [IDL.Text, IDL.Text],

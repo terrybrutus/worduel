@@ -21,6 +21,63 @@ module {
     "v2:" # username # ":" # password;
   };
 
+  func identityHash(identityKey : Text) : Text {
+    "identity:" # identityKey;
+  };
+
+  public func isIdentityAccount(account : PlayerAccount, identityKey : Text) : Bool {
+    account.passwordHash == identityHash(identityKey);
+  };
+
+  public func findAccountByIdentity(
+    accounts : Map.Map<Text, PlayerAccount>,
+    identityKey : Text,
+  ) : ?PlayerAccount {
+    accounts.values().find(func(account : PlayerAccount) : Bool {
+      return isIdentityAccount(account, identityKey);
+    });
+  };
+
+  func cleanUsername(candidate : Text) : Text {
+    let trimmed = candidate.trim(#char ' ');
+    if (trimmed.size() >= 3) {
+      trimmed;
+    } else {
+      "player";
+    };
+  };
+
+  func uniqueUsername(accounts : Map.Map<Text, PlayerAccount>, requested : Text, seed : Int) : Text {
+    let base = cleanUsername(requested);
+    if (not accounts.containsKey(base)) {
+      return base;
+    };
+    let suffix = generateAdminPassword(seed);
+    let fallback = base # "-" # suffix;
+    if (not accounts.containsKey(fallback)) {
+      return fallback;
+    };
+    base # "-" # seed.toText();
+  };
+
+  public func createIdentityAccount(
+    accounts : Map.Map<Text, PlayerAccount>,
+    requestedUsername : Text,
+    identityKey : Text,
+    role : Role,
+  ) : PlayerAccount {
+    let username = uniqueUsername(accounts, requestedUsername, Time.now());
+    let account : PlayerAccount = {
+      username;
+      var passwordHash = identityHash(identityKey);
+      role;
+      var isDisabled = false;
+      createdAt = Time.now();
+    };
+    accounts.add(username, account);
+    account;
+  };
+
   public func verifyPassword(account : PlayerAccount, candidate : Text) : Bool {
     account.passwordHash == hashPassword(account.username, candidate)
       or account.passwordHash == legacyPasswordHash(candidate);

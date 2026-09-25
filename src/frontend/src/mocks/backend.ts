@@ -203,6 +203,10 @@ export const mockBackend: backendInterface = {
     },
   ],
   login: async () => ({ __kind__: "ok", ok: "session-token-mock-123" }),
+  loginWithIdentity: async () => ({
+    __kind__: "ok",
+    ok: "session-token-identity-123",
+  }),
   logout: async () => undefined,
   recordResult: async () => ({ __kind__: "ok", ok: null }),
   register: async () => ({ __kind__: "ok", ok: "session-token-new-123" }),
@@ -249,5 +253,6 @@ export const mockBackend: backendInterface = {
     err: "Self-service admin promotion is disabled. Sign in with an existing admin account.",
   }),
   getRematchOffer: async () => null,
+  getUsernameForSession: async () => "WordMaster",
   acceptRematch: async () => ({ __kind__: "ok" as const, ok: { newGameId: "game-rematch-accepted-1" } }),
 };

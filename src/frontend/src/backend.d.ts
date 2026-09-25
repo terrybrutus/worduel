@@ -259,6 +259,7 @@ export interface backendInterface {
     getMyOpponentStats(token: string): Promise<Array<[string, OpponentRecord]>>;
     getMyStats(token: string): Promise<PlayerStats | null>;
     getRematchOffer(originalGameId: GameId): Promise<RematchOffer | null>;
+    getUsernameForSession(token: string): Promise<string | null>;
     getWordCount(): Promise<bigint>;
     importWords(sessionToken: string, words: Array<string>): Promise<{
         added: bigint;
@@ -272,6 +273,7 @@ export interface backendInterface {
     listAllPlayers(token: string): Promise<Array<PlayerInfo>>;
     listPublicGames(): Promise<Array<GameSummary>>;
     login(username: string, password: string): Promise<LoginResult>;
+    loginWithIdentity(requestedUsername: string): Promise<LoginResult>;
     logout(token: string): Promise<void>;
     promoteToAdmin(username: string, secretKey: string): Promise<{
         __kind__: "ok";

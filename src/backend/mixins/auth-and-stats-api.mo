@@ -24,6 +24,10 @@ mixin (
     };
   };
 
+  public query func getUsernameForSession(token : Text) : async ?Text {
+    requireSession(token);
+  };
+
   public func register(username : Text, password : Text) : async Types.RegisterResult {
     switch (AuthLib.createAccount(accounts, username, password, #player)) {
       case (#err(msg)) { #err(msg) };
@@ -51,6 +55,28 @@ mixin (
         #ok(token);
       };
     };
+  };
+
+  public shared({ caller }) func loginWithIdentity(requestedUsername : Text) : async Types.LoginResult {
+    if (caller.isAnonymous()) {
+      return #err("Sign in with an identity provider first");
+    };
+
+    let identityKey = caller.toText();
+    let account = switch (AuthLib.findAccountByIdentity(accounts, identityKey)) {
+      case (?existing) { existing };
+      case null {
+        AuthLib.createIdentityAccount(accounts, requestedUsername, identityKey, #player);
+      };
+    };
+
+    if (account.isDisabled) {
+      return #err("Account is disabled");
+    };
+
+    let token = AuthLib.generateToken(account.username, Time.now());
+    AuthLib.createSession(sessions, token, account.username);
+    #ok(token);
   };
 
   public func logout(token : Text) : async () {
