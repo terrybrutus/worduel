@@ -233,6 +233,7 @@ service : {
         }) query;
   getMyStats: (token: text) -> (opt PlayerStats);
   getRematchOffer: (originalGameId: GameId) -> (opt RematchOffer) query;
+  getUsernameForSession: (token: text) -> (opt text) query;
   getWordCount: () -> (nat) query;
   importWords: (sessionToken: text, words: vec text) ->
    (record {
@@ -249,6 +250,7 @@ service : {
   listAllPlayers: (token: text) -> (vec PlayerInfo);
   listPublicGames: () -> (vec GameSummary) query;
   login: (username: text, password: text) -> (LoginResult);
+  loginWithIdentity: (requestedUsername: text) -> (LoginResult);
   logout: (token: text) -> ();
   promoteToAdmin: (username: text, secretKey: text) ->
    (variant {

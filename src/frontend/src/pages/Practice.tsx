@@ -608,7 +608,7 @@ export default function Practice() {
                 mode="practice"
               />
             )}
-            {!user && (
+            {!user && !isFinished && (
               <button
                 type="button"
                 onClick={() => void navigate({ to: "/login" })}

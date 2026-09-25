@@ -341,6 +341,7 @@ export interface backendInterface {
     getMyOpponentStats(token: string): Promise<Array<[string, OpponentRecord]>>;
     getMyStats(token: string): Promise<PlayerStats | null>;
     getRematchOffer(originalGameId: GameId): Promise<RematchOffer | null>;
+    getUsernameForSession(token: string): Promise<string | null>;
     getWordCount(): Promise<bigint>;
     importWords(sessionToken: string, words: Array<string>): Promise<{
         added: bigint;
@@ -354,6 +355,7 @@ export interface backendInterface {
     listAllPlayers(token: string): Promise<Array<PlayerInfo>>;
     listPublicGames(): Promise<Array<GameSummary>>;
     login(username: string, password: string): Promise<LoginResult>;
+    loginWithIdentity(requestedUsername: string): Promise<LoginResult>;
     logout(token: string): Promise<void>;
     promoteToAdmin(username: string, secretKey: string): Promise<{
         __kind__: "ok";
@@ -673,6 +675,20 @@ export class Backend implements backendInterface {
             return from_candid_opt_n48(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getUsernameForSession(arg0: string): Promise<string | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getUsernameForSession(arg0);
+                return from_candid_opt_n25(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getUsernameForSession(arg0);
+            return from_candid_opt_n25(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getWordCount(): Promise<bigint> {
         if (this.processError) {
             try {
@@ -787,6 +803,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.login(arg0, arg1);
+            return from_candid_LoginResult_n52(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async loginWithIdentity(arg0: string): Promise<LoginResult> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.loginWithIdentity(arg0);
+                return from_candid_LoginResult_n52(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.loginWithIdentity(arg0);
             return from_candid_LoginResult_n52(this._uploadFile, this._downloadFile, result);
         }
     }

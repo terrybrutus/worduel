@@ -1,10 +1,15 @@
-import { useActor } from "@caffeineai/core-infrastructure";
+import {
+  useActor,
+  useInternetIdentity,
+} from "@caffeineai/core-infrastructure";
 import {
   type ReactNode,
   createContext,
   createElement,
   useCallback,
   useContext,
+  useEffect,
+  useRef,
   useState,
 } from "react";
 import { Role, createActor } from "../backend";
@@ -23,12 +28,14 @@ export interface AuthContextValue {
   isLoading: boolean;
   isConnecting: boolean;
   login: (username: string, password: string) => Promise<void>;
+  loginWithProvider: (requestedUsername?: string) => Promise<void>;
   logout: () => Promise<void>;
   register: (username: string, password: string) => Promise<void>;
   promoteToAdmin: (secretKey: string) => Promise<void>;
 }
 
 const USER_KEY = "__worduel_user__";
+const PENDING_PROVIDER_USERNAME_KEY = "__worduel_pending_provider_username__";
 
 export const AuthContext = createContext<AuthContextValue>({
   user: null,
@@ -37,6 +44,7 @@ export const AuthContext = createContext<AuthContextValue>({
   isLoading: false,
   isConnecting: false,
   login: async () => {},
+  loginWithProvider: async () => {},
   logout: async () => {},
   register: async () => {},
   promoteToAdmin: async () => {},
@@ -49,7 +57,9 @@ function useBackendActor() {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const internetIdentity = useInternetIdentity();
   const { actor, isFetching } = useBackendActor();
+  const identityLoginInFlight = useRef(false);
   const [user, setUser] = useState<AuthUser | null>(() => {
     try {
       const raw = localStorage.getItem(USER_KEY);
@@ -76,6 +86,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (user?.username != null &&
       localStorage.getItem(`admin_promoted_${user.username}`) === "true");
 
+  const defaultProviderUsername = useCallback(() => {
+    const principal =
+      internetIdentity.identity?.getPrincipal().toString() ?? "player";
+    return `player-${principal.slice(0, 8)}`;
+  }, [internetIdentity.identity]);
+
+  const finishProviderLogin = useCallback(
+    async (requestedUsername?: string) => {
+      if (!actor) throw new Error("Connecting to server\u2026");
+      if (!internetIdentity.isAuthenticated) {
+        throw new Error("Provider sign-in is not complete yet.");
+      }
+
+      setIsLoading(true);
+      try {
+        const fallbackUsername = requestedUsername?.trim()
+          ? requestedUsername.trim()
+          : defaultProviderUsername();
+        const result = await actor.loginWithIdentity(fallbackUsername);
+        if (result.__kind__ === "err") throw new Error(result.err);
+        const token = result.ok;
+        const backendUsername =
+          (await actor.getUsernameForSession(token)) ?? fallbackUsername;
+        localStorage.setItem(SESSION_KEY, token);
+        setSessionToken(token);
+        mergeGuestWordBankIntoUser(backendUsername);
+        const authUser: AuthUser = {
+          username: backendUsername,
+          role: Role.player,
+        };
+        localStorage.setItem(USER_KEY, JSON.stringify(authUser));
+        localStorage.removeItem(PENDING_PROVIDER_USERNAME_KEY);
+        setUser(authUser);
+        setAdminPromoted(false);
+      } finally {
+        setIsLoading(false);
+        identityLoginInFlight.current = false;
+      }
+    },
+    [actor, defaultProviderUsername, internetIdentity.isAuthenticated],
+  );
+
+  useEffect(() => {
+    if (
+      user ||
+      !actor ||
+      !internetIdentity.isAuthenticated ||
+      identityLoginInFlight.current
+    ) {
+      return;
+    }
+
+    const pendingUsername =
+      localStorage.getItem(PENDING_PROVIDER_USERNAME_KEY) ?? undefined;
+    identityLoginInFlight.current = true;
+    void finishProviderLogin(pendingUsername);
+  }, [actor, finishProviderLogin, internetIdentity.isAuthenticated, user]);
+
   const login = useCallback(
     async (username: string, password: string) => {
       if (!actor) throw new Error("Connecting to server\u2026");
@@ -101,6 +169,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     },
     [actor],
+  );
+
+  const loginWithProvider = useCallback(
+    async (requestedUsername?: string) => {
+      if (requestedUsername?.trim()) {
+        localStorage.setItem(
+          PENDING_PROVIDER_USERNAME_KEY,
+          requestedUsername.trim(),
+        );
+      }
+
+      if (!internetIdentity.isAuthenticated) {
+        internetIdentity.login();
+        return;
+      }
+
+      await finishProviderLogin(requestedUsername);
+    },
+    [finishProviderLogin, internetIdentity],
   );
 
   const register = useCallback(
@@ -136,10 +223,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(PENDING_PROVIDER_USERNAME_KEY);
+    if (internetIdentity.isAuthenticated) {
+      internetIdentity.clear();
+    }
     setSessionToken(null);
     setUser(null);
     setAdminPromoted(false);
-  }, [actor]);
+  }, [actor, internetIdentity]);
 
   // Call the BACKEND promoteToAdmin endpoint so the account role is actually
   // changed to #admin server-side. Then re-issue a fresh session token so all
@@ -175,6 +266,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
     isConnecting: isFetching,
     login,
+    loginWithProvider,
     logout,
     register,
     promoteToAdmin,
