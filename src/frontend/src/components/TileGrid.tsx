@@ -1,5 +1,6 @@
 import { TileState } from "../backend";
 import type { Guess } from "../backend";
+import { SubmittedWord } from "./SubmittedWord";
 
 interface TileGridProps {
   guesses: Guess[];
@@ -172,7 +173,13 @@ export function TileGrid({
               <span className="flex-shrink-0 w-4 h-4" />
             ) : null}
 
-            {row.letters.map((letter, colIdx) => (
+            {row.isSubmitted && !hideSubmittedLetters ? (
+              <SubmittedWord word={guesses[rowIdx].word}>
+                {row.letters.map((letter, colIdx) => (
+                  <TileCell key={colIdx} letter={letter} state={row.states[colIdx]} flipDelay={isFlippingRow ? colIdx * 0.1 : 0} isFlipping={isFlippingRow} />
+                ))}
+              </SubmittedWord>
+            ) : row.letters.map((letter, colIdx) => (
               <TileCell
                 // biome-ignore lint/suspicious/noArrayIndexKey: tile columns are positional
                 key={colIdx}
