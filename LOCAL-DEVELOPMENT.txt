@@ -1,0 +1,30 @@
+Worduel local preview
+Instance name: worduel-local
+URL: http://127.0.0.1:43992
+
+Mac setup
+1. Install Node.js 22 LTS and pnpm 9 if they are not already installed.
+2. Unzip this package into its own Worduel folder.
+3. Open Terminal in that folder and run:
+   pnpm install --frozen-lockfile
+   pnpm dev:local
+4. Open http://127.0.0.1:43992 in your browser.
+5. Press Control-C in Terminal to stop this instance.
+
+The dedicated port separates this frontend's browser storage from other local
+apps on different ports. If the port is occupied, launch fails explicitly; it
+does not stop another app or silently choose another address.
+
+Frontend changes refresh automatically while this command runs. Install
+dependencies on the Mac itself; do not copy Windows node_modules.
+
+This package includes frontend and Motoko source. The preview command starts
+the frontend only. src/frontend/env.json currently has empty backend settings.
+Guest practice runs locally; account login and multiplayer require a configured
+and deployed backend. This launcher does not start or claim an isolated canister.
+Guest words and account data in Windows browser storage do not travel in this ZIP.
+
+Last completed: provider identity sign-in and duplicate guest sign-in CTA fix.
+Next proposed: simplify guest practice by removing the computer-opponent framing.
+Email/Google availability in the configured identity provider still needs live
+verification; compiling the button does not establish provider support.

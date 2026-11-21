@@ -31,3 +31,4 @@ args = [
 
 [dependencies]
 core = "2.2.0"
+serde-core = "0.1.4"

@@ -1,4 +1,5 @@
 import { TileState } from "../backend";
+import type { CSSProperties } from "react";
 import type { Guess } from "../backend";
 import { SubmittedWord } from "./SubmittedWord";
 
@@ -14,6 +15,7 @@ interface TileGridProps {
   showPlayerLabels?: boolean;
   label?: string;
   hideSubmittedLetters?: boolean;
+  wordLength?: number;
 }
 
 function getTileClass(state: TileState | null): string {
@@ -50,11 +52,7 @@ export function TileCell({
   return (
     <div
       className={`${inputClass} select-none`}
-      style={
-        isFlipping && hasState
-          ? { animation: `tileFlip 0.6s ease-in-out ${flipDelay}s both` }
-          : undefined
-      }
+      style={{ width: "var(--tile-size, 3rem)", height: "var(--tile-size, 3rem)", ...(isFlipping && hasState ? { animation: `tileFlip 0.6s ease-in-out ${flipDelay}s both` } : {}) }}
       aria-label={letter ? `${letter}${state ? `, ${state}` : ""}` : "empty"}
     >
       {letter && (
@@ -97,7 +95,9 @@ export function TileGrid({
   showPlayerLabels = false,
   label,
   hideSubmittedLetters = false,
+  wordLength = 5,
 }: TileGridProps) {
+  const WORD_LENGTH = wordLength;
   // isShaking shakes the current input row (the row the player is typing on)
   const inputRowIndex = guesses.length;
   const rows: {
@@ -147,6 +147,7 @@ export function TileGrid({
     <div
       className="flex flex-col items-center gap-1"
       data-ocid="game.tile_grid"
+      style={wordLength > 5 ? { width: "100%", "--tile-size": `min(2.75rem, calc((100vw - 72px) / ${wordLength} - 4px))` } as CSSProperties : undefined}
     >
       {label && <p className="result-player-label mb-1">{label}</p>}
       {rows.map((row, rowIdx) => {

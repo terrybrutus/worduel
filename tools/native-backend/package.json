@@ -1,0 +1,7 @@
+{
+  "name": "worduel-native-backend-tools",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.12" },
+  "devDependencies": { "@dfinity/pic": "0.25.0", "@icp-sdk/core": "6.1.1" }
+}

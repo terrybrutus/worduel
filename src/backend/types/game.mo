@@ -87,6 +87,7 @@ module {
 
   // Returned to the requesting player — opponent letters hidden in versus
   public type GameState = {
+    wordLength               : Nat;
     id                       : GameId;
     roomCode                 : RoomCode;
     mode                     : GameMode;

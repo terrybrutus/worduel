@@ -7,6 +7,12 @@ import Map "mo:core/Map";
 import List "mo:core/List";
 import Set "mo:core/Set";
 import Time "mo:core/Time";
+import Entropy "../lib/entropy";
+import Text "mo:core/Text";
+import Nat "mo:core/Nat";
+import Int "mo:core/Int";
+import Array "mo:core/Array";
+import Iter "mo:core/Iter";
 
 mixin (
   sessions : Map.Map<Types.GameId, Types.GameSession>,
@@ -25,6 +31,8 @@ mixin (
   // statsStore and opponentStore: injected so recordHistory can auto-update stats
   statsStore : Map.Map<Text, AuthLib.PlayerStatsInternal>,
   opponentStore : Map.Map<Text, Map.Map<Text, AuthLib.OpponentRecordInternal>>,
+  accounts : Map.Map<Text, AuthLib.PlayerAccount>,
+  recordedGames : Set.Set<Text>,
 ) {
 
   func nextCounter() : Nat {
@@ -42,7 +50,10 @@ mixin (
   };
 
   func resolvePlayer(sessionToken : Text) : ?Text {
-    authSessions.get(sessionToken);
+    switch (AuthLib.resolveSession(authSessions,sessionToken)) {
+      case null null;
+      case (?name) { switch (accounts.get(name)) { case (?account) { if (account.isDisabled) null else ?name }; case null null } };
+    };
   };
 
   func addHistoryEntry(playerName : Types.PlayerName, entry : Types.GameHistoryEntry) {
@@ -63,6 +74,8 @@ mixin (
   ) {
     // Only record history for games that had two players (not cancelled waiting games)
     if (session.players.size() < 2) { return };
+    if (recordedGames.contains(session.id)) { return };
+    recordedGames.add(session.id);
     let p1Name = session.players[0];
     let p2Name = session.players[1];
 
@@ -165,16 +178,26 @@ mixin (
     sessionToken : Text,
     mode : Types.GameMode,
   ) : async Types.CreateGameResult {
+    await createSizedGame(sessionToken,mode,5,false);
+  };
+
+  public func createSizedGame(sessionToken : Text, mode : Types.GameMode, length : Nat, isPrivate : Bool) : async Types.CreateGameResult {
+    if (length < 5 or length > 7) return #err("Choose 5, 6, or 7 letters");
     switch (resolvePlayer(sessionToken)) {
       case null { #err("Invalid or expired session") };
       case (?playerName) {
+        let nonce = await Entropy.hex();
+        if (resolvePlayer(sessionToken) != ?playerName) { return #err("Session expired") };
         let counter = nextCounter();
         let now = Time.now();
         let gameId = GameLib.generateGameId(counter);
-        let roomCode = GameLib.generateRoomCode(counter, now);
-        let session = GameLib.newPublicSession(gameId, roomCode, playerName, mode, pendingAnswer, now);
+        let roomCode = GameLib.roomCodeFromSecret(nonce);
+        let answer = WordPoolLib.getAnswerWordsForLength(length)[0];
+        let session = if (isPrivate) GameLib.newPrivateSession(gameId,roomCode,playerName,mode,answer,nonce,now)
+          else GameLib.newPublicSession(gameId,roomCode,playerName,mode,answer,now);
         sessions.add(gameId, session);
-        #ok({ gameId; roomCode; joinToken = "" });
+        if (isPrivate) joinTokens.add(gameId,nonce);
+        #ok({ gameId; roomCode; joinToken = if (isPrivate) nonce else "" });
       };
     };
   };
@@ -183,21 +206,7 @@ mixin (
     sessionToken : Text,
     mode : Types.GameMode,
   ) : async Types.CreatePrivateGameResult {
-    switch (resolvePlayer(sessionToken)) {
-      case null { #err("Invalid or expired session") };
-      case (?playerName) {
-        let counter = nextCounter();
-        let now = Time.now();
-        let gameId = GameLib.generateGameId(counter);
-        let roomCode = GameLib.generateRoomCode(counter, now);
-        let salt = now.toNat() % 1_000_000_007;
-        let joinToken = GameLib.generateJoinToken(counter, salt);
-        let session = GameLib.newPrivateSession(gameId, roomCode, playerName, mode, pendingAnswer, joinToken, now);
-        sessions.add(gameId, session);
-        joinTokens.add(gameId, joinToken);
-        #ok({ gameId; roomCode; joinToken });
-      };
-    };
+    await createSizedGame(sessionToken,mode,5,true);
   };
 
   // joinGame: unified join function.
@@ -220,7 +229,7 @@ mixin (
             // Room code join — works for both public AND private games.
             // P2 who has the room code can always join regardless of isPublic flag.
             let matchOpt = sessions.entries().find(func((_id, s)) {
-              s.roomCode == roomCode and s.status == #waiting
+              s.roomCode == roomCode and s.status == #waiting and (s.isPublic or s.roomCode.size() == 17)
             });
             switch (matchOpt) {
               case null { #err("Game not found or already started") };
@@ -230,7 +239,7 @@ mixin (
                 };
                 // Pick a pair-specific word when P2 joins
                 let host = if (session.players.size() >= 1) { session.players[0] } else { "host" };
-                let freshAnswer = pickWordForPair(WordPoolLib.getAnswerWords(), host, playerName);
+                let freshAnswer = pickWordForPair(WordPoolLib.getAnswerWordsForLength(session.answer.size()), host, playerName);
                 session.answer := freshAnswer;
                 session.players := session.players.concat([playerName]);
                 session.status := #playing;
@@ -254,6 +263,7 @@ mixin (
     joinToken : Text,
     gameIdHint : ?Types.GameId,
   ) : async Types.JoinResult {
+    if (joinToken.size() != 64) return #err("This older invite has expired. Ask the host to create a new private game.");
     switch (resolvePlayer(sessionToken)) {
       case null { #err("Invalid or expired session") };
       case (?playerName) {
@@ -362,7 +372,7 @@ mixin (
                   // playerCount < 2 and game is in #waiting or #playing
                   // — allow the join regardless of status
                   let host = if (playerCount >= 1) { session.players[0] } else { "host" };
-                  let freshAnswer = pickWordForPair(WordPoolLib.getAnswerWords(), host, playerName);
+                  let freshAnswer = pickWordForPair(WordPoolLib.getAnswerWordsForLength(session.answer.size()), host, playerName);
                   session.answer := freshAnswer;
                   session.players := session.players.concat([playerName]);
                   // Ensure status is #playing once P2 joins
@@ -386,12 +396,13 @@ mixin (
     sessionToken : Text,
     gameId : Types.GameId,
   ) : async Types.JoinResult {
-    switch (authSessions.get(sessionToken)) {
+    switch (resolvePlayer(sessionToken)) {
       case null { #err("Invalid or expired session") };
       case (?playerName) {
         switch (sessions.get(gameId)) {
           case null { #err("Game not found") };
           case (?session) {
+            if (GameLib.getPlayerNum(session,playerName) == 0) { return #err("You are not a player in this game") };
             #ok(GameLib.toGameState(session, ?playerName));
           };
         };
@@ -403,12 +414,13 @@ mixin (
     gameId : Types.GameId,
     sessionToken : Text,
   ) : async ?Types.GameStateWithRole {
-    switch (authSessions.get(sessionToken)) {
+    switch (resolvePlayer(sessionToken)) {
       case null { null };
       case (?playerName) {
         switch (sessions.get(gameId)) {
           case null { null };
           case (?session) {
+            if (GameLib.getPlayerNum(session,playerName) == 0) { return null };
             let gs = GameLib.toGameState(session, ?playerName);
             ?{ gameState = gs; isHost = gs.isHost };
           };
@@ -428,7 +440,7 @@ mixin (
   // getMyActiveGames: strictly returns only #waiting or #playing games.
   // Cancelled, expired, won, and lost games are never included.
   public query func getMyActiveGames(sessionToken : Text) : async [Types.GameSummary] {
-    switch (authSessions.get(sessionToken)) {
+    switch (resolvePlayer(sessionToken)) {
       case null { [] };
       case (?playerName) {
         sessions.values()
@@ -462,7 +474,8 @@ mixin (
             switch (GameLib.submitGuess(session, playerName, normalized, now)) {
               case (#err(msg)) { #err(#gameError(msg)) };
               case (#notYourTurn) { #err(#notYourTurn) };
-              case (#ok((_guess, _status))) {
+              case (#ok((_guess, newStatus))) {
+                if (newStatus != #playing) { recordHistory(session,now,#normalPlay,#normalPlay) };
                 #ok(GameLib.toGameState(session, ?playerName));
               };
             };
@@ -493,6 +506,9 @@ mixin (
                 // Also clear any join token so the invite link stops working.
                 sessions.remove(gameId);
                 joinTokens.remove(gameId);
+                for ((original,offer) in rematchOffers.entries().toArray().values()) {
+                  if (offer.newGameId == gameId) rematchOffers.remove(original);
+                };
                 #ok;
               };
               case (#keep) {
@@ -517,14 +533,35 @@ mixin (
         switch (sessions.get(gameId)) {
           case null { #err("Game not found") };
           case (?oldSession) {
+            if (GameLib.getPlayerNum(oldSession,playerName) == 0) { return #err("You are not a player in this game") };
+            if (oldSession.status == #playing or oldSession.status == #waiting) { return #err("Finish the round before requesting a rematch") };
+            switch (rematchOffers.get(gameId)) {
+              case (?offer) {
+                if (offer.offeredBy != playerName) {
+                  switch (await acceptRematch(sessionToken,gameId)) { case (#err(message)) return #err(message); case (#ok(_)) {} };
+                };
+                return #ok({ newGameId = offer.newGameId; roomCode = offer.roomCode; joinToken = offer.joinToken });
+              };
+              case null {};
+            };
+            let nonce = await Entropy.hex();
+            if (resolvePlayer(sessionToken) != ?playerName) { return #err("Session expired") };
+            switch (rematchOffers.get(gameId)) {
+              case (?offer) {
+                if (offer.offeredBy != playerName) {
+                  switch (await acceptRematch(sessionToken,gameId)) { case (#err(message)) return #err(message); case (#ok(_)) {} };
+                };
+                return #ok({ newGameId = offer.newGameId; roomCode = offer.roomCode; joinToken = offer.joinToken });
+              };
+              case null {};
+            };
             let counter = nextCounter();
             let now = Time.now();
             let newGameId = GameLib.generateGameId(counter);
-            let newRoomCode = GameLib.generateRoomCode(counter, now);
-            let salt = now.toNat() % 1_000_000_007;
-            let joinToken = GameLib.generateJoinToken(counter, salt);
+            let newRoomCode = GameLib.roomCodeFromSecret(nonce);
+            let joinToken = nonce;
             // Create the new session with only the requester (host) — PB joins via acceptRematch
-            let newSession = GameLib.newPrivateSession(newGameId, newRoomCode, playerName, oldSession.mode, pendingAnswer, joinToken, now);
+            let newSession = GameLib.newPrivateSession(newGameId, newRoomCode, playerName, oldSession.mode, WordPoolLib.getAnswerWordsForLength(oldSession.answer.size())[0], joinToken, now);
             sessions.add(newGameId, newSession);
             joinTokens.add(newGameId, joinToken);
             // Store the offer keyed by the ORIGINAL gameId so PB can find it by polling
@@ -544,7 +581,19 @@ mixin (
 
   // getRematchOffer: allows PB to poll for a pending rematch offer from their finished game.
   public query func getRematchOffer(originalGameId : Types.GameId) : async ?Types.RematchOffer {
-    rematchOffers.get(originalGameId);
+    ignore originalGameId; null;
+  };
+  public query func getMyRematchOffer(sessionToken : Text, originalGameId : Types.GameId) : async ?Types.RematchOffer {
+    switch (resolvePlayer(sessionToken),sessions.get(originalGameId)) {
+      case (?name,?game) {
+        if (GameLib.getPlayerNum(game,name) == 0) return null;
+        switch (rematchOffers.get(originalGameId)) {
+          case (?offer) { switch (sessions.get(offer.newGameId)) { case (?next) { if (next.status == #waiting and next.players.size() < 2 and offer.offeredBy != name) ?offer else null }; case null null } };
+          case null null;
+        };
+      };
+      case _ null;
+    };
   };
 
   // acceptRematch: PB accepts the rematch offer — auto-joins the new game and clears the offer.
@@ -555,6 +604,10 @@ mixin (
     switch (resolvePlayer(sessionToken)) {
       case null { #err("Invalid or expired session") };
       case (?playerName) {
+        switch (sessions.get(originalGameId)) {
+          case (?original) { if (GameLib.getPlayerNum(original,playerName) == 0) { return #err("You are not a player in this game") } };
+          case null { return #err("Game not found") };
+        };
         switch (rematchOffers.get(originalGameId)) {
           case null { #err("No rematch offer found for this game") };
           case (?offer) {
@@ -567,12 +620,12 @@ mixin (
                 };
                 // Idempotent: if already in the new game, just return
                 if (newSession.players.find(func(p) { p == playerName }) != null) {
-                  rematchOffers.remove(originalGameId);
                   return #ok({ newGameId = offer.newGameId });
                 };
                 // Add PB to the new game
                 let host = if (newSession.players.size() >= 1) { newSession.players[0] } else { "host" };
-                let freshAnswer = pickWordForPair(WordPoolLib.getAnswerWords(), host, playerName);
+                if (newSession.players.size() >= 2 or newSession.status != #waiting) return #err("Rematch is no longer available");
+                let freshAnswer = pickWordForPair(WordPoolLib.getAnswerWordsForLength(newSession.answer.size()), host, playerName);
                 newSession.answer := freshAnswer;
                 newSession.players := newSession.players.concat([playerName]);
                 if (newSession.status == #waiting) {
@@ -581,7 +634,6 @@ mixin (
                 let now = Time.now();
                 newSession.lastMoveAt := now;
                 // Clear the offer — both players are now in the new game
-                rematchOffers.remove(originalGameId);
                 #ok({ newGameId = offer.newGameId });
               };
             };
@@ -594,6 +646,7 @@ mixin (
   // getGameByJoinToken: look up the gameId for a given join token.
   // Used by the frontend when the invite URL contains only the token (no gameId query param).
   public query func getGameByJoinToken(joinToken : Types.JoinToken) : async ?Types.GameId {
+    if (joinToken.size() != 64) return null;
     switch (sessions.entries().find(func((_id, s)) {
       switch (s.joinToken) {
         case (?t) { t == joinToken };
@@ -606,6 +659,10 @@ mixin (
   };
 
   public query func getMyGameHistory(playerName : Types.PlayerName) : async [Types.GameHistoryEntry] {
+    ignore playerName; [];
+  };
+  public query func getSessionGameHistory(token : Text) : async [Types.GameHistoryEntry] {
+    let playerName = switch (resolvePlayer(token)) { case (?name) name; case null return [] };
     switch (gameHistory.get(playerName)) {
       case null { [] };
       case (?entries) { entries.toArray() };
@@ -616,6 +673,7 @@ mixin (
     let now = Time.now();
     for (session in sessions.values()) {
       GameLib.checkTurnExpiry(session, now);
+      if (session.status != #playing and session.status != #waiting) { recordHistory(session,now,#normalPlay,#normalPlay) };
     };
   };
 };

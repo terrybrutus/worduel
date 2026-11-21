@@ -1,0 +1,57 @@
+Worduel: local AI dictionary explanations
+
+This integration runs only in the local Vite server, not the deployed canister.
+Use http://127.0.0.1:43992/lobby on this Windows computer.
+
+To activate, create src/frontend/.env.local in the Worduel repository with:
+ANTHROPIC_API_KEY=your-key-here
+WORDUEL_AI_DAILY_LIMIT=50
+WORDUEL_AI_MONTHLY_LIMIT=500
+
+Never prefix the key with VITE_. Never paste a key into chat or frontend code.
+The .env.local file is ignored by Git and denied to browser requests.
+Restart the existing Worduel server after setting the key. Do not start a second
+instance or delete its live game lock file. Existing matches persist on disk.
+
+Claude Haiku 4.5 receives only a word and its verified dictionary meaning.
+It simplifies that meaning and writes one example; it never decides word validity.
+For saved words without authored quizzes, the same local service can generate
+related wrong choices and an optional contextual sentence question. It receives
+the word, saved meaning, and dictionary meaning, not account information. The
+dictionary meaning is authoritative; mismatched or unsupported senses fall back.
+Question results are cached by word plus saved meaning and reused across players,
+retries, and restarts. Definitions and questions share the daily/monthly attempt
+limits. Quiz generation has a separate 1,000-output-token maximum per request.
+Question structure, duplicates, markup, and answer leaks are checked in code;
+these checks do not prove semantic accuracy. Live generated questions still need
+quality review once an API key is configured. Users see a fallback notice when
+advanced questions are unavailable, rather than a claim of universal coverage.
+Missing dictionary entries do not generate AI requests. Original meanings remain
+available, with dictionary attribution and an AI label on modified explanations.
+
+Quiz candidates receive a separate ambiguity-review request before use. Ambiguous
+sentences are omitted; ambiguous meanings fall back to standard choices. The review
+uses up to 128 output tokens and counts against the SAME daily/monthly attempt
+limits as generation and simplification. A candidate waiting for review is cached
+so a later review does not regenerate it. AI screening can still miss mistakes.
+
+The local server shares .worduel-meanings.json across every player/browser.
+Successful AI explanations persist across restarts, with no automatic expiration.
+Do not delete this cache: deleting it allows the same words to be charged again.
+Concurrent lookups of the same word share one request. No automatic paid retries.
+Failed attempts count toward UTC daily/monthly limits and have a cooldown.
+Limits are counts, not guaranteed dollar limits; also set a provider spending cap.
+Set either limit to 0 to disable new AI generation while retaining cached results.
+Dictionary text still works without a key, on failure, or after reaching a limit.
+Cache corruption or write failure disables AI rather than risking repeat charges.
+
+The AI cache, game state, and local key files are not served to browsers or tracked
+by Git. Ordinary players receive only the requested explanation, not credentials,
+cache files, other words, account information, or usage records.
+
+The private key has been configured, never embedded in frontend source. Live
+checks on November 20, 2026 verified definition simplification and an example;
+the repeated lookup added zero paid attempts. Quiz screening rejected ambiguous
+live drafts rather than presenting them as reliable questions. Automated tests
+use simulated provider responses so regression runs do not incur AI charges.
+There is no in-game key-storage UI; that remains deferred as requested.

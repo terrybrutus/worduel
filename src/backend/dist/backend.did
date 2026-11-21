@@ -1,4 +1,4 @@
-type WordValidationDebug = 
+type WordValidationDebug =
  record {
    acceptedAsAnswer: bool;
    acceptedAsGuess: bool;
@@ -14,39 +14,54 @@ type WordValidationDebug =
    word: text;
  };
 type Timestamp = int;
-type TileState = 
+type TileState =
  variant {
    absent;
    correct;
    present;
  };
 type SessionToken = text;
+type Sentence =
+ record {
+   alternatives: vec Alternative;
+   "text": text;
+ };
 type RoomCode = text;
-type Role = 
+type Role =
  variant {
    admin;
    player;
  };
-type RematchOffer = 
+type RematchOffer =
  record {
    joinToken: JoinToken;
    newGameId: GameId;
    offeredBy: PlayerName;
    roomCode: RoomCode;
  };
-type RegisterResult = 
+type RegisterResult =
  variant {
    err: text;
    ok: SessionToken;
  };
-type PlayerStats = 
+type Quiz =
+ record {
+   aiGenerated: bool;
+   alternatives: vec Alternative;
+   savedDefinition: text;
+   sentence: opt Sentence;
+   source: text;
+   sourceUrl: text;
+   word: text;
+ };
+type PlayerStats =
  record {
    bestStreak: nat;
    currentStreak: nat;
    totalLosses: nat;
    totalWins: nat;
  };
-type PlayerOutcome = 
+type PlayerOutcome =
  variant {
    lost;
    opponentWon;
@@ -54,7 +69,7 @@ type PlayerOutcome =
    won;
  };
 type PlayerName = text;
-type PlayerInfo = 
+type PlayerInfo =
  record {
    createdAt: Timestamp;
    isDisabled: bool;
@@ -62,46 +77,55 @@ type PlayerInfo =
    stats: PlayerStats;
    username: text;
  };
-type OpponentRecord = 
+type OpponentRecord =
  record {
    losses: nat;
    wins: nat;
  };
-type LoginResult = 
+type Meaning =
+ record {
+   aiEnhanced: bool;
+   definition: text;
+   example: text;
+   originalDefinition: text;
+   source: text;
+   sourceUrl: text;
+ };
+type LoginResult =
  variant {
    err: text;
    ok: SessionToken;
  };
-type LeaveResult = 
+type LeaveResult =
  variant {
    err: text;
    ok;
  };
 type JoinToken = text;
-type JoinResult = 
+type JoinResult =
  variant {
    err: text;
    ok: GameState;
  };
-type GuessResultV2 = 
+type GuessResultV2 =
  variant {
    err: GuessError;
    ok: GameState;
  };
-type GuessError = 
+type GuessError =
  variant {
    gameError: text;
    notAWord;
    notYourTurn;
  };
-type Guess = 
+type Guess =
  record {
    playerNum: nat;
    states: vec TileState;
    timestamp: Timestamp;
    word: text;
  };
-type GameSummary = 
+type GameSummary =
  record {
    createdAt: Timestamp;
    id: GameId;
@@ -112,7 +136,7 @@ type GameSummary =
    status: GameStatus;
    waitingForMove: bool;
  };
-type GameStatus = 
+type GameStatus =
  variant {
    expired;
    lost;
@@ -120,12 +144,12 @@ type GameStatus =
    waiting;
    won: nat;
  };
-type GameStateWithRole = 
+type GameStateWithRole =
  record {
    gameState: GameState;
    isHost: bool;
  };
-type GameState = 
+type GameState =
  record {
    answer: opt text;
    coopGuesses: vec Guess;
@@ -144,14 +168,15 @@ type GameState =
    players: vec PlayerName;
    roomCode: RoomCode;
    status: GameStatus;
+   wordLength: nat;
  };
-type GameMode = 
+type GameMode =
  variant {
    coop;
    versus;
  };
 type GameId = text;
-type GameHistoryEntry = 
+type GameHistoryEntry =
  record {
    endedAt: Timestamp;
    exitReason: ExitReason;
@@ -163,7 +188,7 @@ type GameHistoryEntry =
    won: bool;
  };
 type ExitReason = text;
-type CreatePrivateGameResult = 
+type CreatePrivateGameResult =
  variant {
    err: text;
    ok: record {
@@ -172,7 +197,7 @@ type CreatePrivateGameResult =
          roomCode: RoomCode;
        };
  };
-type CreateGameResult = 
+type CreateGameResult =
  variant {
    err: text;
    ok: record {
@@ -181,17 +206,22 @@ type CreateGameResult =
          roomCode: RoomCode;
        };
  };
-type AuthResult = 
+type AuthResult =
  variant {
    err: text;
    ok;
  };
-type AdminSetupInfo = 
+type Alternative =
+ record {
+   definition: text;
+   word: text;
+ };
+type AdminSetupInfo =
  record {
    initialPassword: text;
    username: text;
  };
-type AcceptRematchResult = 
+type AcceptRematchResult =
  variant {
    err: text;
    ok: record {newGameId: GameId;};
@@ -203,6 +233,8 @@ service : {
                                                   err: text;
                                                   ok: nat;
                                                 });
+  appCall: (token: text, method: text, rawArgs: text) -> (text);
+  challengeCall: (token: text, method: text, rawArgs: text) -> (text);
   changePassword: (token: text, oldPassword: text, newPassword: text) ->
    (AuthResult);
   checkAndForceTimeouts: () -> ();
@@ -210,6 +242,8 @@ service : {
    (CreatePrivateGameResult);
   createPublicGame: (sessionToken: text, mode: GameMode) ->
    (CreateGameResult);
+  createSizedGame: (sessionToken: text, mode: GameMode, length: nat,
+   isPrivate: bool) -> (CreateGameResult);
   disablePlayer: (token: text, username: text) -> (AuthResult);
   enablePlayer: (token: text, username: text) -> (AuthResult);
   getAdminSetupInfo: () -> (opt AdminSetupInfo) query;
@@ -231,10 +265,22 @@ service : {
           text;
           OpponentRecord;
         }) query;
+  getMyProfile: (token: text) -> (opt PlayerInfo) query;
+  getMyRematchOffer: (sessionToken: text, originalGameId: GameId) ->
+   (opt RematchOffer) query;
   getMyStats: (token: text) -> (opt PlayerStats);
   getRematchOffer: (originalGameId: GameId) -> (opt RematchOffer) query;
+  getSessionGameHistory: (token: text) -> (vec GameHistoryEntry) query;
   getUsernameForSession: (token: text) -> (opt text) query;
   getWordCount: () -> (nat) query;
+  importLegacyCache: (entries: vec record {
+                                     text;
+                                     Meaning;
+                                   }, questions: vec record {
+                                                       text;
+                                                       Quiz;
+                                                     }, day: int,
+   dailyAttempts: nat, monthlyAttempts: nat) -> (bool);
   importWords: (sessionToken: text, words: vec text) ->
    (record {
       added: nat;
@@ -252,6 +298,7 @@ service : {
   login: (username: text, password: text) -> (LoginResult);
   loginWithIdentity: (requestedUsername: text) -> (LoginResult);
   logout: (token: text) -> ();
+  meaningCall: (token: text, method: text, rawArgs: text) -> (text);
   promoteToAdmin: (username: text, secretKey: text) ->
    (variant {
       err: text;
@@ -261,6 +308,8 @@ service : {
             role: text;
           };
     });
+  provisionIdentityAdmin: (username: text, identity: principal) ->
+   (AuthResult);
   recordResult: (token: text, win: bool, opponentName: text, outcome:
    variant {
      draw;
@@ -268,6 +317,10 @@ service : {
      win;
    }) -> (AuthResult);
   register: (username: text, password: text) -> (RegisterResult);
+  registerGuest: () -> (record {
+                          token: text;
+                          username: text;
+                        });
   removeWord: (sessionToken: text, word: text) ->
    (variant {
       err: text;

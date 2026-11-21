@@ -3,6 +3,11 @@ import Common "../types/common";
 import Map "mo:core/Map";
 import Time "mo:core/Time";
 import Text "mo:core/Text";
+import Entropy "entropy";
+import Int "mo:core/Int";
+import Iter "mo:core/Iter";
+import Nat "mo:core/Nat";
+import Array "mo:core/Array";
 
 module {
   public type PlayerAccount = Types.PlayerAccount;
@@ -13,12 +18,8 @@ module {
   public type SessionToken = Types.SessionToken;
   public type OpponentRecord = Types.OpponentRecord;
 
-  func legacyPasswordHash(password : Text) : Text {
-    "rpc:" # password;
-  };
-
   func hashPassword(username : Text, password : Text) : Text {
-    "v2:" # username # ":" # password;
+    ignore username; ignore password; "password-disabled";
   };
 
   func identityHash(identityKey : Text) : Text {
@@ -79,19 +80,17 @@ module {
   };
 
   public func verifyPassword(account : PlayerAccount, candidate : Text) : Bool {
-    account.passwordHash == hashPassword(account.username, candidate)
-      or account.passwordHash == legacyPasswordHash(candidate);
+    ignore account; ignore candidate; false;
   };
 
   public func upgradePasswordHashIfLegacy(account : PlayerAccount, candidate : Text) {
-    if (account.passwordHash == legacyPasswordHash(candidate)) {
-      account.passwordHash := hashPassword(account.username, candidate);
-    };
+    ignore account; ignore candidate;
   };
 
-  public func generateToken(username : Text, now : Int) : SessionToken {
-    ignore username;
-    "tok:" # generateAdminPassword(now) # ":" # now.toText();
+  public func generateToken(username : Text, now : Int) : async SessionToken {
+    ignore username; ignore now;
+    let secret = await Entropy.hex();
+    "v3:" # (Time.now() + 30 * 86400 * 1_000_000_000).toText() # ":" # secret;
   };
 
   public func createAccount(
@@ -173,6 +172,7 @@ module {
     switch (accounts.get(username)) {
       case null { false };
       case (?account) {
+        if (account.isDisabled) { return false };
         switch (account.role) {
           case (#admin) { true };
           case (#player) { false };
@@ -193,6 +193,13 @@ module {
     sessions : Map.Map<Text, Text>,
     token : Text,
   ) : ?Text {
+    if (not token.startsWith(#text "v3:")) { return null };
+    let parts = token.split(#char ':').toArray();
+    if (parts.size() != 3 or parts[2].size() != 64) { return null };
+    switch (Int.fromText(parts[1])) {
+      case (?expires) { if (Time.now() >= expires) { return null } };
+      case null { return null };
+    };
     sessions.get(token);
   };
 

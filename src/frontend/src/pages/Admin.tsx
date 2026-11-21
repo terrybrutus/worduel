@@ -1,3 +1,4 @@
+import { AppButton } from "../components/AppButton";
 import { useNavigate } from "@tanstack/react-router";
 import {
   AlertTriangle,
@@ -100,7 +101,7 @@ function PlayerRow({
           )}
         </p>
       </div>
-      <button
+      <AppButton
         type="button"
         disabled={isPending}
         onClick={() => {
@@ -127,7 +128,7 @@ function PlayerRow({
           <XCircle className="w-3 h-3" />
         )}
         {player.isDisabled ? "Enable" : "Disable"}
-      </button>
+      </AppButton>
     </div>
   );
 }
@@ -392,14 +393,14 @@ export default function Admin() {
             admin account to manage words and players.
           </p>
         </div>
-        <button
+        <AppButton
           type="button"
           className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           onClick={() => void navigate({ to: "/lobby" })}
           data-ocid="admin.setup.back_button"
         >
           \u2190 Back to Lobby
-        </button>
+        </AppButton>
       </div>
     );
   }
@@ -415,7 +416,7 @@ export default function Admin() {
           </h1>
           <span className="admin-badge hidden sm:inline">admin</span>
         </div>
-        <button
+        <AppButton
           type="button"
           onClick={() => void navigate({ to: "/lobby" })}
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -423,7 +424,7 @@ export default function Admin() {
         >
           <ArrowLeft className="w-4 h-4" />
           <span className="hidden sm:inline">Back to Lobby</span>
-        </button>
+        </AppButton>
       </header>
 
       {/* Tab bar */}
@@ -443,7 +444,7 @@ export default function Admin() {
               },
             ] as const
           ).map(({ key, label, icon }) => (
-            <button
+            <AppButton
               key={key}
               type="button"
               onClick={() => setTab(key)}
@@ -456,7 +457,7 @@ export default function Admin() {
             >
               {icon}
               {label}
-            </button>
+            </AppButton>
           ))}
         </div>
       </div>
@@ -522,7 +523,7 @@ export default function Admin() {
                   className="input-base flex-1 font-mono uppercase tracking-widest placeholder:normal-case placeholder:tracking-normal"
                   data-ocid="admin.dictionary_check.input"
                 />
-                <button
+                <AppButton
                   type="button"
                   onClick={() => setDebugWord(debugWordInput)}
                   disabled={debugWordInput.length === 0 || debugLoading}
@@ -535,7 +536,7 @@ export default function Admin() {
                     <Search className="w-3 h-3" />
                   )}
                   Check
-                </button>
+                </AppButton>
               </div>
               {debugResult && (
                 <div
@@ -617,7 +618,7 @@ export default function Admin() {
                       Found <strong>{csvParsed.length}</strong> valid 5-letter
                       words to import
                     </span>
-                    <button
+                    <AppButton
                       type="button"
                       onClick={() => void handleCsvImport()}
                       disabled={
@@ -632,7 +633,7 @@ export default function Admin() {
                         <Upload className="w-3 h-3" />
                       )}
                       Import {csvParsed.length} words
-                    </button>
+                    </AppButton>
                   </div>
                   {importProgress !== null && (
                     <div
@@ -690,7 +691,7 @@ export default function Admin() {
                     </p>
                   )}
                 </div>
-                <button
+                <AppButton
                   type="button"
                   onClick={handleAddWord}
                   disabled={addWord.isPending || !wordInput.trim()}
@@ -703,7 +704,7 @@ export default function Admin() {
                     <Plus className="w-4 h-4" />
                   )}
                   <span className="hidden sm:inline">Add</span>
-                </button>
+                </AppButton>
               </div>
             </div>
           </div>
