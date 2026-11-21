@@ -22,6 +22,7 @@ import Login, { LoginModal } from "./pages/Login";
 import Practice from "./pages/Practice";
 import Stats from "./pages/Stats";
 import WordBank from "./pages/WordBank";
+import { Challenges, ChallengeRound } from "./pages/Challenges";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 2, staleTime: 1000 } },
@@ -222,7 +223,10 @@ const loginRoute = createRoute({
 const gameRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/game/$gameId",
-  component: Game,
+  component: function GameRoute() {
+    const path = useRouterState({ select: state => state.location.pathname });
+    return <Game key={path} />;
+  },
 });
 const practiceRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -244,6 +248,8 @@ const wordBankRoute = createRoute({
   path: "/word-bank",
   component: WordBank,
 });
+const challengesRoute = createRoute({ getParentRoute: () => rootRoute, path: "/challenges", component: Challenges });
+const challengeRoute = createRoute({ getParentRoute: () => rootRoute, path: "/challenge/$token", component: ChallengeRound });
 const joinByTokenRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/game/join/$joinToken",
@@ -261,6 +267,8 @@ const router = createRouter({
     adminRoute,
     statsRoute,
     wordBankRoute,
+    challengesRoute,
+    challengeRoute,
   ]),
   defaultErrorComponent: ({ error }) => (
     <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-4 bg-background px-6 text-center">

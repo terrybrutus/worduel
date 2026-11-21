@@ -1,0 +1,66 @@
+LOCAL NATIVE BACKEND VERIFICATION, 2026-11-20
+
+Passed:
+- Release Wasm compilation with Motoko 1.7.0 and the locked Mops graph.
+- Saved stable signature compatibility check.
+- Registry file-hash verification and Mops locked dependency install/check.
+- Frontend TypeScript and production Vite build.
+- Real canister tests: expiring crypto sessions; no password login or
+  public administrator secret; private game membership; authorized rematch
+  acceptance; no fabricated/double-counted stats; disabled-account rejection.
+- Real canister tests: 5/6/7-letter guessing, hidden opponent letters,
+  daily shared puzzles, independent play-later runs, reveal/results/history.
+- Private Word Bank isolation and revision conflict rejection.
+- Mocked native HTTP tests: grounded plain-language definitions, independent
+  quiz review, ambiguous sentence rejection, positive-cache reuse and upgrade
+  persistence. No paid AI calls were made by these tests.
+- Previous committed backend 461baa4b8577f3feb2a547da6d8e8d4c20d0aac1
+  compiled and upgraded to the new backend: accounts, history and stats
+  preserved; legacy passwords/sessions retired; controller identity recovery;
+  old finished matches not counted a second time.
+- Two isolated browser players using real ICP HTTP/Candid, not the former
+  Node game engine: 5/6/7 letters and physical keyboard submission.
+- 320x568, 390x740 and 1920x1000 active-game checks: keyboard stays visible,
+  no page scrolling or horizontal overflow; opponent letters remain hidden.
+- Browser daily reload, authored sample quiz and actual Word Bank backup.
+- Actual local replica shutdown/snapshot/restore/upgrade: guest token,
+  saved Word Bank and daily board survived.
+- LAN mobile-size HTTP origin: guest connection and native 7-letter private
+  creation/cancellation work without secure-context errors.
+- Existing AI key absent from frontend source and browser build.
+
+Not claimed:
+- No GitHub push, Caffeine import or live production upgrade was performed.
+- No production email-login or payment setup; login remains on hold.
+- No new live Anthropic provider call was made. Native provider request
+  behavior was verified with mocked HTTP responses, not a paid request.
+- Local guest records do not automatically become production user records.
+- AI credentials still require a Caffeine-supported, appropriately private
+  production configuration, separate from GitHub code transfer.
+
+Run tools/native-backend/test.sh to repeat the core native tests.
+Set WORDUEL_OLD_WASM to an independently compiled prior backend to include
+the optional legacy-upgrade test. Do not reinstall a deployed canister to
+get around a compatibility error.
+
+2026-11-21 LOCAL MULTIPLAYER RELIABILITY PASS
+
+- Offline and reconnect states retain the board and unfinished guess.
+- Transport failures are not presented as missing/deleted games.
+- Read requests have a deadline; writes are not silently retried by this layer.
+- A committed guess whose response is lost is reconciled without duplication.
+- Invalid invites cannot redirect to an unrelated active game, even with a
+  gameId hint. Invite errors include retry and lobby actions.
+- A stalled join displays a retry action after 15 seconds; it does not loop
+  automatically. A late response cannot navigate away after leaving the page.
+- Browser-tested actual native multiplayer, 7-letter co-op, rematch offer,
+  acceptance, six-letter preservation, and typing in the new round.
+- Mobile reconnect state keeps the keyboard inside a 320x568 viewport.
+- Frontend helper tests, TypeScript and production build passed.
+
+Repeat helper tests with: node tools/frontend-reliability-test.mjs
+Browser tests: node tools/multiplayer-reliability.cjs (requires Playwright;
+WORDUEL_PLAYWRIGHT_MODULE may point to an already installed module).
+Browser AI content is mocked; game calls use the actual local canister.
+Live Caffeine import, platform AI secret configuration and friend feedback
+remain pending. No push or additional hosted service was added.

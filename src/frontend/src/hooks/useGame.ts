@@ -1,24 +1,23 @@
-import { useActor } from "@caffeineai/core-infrastructure";
+import { localBackend, localGuest, gameWordLength } from "../lib/localBackend";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createActor } from "../backend";
 import type { GameState, Guess } from "../backend";
 import { GameMode, PlayerOutcome, type TileState } from "../backend";
 import { SESSION_KEY } from "../types";
-import { isValidWord } from "../words";
+import { GameAccessError } from "../lib/gameConnection";
 
 function useBackendActor() {
-  return useActor((canisterId, uploadFile, downloadFile, options) =>
-    createActor(canisterId, uploadFile, downloadFile, options),
-  );
+  return { actor: localBackend, isFetching: false };
 }
 
 function getStoredSessionToken(): string {
+  if (localGuest()) return localGuest()!.token;
   return localStorage.getItem(SESSION_KEY) ?? "";
 }
 
 function getStoredPlayerName(): string {
+  if (localGuest()) return localGuest()!.username;
   try {
     const raw = localStorage.getItem("__worduel_user__");
     if (!raw) return "";
@@ -45,7 +44,6 @@ function isForfeitTimeout(gameState: GameState | null | undefined): boolean {
   );
 }
 
-const WORD_LENGTH = 5;
 const MAX_GUESSES = 6;
 
 export type JoinStatus = "idle" | "joining" | "error";
@@ -54,6 +52,8 @@ export interface UseGameResult {
   // Remote state
   gameState: GameState | null | undefined;
   isLoading: boolean;
+  connection: "connected" | "reconnecting" | "offline";
+  loadError: string | null;
   joinStatus: JoinStatus;
   joinError: string | null;
   playerName: string;
@@ -96,6 +96,13 @@ export function useGame(): UseGameResult {
   // isFlipping triggers only after the server confirms a new guess (via guess count delta)
   const [isFlipping, setIsFlipping] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [online, setOnline] = useState(() => navigator.onLine);
+  useEffect(() => {
+    const changed = () => setOnline(navigator.onLine);
+    window.addEventListener("online", changed);
+    window.addEventListener("offline", changed);
+    return () => { window.removeEventListener("online", changed); window.removeEventListener("offline", changed); };
+  }, []);
 
   const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -114,10 +121,20 @@ export function useGame(): UseGameResult {
 
   // Join token handling
   const joinAttemptedRef = useRef(false);
-  const joinStatusRef = useRef<JoinStatus>("idle");
-  const joinErrorRef = useRef<string | null>(null);
+  const [joinStatus, setJoinStatus] = useState<JoinStatus>("idle");
+  const [joinError, setJoinError] = useState<string | null>(null);
   const hostToken = (search.hostToken as string) ?? null;
   const urlCleanedRef = useRef(false);
+  const activeGameId = useRef(gameId);
+  activeGameId.current = gameId;
+
+  useEffect(() => {
+    if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
+    if (flipTimerRef.current) clearTimeout(flipTimerRef.current);
+    setCurrentInput(""); setInvalidWordMessage(null); setIsShaking(false); setIsFlipping(false); setIsSubmitting(false);
+    prevGuessCountRef.current = -1; prevTurnRef.current = null;
+    joinAttemptedRef.current = false; setJoinStatus("idle"); setJoinError(null);
+  }, [gameId, joinToken, sessionToken]);
 
   useEffect(() => {
     if (!hostToken || urlCleanedRef.current) return;
@@ -131,16 +148,16 @@ export function useGame(): UseGameResult {
     if (!joinToken || !actor || isFetching || joinAttemptedRef.current) return;
     if (!sessionToken) return;
     joinAttemptedRef.current = true;
-    joinStatusRef.current = "joining";
+    setJoinStatus("joining");
 
     actor
       .joinByToken(sessionToken, joinToken, null)
       .then((result) => {
         if (result.__kind__ === "err") {
-          joinStatusRef.current = "error";
-          joinErrorRef.current = result.err;
+          setJoinStatus("error");
+          setJoinError(result.err);
         } else {
-          joinStatusRef.current = "idle";
+          setJoinStatus("idle");
           const url = new URL(window.location.href);
           url.searchParams.delete("join");
           window.history.replaceState({}, "", url.toString());
@@ -148,18 +165,17 @@ export function useGame(): UseGameResult {
         }
       })
       .catch(() => {
-        joinStatusRef.current = "error";
-        joinErrorRef.current =
-          "This join link has expired. Ask your partner for the room code.";
+        setJoinStatus("error");
+        setJoinError("Could not connect. Check your connection and reopen this invitation.");
       });
   }, [joinToken, actor, isFetching, gameId, sessionToken, qc]);
 
-  const { data: gameState, isLoading } = useQuery<GameState | null>({
+  const gameQuery = useQuery<GameState | null>({
     queryKey: ["game", gameId, sessionToken],
     queryFn: async () => {
       if (!actor || !gameId || !sessionToken) return null;
       const result = await actor.getGameState(sessionToken, gameId);
-      if (result.__kind__ === "err") return null;
+      if (result.__kind__ === "err") throw new GameAccessError(result.err);
       return result.ok;
     },
     enabled:
@@ -167,8 +183,11 @@ export function useGame(): UseGameResult {
       !isFetching &&
       !!gameId &&
       !!sessionToken &&
-      joinStatusRef.current !== "joining",
+      joinStatus !== "joining",
+    retry: (count, error) => !(error instanceof GameAccessError) && count < 2,
+    refetchOnReconnect: "always",
     refetchInterval: (query) => {
+      if (query.state.error instanceof GameAccessError) return false;
       const data = query.state.data as GameState | null | undefined;
       if (!data) return 2000;
       const s = data.status.__kind__;
@@ -181,23 +200,29 @@ export function useGame(): UseGameResult {
       return 2000;
     },
   });
+  const { data: gameState, isLoading } = gameQuery;
+  const accessError = gameQuery.error instanceof GameAccessError ? gameQuery.error.message : null;
+  const connection = !online ? "offline" : gameQuery.failureCount > 0 || gameQuery.isError && !accessError ? "reconnecting" : "connected";
+
+  useEffect(() => () => {
+    if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
+    if (flipTimerRef.current) clearTimeout(flipTimerRef.current);
+  }, []);
 
   const forceRefresh = useCallback(() => {
     void qc.invalidateQueries({ queryKey: ["game", gameId] });
   }, [qc, gameId]);
+  const WORD_LENGTH = gameWordLength(gameState);
 
   const isMyTurn = useMemo(() => {
-    if (!gameState) return false;
+    if (!gameState || connection !== "connected" || accessError || gameState.status.__kind__ !== "playing") return false;
     if (gameState.mode === GameMode.coop) {
       return gameState.currentTurn === gameState.playerNum;
     }
     // In versus: turn is yours as long as you're still playing
     if (gameState.myOutcome !== PlayerOutcome.playing) return false;
-    const s = gameState.status.__kind__;
-    if (s === "won" || s === "lost" || s === "expired" || s === "waiting")
-      return false;
     return true;
-  }, [gameState]);
+  }, [gameState, connection, accessError]);
 
   const currentGuesses = useMemo((): Guess[] => {
     if (!gameState) return [];
@@ -213,6 +238,8 @@ export function useGame(): UseGameResult {
         ? gameState.coopGuesses
         : gameState.myGuesses;
     const count = guesses.length;
+    // A committed guess can arrive after its original response was lost.
+    if (count && guesses[count - 1].word.toLowerCase() === currentInput.toLowerCase()) setCurrentInput("");
     if (prevGuessCountRef.current >= 0 && count > prevGuessCountRef.current) {
       setIsFlipping(true);
       if (flipTimerRef.current) clearTimeout(flipTimerRef.current);
@@ -243,12 +270,6 @@ export function useGame(): UseGameResult {
           return;
         }
 
-        // Optional fast-path validation. The backend remains authoritative.
-        if (!isValidWord(currentInput)) {
-          triggerShake("Not a word");
-          return;
-        }
-
         // FIX #1: Reject already-submitted duplicate guesses
         const alreadyGuessed = guesses.some(
           (g) => g.word.toLowerCase() === currentInput.toLowerCase(),
@@ -265,6 +286,7 @@ export function useGame(): UseGameResult {
             gameId,
             currentInput.toLowerCase(),
           );
+          if (activeGameId.current !== gameId) return;
 
           if (result.__kind__ === "err") {
             const errKind = result.err.__kind__;
@@ -287,9 +309,10 @@ export function useGame(): UseGameResult {
           setCurrentInput("");
           void qc.invalidateQueries({ queryKey: ["game", gameId] });
         } catch {
+          if (activeGameId.current !== gameId) return;
           triggerShake("Connection error, try again");
         } finally {
-          setIsSubmitting(false);
+          if (activeGameId.current === gameId) setIsSubmitting(false);
         }
         return;
       }
@@ -307,6 +330,7 @@ export function useGame(): UseGameResult {
       gameId,
       currentInput,
       gameState,
+      WORD_LENGTH,
       triggerShake,
       qc,
     ],
@@ -331,9 +355,11 @@ export function useGame(): UseGameResult {
 
   return {
     gameState: gameState ?? null,
-    isLoading,
-    joinStatus: joinStatusRef.current,
-    joinError: joinErrorRef.current,
+    isLoading: isLoading || joinStatus === "joining",
+    connection,
+    loadError: accessError || joinError,
+    joinStatus,
+    joinError,
     playerName,
     isMyTurn,
     currentGuesses,

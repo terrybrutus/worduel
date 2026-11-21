@@ -1,6 +1,5 @@
-import { useActor } from "@caffeineai/core-infrastructure";
+import { localBackend, createLocalMatch } from "../lib/localBackend";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createActor } from "../backend";
 import type {
   GameHistoryEntry,
   GameState,
@@ -14,9 +13,7 @@ import type {
 import { GameMode } from "../backend";
 
 function useBackendActor() {
-  return useActor((canisterId, uploadFile, downloadFile, options) =>
-    createActor(canisterId, uploadFile, downloadFile, options),
-  );
+  return { actor: localBackend, isFetching: false };
 }
 
 export function usePublicGames() {
@@ -87,18 +84,15 @@ export function useCreateGame() {
       sessionToken,
       mode,
       isPrivate,
+      wordLength = 5,
     }: {
       sessionToken: string;
       mode: GameMode;
       isPrivate: boolean;
+      wordLength?: number;
     }) => {
       if (!actor) throw new Error("Not connected");
-      if (isPrivate) {
-        const result = await actor.createPrivateGame(sessionToken, mode);
-        if (result.__kind__ === "err") throw new Error(result.err);
-        return result.ok;
-      }
-      const result = await actor.createPublicGame(sessionToken, mode);
+      const result = await createLocalMatch(sessionToken, mode, isPrivate, wordLength);
       if (result.__kind__ === "err") throw new Error(result.err);
       return result.ok;
     },

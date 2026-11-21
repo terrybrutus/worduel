@@ -1,3 +1,4 @@
+import { AppButton } from "./AppButton";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { BookOpen, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -34,7 +35,7 @@ function CoopAlert({
         <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary" />
       </span>
 
-      <button
+      <AppButton
         type="button"
         onClick={onNavigate}
         data-ocid="cross_game_alert.navigate_button"
@@ -46,9 +47,9 @@ function CoopAlert({
         <span className="font-mono text-[10px] text-primary/60 truncate block">
           {partner} is waiting for your turn
         </span>
-      </button>
+      </AppButton>
 
-      <button
+      <AppButton
         type="button"
         onClick={onNavigate}
         data-ocid="cross_game_alert.play_button"
@@ -56,9 +57,9 @@ function CoopAlert({
         aria-label="Play your turn"
       >
         Play
-      </button>
+      </AppButton>
 
-      <button
+      <AppButton
         type="button"
         onClick={onDismiss}
         data-ocid="cross_game_alert.dismiss_button"
@@ -66,7 +67,7 @@ function CoopAlert({
         aria-label="Dismiss alert"
       >
         <X className="w-3.5 h-3.5" />
-      </button>
+      </AppButton>
     </div>
   );
 }

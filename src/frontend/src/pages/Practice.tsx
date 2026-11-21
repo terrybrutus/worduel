@@ -1,3 +1,4 @@
+import { AppButton } from "../components/AppButton";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, BookOpen, RotateCcw, Trophy, UserPlus } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
@@ -14,6 +15,7 @@ import { useAuth } from "../hooks/useAuth";
 import { triggerHaptic, useHapticEnabled } from "../hooks/useHapticEnabled";
 import { useSoundEnabled } from "../hooks/useSoundEnabled";
 import { PRACTICE_ANSWERS, PRACTICE_GUESSES } from "../lib/practiceDictionary";
+import { LONGER_ANSWERS, LONGER_GUESSES, type WordLength } from "../lib/longerWords";
 
 const WORD_LENGTH = 5;
 const MAX_GUESSES = 6;
@@ -131,8 +133,8 @@ function randomIndex(max: number): number {
   return Math.floor(Math.random() * max);
 }
 
-function pickAnswer(previous?: string): string {
-  const answers: readonly string[] = PRACTICE_ANSWERS;
+function pickAnswer(previous?: string, length: WordLength = 5): string {
+  const answers: readonly string[] = length === 5 ? PRACTICE_ANSWERS : LONGER_ANSWERS[length];
   if (answers.length === 0) return "crane";
   if (answers.length === 1) return answers[0];
   let next = answers[randomIndex(answers.length)];
@@ -166,6 +168,7 @@ function pickMeaningCard(previous?: string): MeaningCard {
 }
 
 function evaluateGuess(guess: string, answer: string): TileState[] {
+  const WORD_LENGTH = answer.length;
   const states: TileState[] = Array(WORD_LENGTH).fill(TileState.absent);
   const answerLetters = answer.split("");
   const used = Array(WORD_LENGTH).fill(false);
@@ -200,13 +203,6 @@ function makeGuess(word: string, answer: string, playerNum: bigint): Guess {
   };
 }
 
-function pickBotGuess(answer: string, turn: number): string {
-  const script = ["crane", "light", "sound", "plant", "brave", "trust"].filter(
-    (word) => word !== answer,
-  );
-  return script[Math.min(turn, script.length - 1)] ?? "crane";
-}
-
 export default function Practice() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -214,12 +210,13 @@ export default function Practice() {
   const { hapticEnabled } = useHapticEnabled();
 
   const [practiceMode, setPracticeMode] = useState<PracticeMode>("guess");
+  const [wordLength, setWordLength] = useState<WordLength>(5);
+  const WORD_LENGTH = wordLength;
   const [answer, setAnswer] = useState(() => pickAnswer());
   const [meaningCard, setMeaningCard] = useState(() => pickMeaningCard());
   const [meaningChoice, setMeaningChoice] = useState<string | null>(null);
   const [currentInput, setCurrentInput] = useState("");
   const [guesses, setGuesses] = useState<Guess[]>([]);
-  const [botGuesses, setBotGuesses] = useState<Guess[]>([]);
   const [status, setStatus] = useState<PracticeStatus>("playing");
   const [message, setMessage] = useState<string | null>(null);
   const [isShaking, setIsShaking] = useState(false);
@@ -228,32 +225,30 @@ export default function Practice() {
 
   const isFinished = status !== "playing";
   const isGuessMode = practiceMode === "guess";
-  const lastBotGuess = botGuesses[botGuesses.length - 1];
 
   const headline = useMemo(() => {
     if (status === "won") return isGuessMode ? "You solved it" : "You got it";
     if (status === "lost") return "Round complete";
-    return isGuessMode ? "Guest Word Practice" : "Meaning Duel";
+    return isGuessMode ? "Solo Practice" : "Meaning Duel";
   }, [isGuessMode, status]);
 
   const reset = useCallback(
-    (mode: PracticeMode = practiceMode) => {
+    (mode: PracticeMode = practiceMode, length: WordLength = wordLength) => {
       if (mode === "guess") {
-        setAnswer((current) => pickAnswer(current));
+        setAnswer((current) => pickAnswer(current, length));
       } else {
         setMeaningCard((current) => pickMeaningCard(current.word));
       }
       setMeaningChoice(null);
       setCurrentInput("");
       setGuesses([]);
-      setBotGuesses([]);
       setStatus("playing");
       setMessage(null);
       setIsShaking(false);
       setIsFlipping(false);
       setRoundId((current) => current + 1);
     },
-    [practiceMode],
+    [practiceMode, wordLength],
   );
 
   const switchMode = (mode: PracticeMode) => {
@@ -291,7 +286,7 @@ export default function Practice() {
         }
 
         const normalized = currentInput.toLowerCase();
-        if (!PRACTICE_GUESSES.has(normalized)) {
+        if (!(wordLength === 5 ? PRACTICE_GUESSES : LONGER_GUESSES).has(normalized)) {
           rejectInput("Not a word");
           return;
         }
@@ -314,11 +309,6 @@ export default function Practice() {
           return;
         }
 
-        const botWord = pickBotGuess(answer, botGuesses.length);
-        const nextBotGuess = makeGuess(botWord, answer, BigInt(2));
-        const nextBotGuesses = [...botGuesses, nextBotGuess];
-        setBotGuesses(nextBotGuesses);
-
         if (nextGuesses.length >= MAX_GUESSES) {
           setStatus("lost");
           if (soundEnabled) playLossSound();
@@ -332,13 +322,13 @@ export default function Practice() {
     },
     [
       answer,
-      botGuesses,
       currentInput,
       guesses,
       isFinished,
       isGuessMode,
       rejectInput,
       soundEnabled,
+      wordLength,
     ],
   );
 
@@ -361,7 +351,7 @@ export default function Practice() {
     >
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 sm:gap-5">
         <header className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-          <button
+          <AppButton
             type="button"
             onClick={() => void navigate({ to: "/lobby" })}
             className="flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-display font-bold text-foreground hover:bg-muted/40"
@@ -369,10 +359,10 @@ export default function Practice() {
           >
             <ArrowLeft className="h-4 w-4" />
             Lobby
-          </button>
+          </AppButton>
           <div className="text-right">
             <p className="text-[10px] font-mono uppercase tracking-widest text-primary">
-              Guest mode
+              Practice
             </p>
             <p className="text-xs text-muted-foreground">
               {user
@@ -388,31 +378,32 @@ export default function Practice() {
               <h1 className="font-display text-2xl font-black text-foreground">
                 {headline}
               </h1>
-              <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+              <p className="mt-1 hidden max-w-2xl text-sm text-muted-foreground sm:block">
                 {isGuessMode
                   ? "Solve the word, learn the meaning, and keep useful words for later."
                   : "Pick the real meaning, then save the word if it is worth reviewing."}
               </p>
             </div>
-            <button
+            <AppButton
               type="button"
-              onClick={() => reset()}
+              onClick={(event) => { event.currentTarget.blur(); reset(); }}
               className="flex min-h-11 items-center gap-2 rounded-lg border border-primary/40 px-3 py-2 text-sm font-display font-bold text-primary hover:bg-primary/10"
               data-ocid="practice.new_round_button"
+              tooltip="Start a fresh word at the selected length."
             >
               <RotateCcw className="h-4 w-4" />
               New Round
-            </button>
+            </AppButton>
           </div>
           <div
-            className="mt-4 grid gap-2 sm:grid-cols-2"
+            className="mt-3 grid grid-cols-2 gap-2"
             data-ocid="practice.mode_selector"
           >
             {[
               {
                 mode: "guess" as const,
                 label: "Guess Word",
-                detail: "Classic five-letter duel practice.",
+                detail: "Classic guessing with 5, 6, or 7 letters.",
               },
               {
                 mode: "meaning" as const,
@@ -422,10 +413,12 @@ export default function Practice() {
             ].map((option) => {
               const selected = practiceMode === option.mode;
               return (
-                <button
+                <AppButton
                   key={option.mode}
                   type="button"
-                  onClick={() => switchMode(option.mode)}
+                  onClick={(event) => { event.currentTarget.blur(); switchMode(option.mode); }}
+                  aria-pressed={selected}
+                  tooltip={option.mode === "guess" ? "Find the hidden word in six guesses." : "Choose a definition for a longer word."}
                   className={`rounded-lg border px-3 py-2 text-left transition-smooth ${
                     selected
                       ? "border-primary bg-primary/10 text-primary"
@@ -436,61 +429,39 @@ export default function Practice() {
                   <p className="font-display text-sm font-bold">
                     {option.label}
                   </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
+                  <p className="mt-1 hidden text-xs text-muted-foreground sm:block">
                     {option.detail}
                   </p>
-                </button>
+                </AppButton>
               );
             })}
           </div>
+          {isGuessMode && (
+            <fieldset className="mt-3 flex flex-wrap items-center gap-2">
+              <legend className="mb-2 text-sm font-semibold">Word length</legend>
+              {([5, 6, 7] as const).map(length => (
+                <label key={length} className={`flex min-h-11 items-center gap-2 rounded-md border px-3 py-2 text-sm ${wordLength === length ? "border-primary text-primary" : "border-border"}`}>
+                  <input type="radio" name="word-length" value={length} checked={wordLength === length} onChange={() => { setWordLength(length); reset("guess", length); }} />
+                  {length} letters
+                </label>
+              ))}
+            </fieldset>
+          )}
         </section>
 
-        <main className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_17rem_minmax(0,1fr)] lg:items-start lg:gap-5">
+        <main className="mx-auto grid w-full max-w-3xl gap-3 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start lg:gap-5">
           {isGuessMode ? (
             <>
               <section className="order-1 rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4 lg:col-start-1 lg:row-start-1">
                 <TileGrid
                   key={`player-${roundId}`}
+                  wordLength={wordLength}
                   guesses={guesses}
                   currentInput={currentInput}
                   isFlipping={isFlipping}
                   isShaking={isShaking}
                   label="You"
                 />
-                <div
-                  className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/50 px-3 py-2"
-                  data-ocid="practice.computer_inline_status"
-                >
-                  <div>
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                      Computer pace
-                    </p>
-                    <p className="text-xs font-semibold text-foreground">
-                      {lastBotGuess
-                        ? `Pace move ${botGuesses.length}`
-                        : "Starts after your first guess"}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">
-                      Automatic sample guess, not your letters.
-                    </p>
-                  </div>
-                  <div
-                    className="flex gap-1"
-                    aria-label="Computer color result"
-                  >
-                    {Array.from({ length: WORD_LENGTH }).map((_, index) => (
-                      <span
-                        // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length result preview
-                        key={index}
-                        className={getMiniTileClass(
-                          (lastBotGuess?.states[index] as
-                            | TileState
-                            | undefined) ?? null,
-                        )}
-                      />
-                    ))}
-                  </div>
-                </div>
               </section>
 
               <div className="order-2 sticky bottom-0 z-20 -mx-3 border-t border-border/60 bg-background/95 px-3 py-2 backdrop-blur lg:static lg:col-start-1 lg:row-start-2 lg:mx-0 lg:border-t-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
@@ -524,7 +495,7 @@ export default function Practice() {
                   const correct = choice === meaningCard.definition;
                   const revealed = isFinished;
                   return (
-                    <button
+                    <AppButton
                       key={choice}
                       type="button"
                       onClick={() => handleMeaningChoice(choice)}
@@ -541,7 +512,7 @@ export default function Practice() {
                       data-ocid={`practice.meaning_choice.${correct ? "correct" : "distractor"}`}
                     >
                       {choice}
-                    </button>
+                    </AppButton>
                   );
                 })}
               </div>
@@ -552,11 +523,11 @@ export default function Practice() {
             <Trophy className="mx-auto h-6 w-6 text-primary" />
             <div>
               <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
-                {isGuessMode ? "Round pace" : "Round result"}
+                {isGuessMode ? "Your round" : "Round result"}
               </p>
               {isGuessMode ? (
                 <>
-                  <div className="mt-3 grid grid-cols-2 gap-2 text-left">
+                  <div className="mt-3 text-left">
                     <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-2">
                       <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
                         You
@@ -565,18 +536,9 @@ export default function Practice() {
                         {guesses.length}/{MAX_GUESSES}
                       </p>
                     </div>
-                    <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-2">
-                      <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                        Pace
-                      </p>
-                      <p className="mt-1 font-display text-lg font-black text-foreground">
-                        {botGuesses.length}/{MAX_GUESSES}
-                      </p>
-                    </div>
                   </div>
                   <p className="mt-2 text-xs text-muted-foreground">
-                    The pace uses its own sample guesses against the same
-                    answer. Your puzzle is the one that counts.
+                    {isFinished ? "Round complete." : "Six guesses to find the word."}
                   </p>
                 </>
               ) : (
@@ -609,7 +571,7 @@ export default function Practice() {
               />
             )}
             {!user && !isFinished && (
-              <button
+              <AppButton
                 type="button"
                 onClick={() => void navigate({ to: "/login" })}
                 className="mt-auto flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-display font-bold text-foreground hover:bg-muted/40"
@@ -617,42 +579,10 @@ export default function Practice() {
               >
                 <UserPlus className="h-4 w-4" />
                 Sign in to keep words
-              </button>
+              </AppButton>
             )}
           </aside>
 
-          {isGuessMode ? (
-            <section className="order-4 hidden rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4 lg:col-start-3 lg:row-span-2 lg:row-start-1 lg:block">
-              <TileGrid
-                key={`computer-${roundId}`}
-                guesses={botGuesses}
-                currentInput=""
-                label="Computer"
-                hideSubmittedLetters
-              />
-            </section>
-          ) : (
-            <section className="order-4 hidden rounded-xl border border-border/60 bg-card/80 p-4 lg:col-start-3 lg:row-span-2 lg:row-start-1 lg:block">
-              <p className="font-display text-sm font-bold text-foreground">
-                Duel Shape
-              </p>
-              <p className="mt-2 text-xs text-muted-foreground">
-                This mode can become multiplayer by giving both players the same
-                word and scoring fast correct answers.
-              </p>
-              <div className="mt-4 space-y-2 text-left text-xs text-muted-foreground">
-                <p className="rounded-lg border border-border/60 bg-muted/10 px-3 py-2">
-                  1. Same word
-                </p>
-                <p className="rounded-lg border border-border/60 bg-muted/10 px-3 py-2">
-                  2. Same choices
-                </p>
-                <p className="rounded-lg border border-border/60 bg-muted/10 px-3 py-2">
-                  3. Correct plus fast wins
-                </p>
-              </div>
-            </section>
-          )}
         </main>
       </div>
     </div>

@@ -1,5 +1,53 @@
 # WORDUEL Roadmap
 
+## Local Status: November 20, 2026
+
+This snapshot describes the unpushed local preview, not a verified public release.
+The historical "Progress Shipped" section below records earlier UI iterations;
+an entry point or preset is not proof of a complete server-backed feature.
+
+Working locally: login-free solo testing, live same-Wi-Fi versus/co-op with
+5/6/7-letter boards, private invitations with QR codes, rematches, hidden opponent
+letters, responsive match layout, submitted-word lookup, device-local Word Bank,
+review scheduling, flashcards, mixed quizzes, selection counts, and sample words.
+
+### Next To Finish
+
+1. Private server-side AI is now configured. Live definition simplification and
+   repeat-lookup caching passed. Live quiz drafts exposed ambiguity, so a separate
+   reviewer now screens the choices; rejected drafts fall back rather than mark a
+   reasonable answer wrong. Both generation and review share request limits and
+   caching. More real generated-question quality testing remains necessary; an AI
+   reviewer is still not a guarantee of semantic correctness.
+2. Make real multiplayer reachable outside the local Wi-Fi. The current Node/Vite
+   game service is for local testing; production backend parity, upgrades, durable
+   hosting, and deployment tests remain release work, including longer-word play.
+3. Add proper accounts/email verification, username editing, and cloud syncing
+   for Word Bank/progress/stats. Login remains on hold. Current Word Bank data is
+   browser-local, not an account-backed cloud collection.
+4. Shared Daily Duel and asynchronous replay challenges now work locally for
+   5/6/7 letters. They persist independent player boards, reveal comparison scores
+   only after finishing, keep recent challenges, and support UTC daily streaks.
+   Links last 30 days and still require this local server. Production hosting,
+   account-linked history, and public leaderboards remain pending.
+5. Add player-chosen valid dictionary words for opponents.
+6. Add custom word packs, persistent private group/classroom rooms, host controls,
+   leaderboards, and tournaments. Word packs and hosting remain deferred.
+7. Validate a paid offering, then implement subscriptions, entitlements, and group
+   reporting. Nothing here is a live paid service.
+8. Complete physical-device/browser testing and public-release checks. Prepare an
+   updated Mac local setup and LinkedIn portfolio walkthrough when requested.
+
+### Optional Ideas Preserved, Not Required For The Next Release
+
+- Friend challenges built from shared saved-word quizzes.
+- A genuinely separate bluff-definition social mode; ordinary multiple choice
+  is not that multiplayer mode.
+- An optional teacher-style opponent, not the removed cosmetic computer pace.
+- Cosmetics, themed packs, branded events, and richer host/group learning reports.
+- Portfolio framing: a competitive word game with optional word discovery and
+  review, rather than claiming a Wordle win alone demonstrates vocabulary mastery.
+
 ## Product Direction
 
 WORDUEL should grow as a competitive and social word game, not as a cash-prize wagering product. Real-money head-to-head payouts would create strong cheating incentives because players can screenshot boards and use AI or solver apps. Paid value should come from hosting, personalization, education, custom content, and polished group experiences.

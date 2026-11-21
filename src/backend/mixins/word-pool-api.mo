@@ -5,6 +5,9 @@ import Map "mo:core/Map";
 import List "mo:core/List";
 import Set "mo:core/Set";
 import Time "mo:core/Time";
+import Text "mo:core/Text";
+import Array "mo:core/Array";
+import Char "mo:core/Char";
 
 mixin (
   accounts : Map.Map<Text, AuthLib.PlayerAccount>,

@@ -1,3 +1,4 @@
+import { AppButton } from "./AppButton";
 import {
   Brain,
   CheckCircle2,
@@ -9,6 +10,8 @@ import {
 import { useMemo, useState } from "react";
 import { GameMode } from "../backend";
 import { useAuth } from "../hooks/useAuth";
+import { useWordMeaning } from "../hooks/useWordMeaning";
+import { MeaningAttribution } from "./MeaningAttribution";
 import {
   type Confidence,
   confidenceKey,
@@ -70,9 +73,9 @@ const CONFIDENCE_OPTIONS: Array<{
   label: string;
   icon: typeof CheckCircle2;
 }> = [
-  { value: "knew", label: "Knew it", icon: CheckCircle2 },
-  { value: "guessed", label: "Guessed it", icon: Brain },
-  { value: "unknown", label: "No idea", icon: HelpCircle },
+  { value: "knew", label: "Already know it", icon: CheckCircle2 },
+  { value: "guessed", label: "A little unsure", icon: Brain },
+  { value: "unknown", label: "New to me", icon: HelpCircle },
 ];
 
 function getDefinition(word: string): string {
@@ -121,6 +124,8 @@ export function LearningRecap({
   const { user } = useAuth();
   const normalized = word.toLowerCase();
   const hasWord = normalized.trim().length > 0;
+  const meaning = useWordMeaning(normalized, getDefinition(normalized));
+  const [saveError, setSaveError] = useState("");
   const key = hasWord ? confidenceKey(user?.username, normalized) : "";
   const [confidence, setConfidence] = useState<Confidence | null>(() => {
     if (!key) return null;
@@ -148,16 +153,23 @@ export function LearningRecap({
     if (!hasWord)
       return "The backend did not send the answer for this finished game.";
     if (opponentWon)
-      return "Your opponent solved it first. Review the word and try to recall it next time.";
+      return "Your opponent solved it first.";
     if (won)
-      return "You solved the word. Mark how confident you felt so this can become review data later.";
-    return "You saw the answer after the round. Save the meaning mentally for the next duel.";
+      return "You solved the word.";
+    return "The answer is revealed. Try another round when you are ready.";
   }, [hasWord, opponentWon, won]);
 
   const handleConfidence = (value: Confidence) => {
+    setSaveError("");
+    try {
+      if (value !== "knew") {
+        saveWord(user?.username, normalized, meaning.definition, value, meaning);
+        updateSavedWordConfidence(user?.username, normalized, value);
+        setSaved(true);
+      } else if (saved) updateSavedWordConfidence(user?.username, normalized, value);
     setConfidence(value);
     if (key) localStorage.setItem(key, value);
-    if (saved) updateSavedWordConfidence(user?.username, normalized, value);
+    } catch { setSaveError("Could not save. Browser storage may be unavailable."); }
   };
 
   const handleCopy = () => {
@@ -169,13 +181,15 @@ export function LearningRecap({
 
   const handleSaveWord = () => {
     if (!hasWord) return;
+    try {
     if (saved) {
       removeWord(user?.username, normalized);
       setSaved(false);
       return;
     }
-    saveWord(user?.username, normalized, getDefinition(normalized), confidence);
+    saveWord(user?.username, normalized, meaning.definition, confidence, meaning);
     setSaved(true);
+    } catch { setSaveError("Could not save. Browser storage may be unavailable."); }
   };
 
   return (
@@ -186,13 +200,13 @@ export function LearningRecap({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-mono uppercase tracking-widest text-primary">
-            Learning recap
+            The word
           </p>
           <p className="mt-1 font-display text-xl font-black uppercase tracking-widest text-foreground">
             {hasWord ? normalized : "-----"}
           </p>
         </div>
-        <button
+        <AppButton
           type="button"
           className="flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-xs font-display font-bold text-foreground hover:bg-muted/40"
           onClick={handleCopy}
@@ -200,28 +214,31 @@ export function LearningRecap({
         >
           <Share2 className="h-3.5 w-3.5" />
           {copied ? "Copied" : "Share"}
-        </button>
+        </AppButton>
       </div>
 
       <p className="mt-3 text-sm font-body text-foreground">
-        {hasWord ? getDefinition(normalized) : "Answer unavailable."}
+        {hasWord ? meaning.definition || (meaning.loading ? "Looking up meaning..." : "Definition unavailable right now.") : "Answer unavailable."}
       </p>
+      {meaning.example && <p className="mt-2 text-xs text-muted-foreground">Example: {meaning.example}</p>}
+      <MeaningAttribution {...meaning} />
       <p className="mt-2 text-xs text-muted-foreground">{recap}</p>
 
       <div className="mt-4">
         <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-          Did you know this word?
+          Want to remember this word?
         </p>
         <div className="mt-2 grid grid-cols-3 gap-2">
           {CONFIDENCE_OPTIONS.map((option) => {
             const Icon = option.icon;
             const selected = confidence === option.value;
             return (
-              <button
+              <AppButton
                 key={option.value}
                 type="button"
                 onClick={() => handleConfidence(option.value)}
-                disabled={!hasWord}
+                tooltip={option.value === "knew" ? "Skip automatic reviews for this word." : option.value === "guessed" ? "Save this word for review." : "Save this new word and put it first in review."}
+                disabled={!hasWord || !meaning.definition}
                 className={`flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg border px-2 py-2 text-[10px] font-display font-bold transition-smooth disabled:opacity-50 ${
                   selected
                     ? "border-primary bg-primary/10 text-primary"
@@ -231,14 +248,17 @@ export function LearningRecap({
               >
                 <Icon className="h-3.5 w-3.5" />
                 {option.label}
-              </button>
+              </AppButton>
             );
           })}
         </div>
-        <button
+        {confidence && <p role="status" className="mt-2 text-xs text-muted-foreground">{confidence === "knew" ? "No automatic review. You can still save it." : "Saved for review in Word Bank."}</p>}
+        {confidence && confidence !== "knew" && <a href="/word-bank" className="mt-2 inline-block text-sm text-primary underline">Review saved words</a>}
+        {saveError && <p role="alert" className="mt-2 text-sm text-destructive">{saveError}</p>}
+        <AppButton
           type="button"
           onClick={handleSaveWord}
-          disabled={!hasWord}
+          disabled={!hasWord || !meaning.definition}
           className={`mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-display font-bold transition-smooth disabled:opacity-50 ${
             saved
               ? "border-primary bg-primary/10 text-primary"
@@ -254,7 +274,7 @@ export function LearningRecap({
             : saved
               ? "Saved on This Device"
               : "Save on This Device"}
-        </button>
+        </AppButton>
         <p className="mt-2 text-[11px] text-muted-foreground">
           {user
             ? "Saved words appear in Word Memory Bank."
@@ -265,7 +285,7 @@ export function LearningRecap({
       </div>
 
       {!user && (
-        <button
+        <AppButton
           type="button"
           onClick={() => window.location.assign("/login?redirect=/word-bank")}
           className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-display font-bold text-primary hover:bg-primary/15"
@@ -273,7 +293,7 @@ export function LearningRecap({
         >
           <UserPlus className="h-4 w-4" />
           Sign in to keep words
-        </button>
+        </AppButton>
       )}
     </div>
   );

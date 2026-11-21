@@ -1,7 +1,18 @@
 // Version: 1.0.0
-type Data__159895909<T> = {var count : Nat__490723111; elements : [var ?T]};
-type Data__791452850<K, V> =
-  {var count : Nat__490723111; kvs : [var ?(K, V)]};
+type Alternative__338776776 = {definition : Text; word : Text};
+type Challenge__908504453 =
+  {
+    answer : Text;
+    created : Int;
+    day : Int;
+    id : Text;
+    kind : Text;
+    runs : Map__769234719<Text, Run__1017599534>;
+    wordLength : Nat
+  };
+type Data__384256667<K, V> =
+  {var count : Nat__912416196; kvs : [var ?(K, V)]};
+type Data__426354262<T> = {var count : Nat__912416196; elements : [var ?T]};
 type ExitReason__697964445 = Text;
 type GameHistoryEntry__129170121 =
   {
@@ -49,31 +60,40 @@ type Guess__579589388 =
     timestamp : Timestamp__93733298;
     word : Text
   };
-type Internal__667636161<T> =
-  {children : [var ?Node__92254746<T>]; data : Data__159895909<T>};
-type Internal__8484328<K, V> =
-  {children : [var ?Node__46230540<K, V>]; data : Data__791452850<K, V>};
+type Internal__198519053<K, V> =
+  {children : [var ?Node__953186112<K, V>]; data : Data__384256667<K, V>};
+type Internal__651334830<T> =
+  {children : [var ?Node__391078683<T>]; data : Data__426354262<T>};
 type JoinToken__1007945652 = JoinToken__262252929;
 type JoinToken__262252929 = Text;
-type Leaf__520550824<T> = {data : Data__159895909<T>};
-type Leaf__809889148<K, V> = {data : Data__791452850<K, V>};
-type List__415060402<T> = List__790383201<T>;
-type List__790383201<T> =
+type Leaf__30337262<T> = {data : Data__426354262<T>};
+type Leaf__682421896<K, V> = {data : Data__384256667<K, V>};
+type List__297895508<T> = List__634248035<T>;
+type List__634248035<T> =
   {
-    var blockIndex : Nat__490723111;
+    var blockIndex : Nat__912416196;
     var blocks : [var [var ?T]];
-    var elementIndex : Nat__490723111
+    var elementIndex : Nat__912416196
   };
-type Map__158565046<K, V> = Map__297112838<K, V>;
-type Map__297112838<K, V> =
-  {var root : Node__46230540<K, V>; var size : Nat__490723111};
-type Map__605269027<K, V> = Map__158565046<K, V>;
-type Nat__490723111 = Nat__920180692;
+type Map__630357164<K, V> =
+  {var root : Node__953186112<K, V>; var size : Nat__912416196};
+type Map__719980648<K, V> = Map__630357164<K, V>;
+type Map__769234719<K, V> = Map__719980648<K, V>;
+type Meaning__312250827 =
+  {
+    aiEnhanced : Bool;
+    definition : Text;
+    example : Text;
+    originalDefinition : Text;
+    source : Text;
+    sourceUrl : Text
+  };
+type Nat__912416196 = Nat__920180692;
 type Nat__920180692 = Nat;
-type Node__46230540<K, V> =
-  {#internal : Internal__8484328<K, V>; #leaf : Leaf__809889148<K, V>};
-type Node__92254746<T> =
-  {#internal : Internal__667636161<T>; #leaf : Leaf__520550824<T>};
+type Node__391078683<T> =
+  {#internal : Internal__651334830<T>; #leaf : Leaf__30337262<T>};
+type Node__953186112<K, V> =
+  {#internal : Internal__198519053<K, V>; #leaf : Leaf__682421896<K, V>};
 type OpponentRecordInternal__433823615 =
   {var draws : Nat; var losses : Nat; var wins : Nat};
 type PlayerAccount__317939798 =
@@ -94,6 +114,16 @@ type PlayerStatsInternal__398179385 =
     var totalLosses : Nat;
     var totalWins : Nat
   };
+type Quiz__560046419 =
+  {
+    aiGenerated : Bool;
+    alternatives : [Alternative__338776776];
+    savedDefinition : Text;
+    sentence : ?Sentence__728973883;
+    source : Text;
+    sourceUrl : Text;
+    word : Text
+  };
 type RematchOffer__540615130 =
   {
     joinToken : JoinToken__1007945652;
@@ -104,9 +134,18 @@ type RematchOffer__540615130 =
 type Role__668637276 = {#admin; #player};
 type RoomCode__1024180881 = RoomCode__684757313;
 type RoomCode__684757313 = Text;
-type Set__532252804<T> = Set__710576254<T>;
-type Set__710576254<T> =
-  {var root : Node__92254746<T>; var size : Nat__490723111};
+type Run__1017599534 =
+  {
+    var completed : ?Int;
+    var guesses : [Guess__579589388];
+    var solved : Bool;
+    username : Text
+  };
+type Sentence__728973883 =
+  {alternatives : [Alternative__338776776]; text : Text};
+type Set__227482796<T> =
+  {var root : Node__391078683<T>; var size : Nat__912416196};
+type Set__428357399<T> = Set__227482796<T>;
 type TileState__420246761 = {#absent; #correct; #present};
 type Timestamp__18894895 = Timestamp__301639476;
 type Timestamp__301639476 = Int;
@@ -122,73 +161,101 @@ actor {
   stable _timerId : Nat;
   stable accounts :
     {
-      var root : Node__46230540<Text, PlayerAccount__317939798>;
-      var size : Nat__490723111
+      var root : Node__953186112<Text, PlayerAccount__317939798>;
+      var size : Nat__912416196
     };
   stable adminSetupBox : {var consumed : Bool; var initialPass : ?Text};
+  stable aiAttempts :
+    {var root : Node__953186112<Text, Int>; var size : Nat__912416196};
+  stable aiUsage :
+    {var root : Node__953186112<Text, Nat>; var size : Nat__912416196};
   stable authSessions :
-    {var root : Node__46230540<Text, Text>; var size : Nat__490723111};
+    {var root : Node__953186112<Text, Text>; var size : Nat__912416196};
+  stable challenges :
+    {
+      var root : Node__953186112<Text, Challenge__908504453>;
+      var size : Nat__912416196
+    };
   stable counterBox :
     {
-      var blockIndex : Nat__490723111;
+      var blockIndex : Nat__912416196;
       var blocks : [var [var ?Nat]];
-      var elementIndex : Nat__490723111
+      var elementIndex : Nat__912416196
     };
   stable customWords :
     {
-      var blockIndex : Nat__490723111;
+      var blockIndex : Nat__912416196;
       var blocks : [var [var ?WordPoolEntry__909654232]];
-      var elementIndex : Nat__490723111
+      var elementIndex : Nat__912416196
     };
   stable gameCounter :
     {
-      var blockIndex : Nat__490723111;
+      var blockIndex : Nat__912416196;
       var blocks : [var [var ?Nat]];
-      var elementIndex : Nat__490723111
+      var elementIndex : Nat__912416196
     };
   stable gameHistory :
     {
       var root :
-        Node__46230540<PlayerName__363347696,
-                        List__415060402<GameHistoryEntry__129170121>>;
-      var size : Nat__490723111
+        Node__953186112<PlayerName__363347696,
+                         List__297895508<GameHistoryEntry__129170121>>;
+      var size : Nat__912416196
     };
   stable joinTokens :
     {
-      var root : Node__46230540<GameId__54718739, Text>;
-      var size : Nat__490723111
+      var root : Node__953186112<GameId__54718739, Text>;
+      var size : Nat__912416196
     };
   stable knownValidWords :
-    {var root : Node__92254746<Text>; var size : Nat__490723111};
+    {var root : Node__391078683<Text>; var size : Nat__912416196};
+  stable var legacyCacheImported : Bool;
+  stable meanings :
+    {
+      var root : Node__953186112<Text, Meaning__312250827>;
+      var size : Nat__912416196
+    };
+  stable var nativeDictionaryVersion : Nat;
   stable opponentStore :
     {
       var root :
-        Node__46230540<Text,
-                        Map__605269027<Text,
-                                        OpponentRecordInternal__433823615>>;
-      var size : Nat__490723111
+        Node__953186112<Text,
+                         Map__769234719<Text,
+                                         OpponentRecordInternal__433823615>>;
+      var size : Nat__912416196
     };
   stable pairUsedWords :
     {
-      var root : Node__46230540<Text, Set__532252804<Text>>;
-      var size : Nat__490723111
+      var root : Node__953186112<Text, Set__428357399<Text>>;
+      var size : Nat__912416196
     };
   stable pendingAnswer : Text;
+  stable quizCache :
+    {
+      var root : Node__953186112<Text, Quiz__560046419>;
+      var size : Nat__912416196
+    };
+  stable recordedGames :
+    {var root : Node__391078683<Text>; var size : Nat__912416196};
   stable rematchOffers :
     {
-      var root : Node__46230540<GameId__54718739, RematchOffer__540615130>;
-      var size : Nat__490723111
+      var root : Node__953186112<GameId__54718739, RematchOffer__540615130>;
+      var size : Nat__912416196
     };
   stable sessions :
     {
-      var root : Node__46230540<GameId__54718739, GameSession__705701642>;
-      var size : Nat__490723111
+      var root : Node__953186112<GameId__54718739, GameSession__705701642>;
+      var size : Nat__912416196
     };
   stable statsStore :
     {
-      var root : Node__46230540<Text, PlayerStatsInternal__398179385>;
-      var size : Nat__490723111
+      var root : Node__953186112<Text, PlayerStatsInternal__398179385>;
+      var size : Nat__912416196
     };
   stable usedWords :
-    {var root : Node__92254746<Text>; var size : Nat__490723111}
+    {var root : Node__391078683<Text>; var size : Nat__912416196};
+  stable wordBanks :
+    {
+      var root : Node__953186112<Text, {payload : Text; revision : Nat}>;
+      var size : Nat__912416196
+    }
 };

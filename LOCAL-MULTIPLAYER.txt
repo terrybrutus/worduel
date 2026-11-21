@@ -1,0 +1,53 @@
+WORDUEL LOCAL FRIEND TEST
+
+Run pnpm dev:local from the Worduel root. The dedicated port is 43992.
+Open http://127.0.0.1:43992/lobby on the host computer.
+
+Each browser profile receives a private guest session automatically. No login
+or email account is needed. Use another browser or a private window to test
+a second player on the same computer. Two ordinary tabs share one identity.
+
+Challenge a Friend -> select 5, 6, or 7 letters and Versus or Co-op -> Create
+Game. Copy the invitation to a friend on the same Wi-Fi. Invites use the
+host's LAN address instead of localhost. The friend can also enter the room
+code on the host's LAN lobby. Public games appear in Join a Game.
+
+Six guesses are allowed at all lengths. In versus, both players guess
+independently; the first correct answer ends the round. A player who uses
+all guesses can see the answer while the opponent continues. In co-op,
+players alternate turns and share six guesses.
+
+The server checks every guess, controls results, keeps opponent letters and
+unfinished answers private, and persists guest sessions/games across restarts.
+Only an explicit leave forfeits a versus match. Refreshing keeps your match;
+inactive matches expire after two hours. Rematches retain length and mode.
+
+Local state: src/frontend/.worduel-local-games.json and its lock/backup files.
+These files are ignored by Git and denied browser access. Do not share them.
+The process lock prevents separate loopback/LAN instances splitting game state.
+
+The same-Wi-Fi link requires the host computer to stay on and reachable.
+VPN isolation, guest Wi-Fi isolation, and Windows Firewall can block a friend's
+connection. This setup does not make an internet address for off-site friends.
+Do not expose the Vite development server directly to the public internet.
+
+This is a real local multiplayer service, not the Caffeine Motoko deployment.
+The deployed login/backend are unchanged. Production deployment, internet
+hosting, and cross-device Word Bank sync are separate work. Nothing is pushed.
+
+DAILY AND PLAY-LATER CHALLENGES
+
+Open /challenges, or Daily & Play-Later in the lobby. Choose 5, 6, or 7 letters.
+Daily Duel uses one shared puzzle per UTC date and length. Each browser profile
+keeps its own guesses. Daily streaks count puzzles solved on their UTC date.
+
+For a play-later challenge, solve your board and copy the challenge link from
+the result. A friend gets an empty, independent board for the same word. The
+creator's browser need not stay open; this local server computer must stay on.
+Completed results become comparable only after each player finishes. Unfinished
+answers and other players' guesses are never included in the response.
+
+Runs persist across refreshes and server restarts. Recent rounds appear on the
+challenge page. Links expire after 30 days. Private state lives in
+src/frontend/.worduel-challenges.json, ignored by Git and blocked to browsers.
+These modes do not create public internet hosting or verified-email accounts.

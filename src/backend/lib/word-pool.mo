@@ -2,8 +2,13 @@ import Types "../types/word-pool";
 import Common "../types/common";
 import WordListData "word-list-data";
 import GuessWordListData "guess-word-list-data";
+import LongGuessWords "long-guess-word-list-data";
 import List "mo:core/List";
 import Set "mo:core/Set";
+import Text "mo:core/Text";
+import Array "mo:core/Array";
+import Char "mo:core/Char";
+import Iter "mo:core/Iter";
 
 module {
   public type WordPoolEntry = Types.WordPoolEntry;
@@ -16,6 +21,11 @@ module {
 
   // Keep answers curated, but accept a much broader set of real guesses.
   public func getAnswerWords() : [Text] { WordListData.chunk01() };
+  public func getAnswerWordsForLength(length : Nat) : [Text] {
+    if (length == 6) return ["planet","garden","bridge","silver","castle","stream","forest","bright","puzzle","orange","travel","friend","bottle","winter","summer","branch","school","flower","gentle","wonder","little","cheese","rabbit","smooth"];
+    if (length == 7) return ["journey","picture","blanket","thunder","library","morning","balance","freedom","curious","whisper","village","orchard","rainbow","teacher","kitchen","weather","bicycle","dolphin","feather","lantern","pumpkin","stretch","collect","reflect"];
+    getAnswerWords();
+  };
 
   public func _makeAnswerWordSet() : Set.Set<Text> {
     let s = Set.empty<Text>();
@@ -29,9 +39,9 @@ module {
 
   public func _makeGuessWordSet() : Set.Set<Text> {
     let s = Set.empty<Text>();
-    for (arr in GuessWordListData.getAllChunks().values()) {
+    for (arr in GuessWordListData.getAllChunks().concat(LongGuessWords.getAllChunks()).values()) {
       for (w in arr.values()) {
-        if (w.size() == 5) {
+        if (w.size() >= 5 and w.size() <= 7) {
           s.add(w);
         };
       };
@@ -75,7 +85,10 @@ module {
     knownValidWords : Set.Set<Text>,
     word : Text,
   ) : Bool {
-    validateWordDebug(custom, knownValidWords, word).acceptedAsGuess;
+    let lower = word.toLower();
+    if (lower.size() < 5 or lower.size() > 7 or not lower.toArray().all(func(c) { c >= 'a' and c <= 'z' })) return false;
+    if (knownValidWords.contains(lower)) return true;
+    validateWordDebug(custom, knownValidWords, lower).acceptedAsGuess;
   };
 
   public func validateWordDebug(
@@ -84,7 +97,7 @@ module {
     word : Text,
   ) : WordValidationDebug {
     let lower = word.toLower();
-    let lengthOk = lower.size() == 5;
+    let lengthOk = lower.size() >= 5 and lower.size() <= 7;
     let alphabetic = lower.toArray().all(func(c) = c.isAlphabetic());
     let guessWordSet = _makeGuessWordSet();
     let answerWordSet = _makeAnswerWordSet();

@@ -1,0 +1,74 @@
+WORDUEL: ONE BACKEND FOR LOCAL TESTING AND CAFFEINE
+
+Nothing in this change requires Supabase or another hosted service.
+The React frontend calls the Motoko canister in both environments.
+The former Node games/challenges/AI modules are no longer mounted by Vite.
+
+Local startup (Windows with Ubuntu WSL and the pinned Motoko dependencies):
+  node tools/native-backend/dev.mjs
+Frontend: http://127.0.0.1:43992
+The local ICP gateway uses loopback port 49431. No other app is stopped.
+The launcher fails if a required port is occupied.
+
+Backend checks:
+  corepack pnpm test:backend
+These compile the real Wasm, check the saved stable signature, and run
+security, multiplayer, daily/replay, private Word Bank and mocked AI tests.
+The AI tests never use the real key or make paid requests.
+
+Local state and controller credentials are private files under
+.worduel-native/, excluded from Git and blocked by Vite. Stop the native
+process cleanly to save a canister snapshot. A later startup reloads that
+snapshot and upgrades it, rather than reinstalling and erasing its state.
+Keep backups of this folder if local backend test data matters.
+
+Existing browser Word Banks are retained and migrated into the native
+guest's bank. Old prototype Node matches/challenge links are not native
+canister matches. Their JSON files remain untouched for recovery, but new
+matches and links must be created against the native backend.
+
+SECURITY / LOGIN
+Guest play requires no sign-in. Password login and password-reset flows
+are retired: the previous password representation was not a secure hash.
+Existing account records and stats are preserved; old passwords and old
+session formats cannot authenticate. Account UI remains on hold.
+Caffeine identity principals can authenticate through loginWithIdentity.
+An administrator must be bound by a real canister controller using
+provisionIdentityAdmin. There is no public setup password, secret-key
+self-promotion or browser-storage privilege flag.
+
+DEFINITIONS / AI
+The existing Anthropic provider is used through native, non-replicated
+canister HTTP outcalls. No key is shipped in source code, browser assets,
+Candid arguments or GitHub. Local development reads the ignored
+src/frontend/.env.local and passes ANTHROPIC_API_KEY into the local
+canister's environment; only the local controller can inspect settings.
+
+For Caffeine deployment, its canister environment must separately contain
+ANTHROPIC_API_KEY. A GitHub push CANNOT safely provision that secret.
+Without it, games, Word Bank, authored quizzes and dictionary definitions
+still work, while generated quiz choices report not configured.
+Use Caffeine's supported secret/environment configuration; do not put a
+secret into the public env.json or a VITE_* variable. If the Caffeine UI
+does not expose this setting, this needs platform support before paid AI
+can be enabled there. No claim of a live Caffeine deployment is made.
+Keep status, log and snapshot visibility restricted to controllers before
+provisioning a key. Canister memory/environment is not confidential from
+subnet operators; this is not a general-purpose secrets vault. Prefer a
+Caffeine-supported secret/inference mechanism for production credentials.
+Reference: https://docs.internetcomputer.org/guides/security/https-outcalls/
+
+Paid attempts are reserved in stable state before each request: 50/day,
+500 per rolling 31 days, and 10 per player/day, shared across simplification,
+quiz drafting and independent review. Failures count too. Accepted content
+is cached across upgrades. AI is not the dictionary/guess validator.
+Definitions have a dictionary source. Quiz alternatives receive independent
+AI screening, which reduces ambiguity but cannot guarantee correctness.
+
+IMPORT / UPGRADE
+Caffeine must build src/backend/main.mo with mops.toml dependencies and
+inject its real backend_host and backend_canister_id into env.json.
+The local test does not substitute a fabricated backend in production.
+Compatibility is checked against the repository's saved .most signature.
+The exact deployed Caffeine state is still verified only during a real
+platform import; never reinstall a production canister to bypass errors.

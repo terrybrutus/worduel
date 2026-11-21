@@ -1,6 +1,10 @@
 import Types "../types/game";
 import Text "mo:core/Text";
 import Time "mo:core/Time";
+import Nat "mo:core/Nat";
+import Int "mo:core/Int";
+import Array "mo:core/Array";
+import VarArray "mo:core/VarArray";
 
 module {
   public type GameSession = Types.GameSession;
@@ -15,6 +19,13 @@ module {
   // Generate a new unique game ID from a counter
   public func generateGameId(counter : Nat) : Types.GameId {
     "game-" # counter.toText();
+  };
+  public func roomCodeFromSecret(secret : Text) : Text {
+    let chars = secret.toArray();
+    var code = "WORD-";
+    var i = 0;
+    while (i < 12) { code #= Text.fromChar(chars[i]); i += 1 };
+    code.toUpper();
   };
 
   // Generate a "WORD-XXXX" room code using timestamp entropy + counter.
@@ -66,35 +77,26 @@ module {
   public func evaluateGuess(guess : Text, answer : Text) : [TileState] {
     let g = guess.toArray();
     let a = answer.toArray();
-    var r0 : TileState = #absent;
-    var r1 : TileState = #absent;
-    var r2 : TileState = #absent;
-    var r3 : TileState = #absent;
-    var r4 : TileState = #absent;
-    var u0 = a[0]; var u1 = a[1]; var u2 = a[2]; var u3 = a[3]; var u4 = a[4];
-
-    if (g[0] == a[0]) { r0 := #correct; u0 := ' ' };
-    if (g[1] == a[1]) { r1 := #correct; u1 := ' ' };
-    if (g[2] == a[2]) { r2 := #correct; u2 := ' ' };
-    if (g[3] == a[3]) { r3 := #correct; u3 := ' ' };
-    if (g[4] == a[4]) { r4 := #correct; u4 := ' ' };
-
-    func markPresent(gi : Char, ri : TileState) : TileState {
-      if (ri == #correct) { return #correct };
-      if (gi == u0) { u0 := ' '; return #present };
-      if (gi == u1) { u1 := ' '; return #present };
-      if (gi == u2) { u2 := ' '; return #present };
-      if (gi == u3) { u3 := ' '; return #present };
-      if (gi == u4) { u4 := ' '; return #present };
-      ri;
+    let result = Array.repeat<TileState>(#absent,a.size()).toVarArray<TileState>();
+    let used = Array.repeat(false,a.size()).toVarArray();
+    if (g.size() != a.size()) return result.toArray();
+    var i = 0;
+    while (i < a.size()) {
+      if (g[i] == a[i]) { result[i] := #correct; used[i] := true };
+      i += 1;
     };
-    r0 := markPresent(g[0], r0);
-    r1 := markPresent(g[1], r1);
-    r2 := markPresent(g[2], r2);
-    r3 := markPresent(g[3], r3);
-    r4 := markPresent(g[4], r4);
-
-    [r0, r1, r2, r3, r4];
+    i := 0;
+    while (i < a.size()) {
+      if (result[i] != #correct) {
+        var j = 0;
+        label find while (j < a.size()) {
+          if (not used[j] and g[i] == a[j]) { result[i] := #present; used[j] := true; break find };
+          j += 1;
+        };
+      };
+      i += 1;
+    };
+    result.toArray();
   };
 
   public func createGame(
@@ -251,6 +253,7 @@ module {
 
     {
       id = session.id;
+      wordLength = session.answer.size();
       roomCode = session.roomCode;
       mode = session.mode;
       players = session.players;
@@ -316,8 +319,8 @@ module {
     word : Text,
     now : Types.Timestamp,
   ) : { #ok : (Guess, GameStatus); #err : Text; #notYourTurn } {
-    if (word.size() != 5) {
-      return #err("Word must be exactly 5 letters");
+    if (word.size() != session.answer.size()) {
+      return #err("Word must be exactly " # session.answer.size().toText() # " letters");
     };
     if (session.status != #playing) {
       return #err("Game is not in progress");
@@ -457,7 +460,12 @@ module {
         #delete
       };
       case (#playing) {
-        session.status := #expired;
+        if (session.mode == #versus and session.players.size() == 2) {
+          let winner = if (playerNum == 1) { 2 } else { 1 };
+          session.status := #won(winner);
+          if (winner == 1) { session.p1Won := true; session.p1Done := true }
+          else { session.p2Won := true; session.p2Done := true };
+        } else { session.status := #expired };
         session.exitReason := "opponent_left";
         session.finishedAt := ?now;
         #keep;

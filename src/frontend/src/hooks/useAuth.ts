@@ -1,280 +1,88 @@
-import {
-  useActor,
-  useInternetIdentity,
-} from "@caffeineai/core-infrastructure";
-import {
-  type ReactNode,
-  createContext,
-  createElement,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import { Role, createActor } from "../backend";
-import { mergeGuestWordBankIntoUser } from "../lib/wordBank";
+import { useInternetIdentity } from "@caffeineai/core-infrastructure";
+import { createContext, createElement, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { Role, type PlayerInfo } from "../backend";
+import { connectLocalGuest, localGuest, localCall, signInNativeIdentity, type LocalGuest } from "../lib/localBackend";
+import { loadWordBank, saveWordBank, mergeGuestWordBankIntoUser } from "../lib/wordBank";
 import { SESSION_KEY } from "../types";
+import { startWordBankSync } from "../lib/wordBankSync";
 
-export interface AuthUser {
-  username: string;
-  role: Role;
-}
-
+export interface AuthUser { username: string; role: Role }
 export interface AuthContextValue {
-  user: AuthUser | null;
-  sessionToken: string | null;
-  isAdmin: boolean;
-  isLoading: boolean;
-  isConnecting: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  user: AuthUser | null; sessionToken: string | null; isAdmin: boolean; isLoading: boolean; isConnecting: boolean;
+  login: (username: string,password: string) => Promise<void>;
+  register: (username: string,password: string) => Promise<void>;
   loginWithProvider: (requestedUsername?: string) => Promise<void>;
   logout: () => Promise<void>;
-  register: (username: string, password: string) => Promise<void>;
   promoteToAdmin: (secretKey: string) => Promise<void>;
 }
-
-const USER_KEY = "__worduel_user__";
-const PENDING_PROVIDER_USERNAME_KEY = "__worduel_pending_provider_username__";
-
-export const AuthContext = createContext<AuthContextValue>({
-  user: null,
-  sessionToken: null,
-  isAdmin: false,
-  isLoading: false,
-  isConnecting: false,
-  login: async () => {},
-  loginWithProvider: async () => {},
-  logout: async () => {},
-  register: async () => {},
-  promoteToAdmin: async () => {},
-});
-
-function useBackendActor() {
-  return useActor((canisterId, uploadFile, downloadFile, options) =>
-    createActor(canisterId, uploadFile, downloadFile, options),
-  );
-}
-
+const unavailable = async () => { throw new Error("Password login is retired. Use guest play or Caffeine identity."); };
+export const AuthContext = createContext<AuthContextValue>({ user: null,sessionToken: null,isAdmin: false,isLoading: true,isConnecting: true,login: unavailable,register: unavailable,loginWithProvider: unavailable,logout: async () => {},promoteToAdmin: unavailable });
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const internetIdentity = useInternetIdentity();
-  const { actor, isFetching } = useBackendActor();
-  const identityLoginInFlight = useRef(false);
-  const [user, setUser] = useState<AuthUser | null>(() => {
+  const identity = useInternetIdentity();
+  const [session,setSession] = useState<LocalGuest | null>(null);
+  const [role,setRole] = useState(Role.player);
+  const [error,setError] = useState("");
+  const signingIn = useRef(false);
+  const connect = useCallback(async () => {
+    setError("");
     try {
-      const raw = localStorage.getItem(USER_KEY);
-      if (!raw) return null;
-      return JSON.parse(raw) as AuthUser;
-    } catch {
-      return null;
+      const before = localGuest();
+      const next = await connectLocalGuest();
+      const profile = await localCall<PlayerInfo | null>("getMyProfile");
+      if (!profile) throw new Error("Session could not be verified.");
+      if (before && before.username !== next.username) {
+        const saved = loadWordBank(next.username);
+        saveWordBank(next.username,[...saved,...loadWordBank(before.username).filter(word => !saved.some(entry => entry.word === word.word))]);
+      }
+      // Preserve the previous local prototype's saved words when moving to the canister.
+      if (!localStorage.getItem("__worduel_native_bank_migrated__")) {
+        let previous: LocalGuest | null = null;
+        try { previous = JSON.parse(localStorage.getItem("__worduel_local_guest__") ?? "null"); } catch {}
+        const current = loadWordBank(next.username);
+        const old = [...loadWordBank("WordMaster"),...(previous ? loadWordBank(previous.username) : [])];
+        saveWordBank(next.username,[...current,...old.filter((word,index) => !current.some(entry => entry.word === word.word) && old.findIndex(entry => entry.word === word.word) === index)]);
+        mergeGuestWordBankIntoUser(next.username);
+        localStorage.setItem("__worduel_native_bank_migrated__","true");
+      }
+      setRole(profile.role); setSession(next);
+      localStorage.setItem("__worduel_user__",JSON.stringify({username: next.username,role: profile.role}));
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not connect."); }
+  },[]);
+  useEffect(() => { void connect(); },[connect]);
+  useEffect(() => { if (session) return startWordBankSync(session.username,session.token); },[session?.username,session?.token]);
+  const loginWithProvider = useCallback(async (requestedUsername?: string) => {
+    if (!identity.identity || !identity.isAuthenticated) {
+      localStorage.setItem("__worduel_pending_identity__",requestedUsername?.trim() || "player");
+      identity.login(); return;
     }
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [sessionToken, setSessionToken] = useState<string | null>(() =>
-    localStorage.getItem(SESSION_KEY),
-  );
-  const [adminPromoted, setAdminPromoted] = useState(() =>
-    user?.username != null
-      ? localStorage.getItem(`admin_promoted_${user.username}`) === "true"
-      : false,
-  );
-
-  // Admin if the backend returned an admin role OR the user self-promoted via secret key
-  const isAdmin =
-    user?.role === Role.admin ||
-    adminPromoted ||
-    (user?.username != null &&
-      localStorage.getItem(`admin_promoted_${user.username}`) === "true");
-
-  const defaultProviderUsername = useCallback(() => {
-    const principal =
-      internetIdentity.identity?.getPrincipal().toString() ?? "player";
-    return `player-${principal.slice(0, 8)}`;
-  }, [internetIdentity.identity]);
-
-  const finishProviderLogin = useCallback(
-    async (requestedUsername?: string) => {
-      if (!actor) throw new Error("Connecting to server\u2026");
-      if (!internetIdentity.isAuthenticated) {
-        throw new Error("Provider sign-in is not complete yet.");
-      }
-
-      setIsLoading(true);
-      try {
-        const fallbackUsername = requestedUsername?.trim()
-          ? requestedUsername.trim()
-          : defaultProviderUsername();
-        const result = await actor.loginWithIdentity(fallbackUsername);
-        if (result.__kind__ === "err") throw new Error(result.err);
-        const token = result.ok;
-        const backendUsername =
-          (await actor.getUsernameForSession(token)) ?? fallbackUsername;
-        localStorage.setItem(SESSION_KEY, token);
-        setSessionToken(token);
-        mergeGuestWordBankIntoUser(backendUsername);
-        const authUser: AuthUser = {
-          username: backendUsername,
-          role: Role.player,
-        };
-        localStorage.setItem(USER_KEY, JSON.stringify(authUser));
-        localStorage.removeItem(PENDING_PROVIDER_USERNAME_KEY);
-        setUser(authUser);
-        setAdminPromoted(false);
-      } finally {
-        setIsLoading(false);
-        identityLoginInFlight.current = false;
-      }
-    },
-    [actor, defaultProviderUsername, internetIdentity.isAuthenticated],
-  );
-
+    const before = localGuest();
+    const next = await signInNativeIdentity(identity.identity,requestedUsername || "player");
+    if (before) {
+      const saved = loadWordBank(next.username);
+      saveWordBank(next.username,[...saved,...loadWordBank(before.username).filter(word => !saved.some(entry => entry.word === word.word))]);
+    }
+    localStorage.removeItem("__worduel_pending_identity__");
+    await connect();
+  },[connect,identity]);
   useEffect(() => {
-    if (
-      user ||
-      !actor ||
-      !internetIdentity.isAuthenticated ||
-      identityLoginInFlight.current
-    ) {
-      return;
-    }
-
-    const pendingUsername =
-      localStorage.getItem(PENDING_PROVIDER_USERNAME_KEY) ?? undefined;
-    identityLoginInFlight.current = true;
-    void finishProviderLogin(pendingUsername);
-  }, [actor, finishProviderLogin, internetIdentity.isAuthenticated, user]);
-
-  const login = useCallback(
-    async (username: string, password: string) => {
-      if (!actor) throw new Error("Connecting to server\u2026");
-      setIsLoading(true);
-      try {
-        const result = await actor.login(username, password);
-        if (result.__kind__ === "err") throw new Error(result.err);
-        const token = result.ok;
-        localStorage.setItem(SESSION_KEY, token);
-        setSessionToken(token);
-        const promoted =
-          localStorage.getItem(`admin_promoted_${username}`) === "true";
-        const authUser: AuthUser = {
-          username,
-          role: promoted ? Role.admin : Role.player,
-        };
-        mergeGuestWordBankIntoUser(username);
-        localStorage.setItem(USER_KEY, JSON.stringify(authUser));
-        setUser(authUser);
-        setAdminPromoted(promoted);
-      } finally {
-        setIsLoading(false);
-      }
+    const pending = localStorage.getItem("__worduel_pending_identity__");
+    if (!pending || !identity.isAuthenticated || signingIn.current) return;
+    signingIn.current = true;
+    void loginWithProvider(pending).catch(reason => setError(String(reason))).finally(() => { signingIn.current = false; });
+  },[identity.isAuthenticated,loginWithProvider]);
+  if (!session) return createElement("main",{className:"mx-auto p-6 text-center"},
+    createElement("p",{role:"status"},error || "Connecting to Worduel..."),
+    error && createElement("button",{onClick:() => void connect(),className:"mt-4 rounded-md border p-3"},"Retry connection"));
+  return createElement(AuthContext.Provider,{value:{
+    user:{username:session.username,role}, sessionToken:session.token,isAdmin:role === Role.admin,isLoading:false,isConnecting:false,
+    login:unavailable,register:unavailable,loginWithProvider,
+    logout:async () => {
+      await localCall("logout");
+      localStorage.removeItem("__worduel_native_guest__"); localStorage.removeItem(SESSION_KEY); localStorage.removeItem("__worduel_user__");
+      if (identity.isAuthenticated) identity.clear();
+      setSession(null); await connect();
     },
-    [actor],
-  );
-
-  const loginWithProvider = useCallback(
-    async (requestedUsername?: string) => {
-      if (requestedUsername?.trim()) {
-        localStorage.setItem(
-          PENDING_PROVIDER_USERNAME_KEY,
-          requestedUsername.trim(),
-        );
-      }
-
-      if (!internetIdentity.isAuthenticated) {
-        internetIdentity.login();
-        return;
-      }
-
-      await finishProviderLogin(requestedUsername);
-    },
-    [finishProviderLogin, internetIdentity],
-  );
-
-  const register = useCallback(
-    async (username: string, password: string) => {
-      if (!actor) throw new Error("Connecting to server\u2026");
-      setIsLoading(true);
-      try {
-        const result = await actor.register(username, password);
-        if (result.__kind__ === "err") throw new Error(result.err);
-        const token = result.ok;
-        localStorage.setItem(SESSION_KEY, token);
-        setSessionToken(token);
-        const authUser: AuthUser = { username, role: Role.player };
-        mergeGuestWordBankIntoUser(username);
-        localStorage.setItem(USER_KEY, JSON.stringify(authUser));
-        setUser(authUser);
-        setAdminPromoted(false);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [actor],
-  );
-
-  const logout = useCallback(async () => {
-    const token = localStorage.getItem(SESSION_KEY);
-    if (actor && token) {
-      try {
-        await actor.logout(token);
-      } catch {
-        /* best effort */
-      }
-    }
-    localStorage.removeItem(SESSION_KEY);
-    localStorage.removeItem(USER_KEY);
-    localStorage.removeItem(PENDING_PROVIDER_USERNAME_KEY);
-    if (internetIdentity.isAuthenticated) {
-      internetIdentity.clear();
-    }
-    setSessionToken(null);
-    setUser(null);
-    setAdminPromoted(false);
-  }, [actor, internetIdentity]);
-
-  // Call the BACKEND promoteToAdmin endpoint so the account role is actually
-  // changed to #admin server-side. Then re-issue a fresh session token so all
-  // subsequent calls carry the admin role.
-  // Calls the BACKEND promoteToAdmin so the account role is persisted as #admin
-  // server-side, then clears the stale session token (the backend invalidates it).
-  // The caller is redirected to log in again to get a fresh token with admin role.
-  const promoteToAdmin = useCallback(
-    async (secretKey: string) => {
-      if (!user?.username) throw new Error("Not logged in");
-      if (!actor) throw new Error("Connecting to server\u2026");
-      const result = await actor.promoteToAdmin(user.username, secretKey);
-      if (result.__kind__ === "err") throw new Error(result.err);
-      // The backend invalidates the old session and returns a fresh token.
-      // Swap it immediately so all subsequent admin calls (importWords, addWord, etc)
-      // use the new valid token — without this swap every admin action returns Unauthorized.
-      const newToken = result.ok.newToken;
-      localStorage.setItem(SESSION_KEY, newToken);
-      setSessionToken(newToken);
-      localStorage.setItem(`admin_promoted_${user.username}`, "true");
-      const updatedUser: AuthUser = { ...user, role: Role.admin };
-      localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
-      setUser(updatedUser);
-      setAdminPromoted(true);
-    },
-    [actor, user],
-  );
-
-  const value: AuthContextValue = {
-    user,
-    sessionToken,
-    isAdmin,
-    isLoading,
-    isConnecting: isFetching,
-    login,
-    loginWithProvider,
-    logout,
-    register,
-    promoteToAdmin,
-  };
-
-  return createElement(AuthContext.Provider, { value }, children);
+    promoteToAdmin:async () => { throw new Error("Only the Caffeine canister controller can assign administrators."); },
+  }},children);
 }
-
-export function useAuth() {
-  return useContext(AuthContext);
-}
+export function useAuth() { return useContext(AuthContext); }

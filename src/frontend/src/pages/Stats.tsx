@@ -1,3 +1,4 @@
+import { AppButton } from "../components/AppButton";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "@tanstack/react-router";
@@ -111,15 +112,16 @@ export default function Stats() {
               My Stats
             </h1>
           </div>
-          <button
+          <AppButton
             type="button"
             onClick={() => void navigate({ to: "/lobby" })}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0"
             data-ocid="stats.back_button"
+            aria-label="Back to lobby"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Back to Lobby</span>
-          </button>
+            <span>Lobby</span>
+          </AppButton>
         </div>
 
         {/* Summary cards */}
@@ -294,11 +296,6 @@ export default function Stats() {
                       <th
                         key={key}
                         className="text-right px-4 py-2 text-xs font-mono text-muted-foreground uppercase tracking-wider cursor-pointer hover:text-foreground transition-colors select-none"
-                        onClick={() => toggleSort(key)}
-                        onKeyDown={(e) =>
-                          (e.key === "Enter" || e.key === " ") &&
-                          toggleSort(key)
-                        }
                         scope="col"
                         aria-sort={
                           rivalSort === key
@@ -309,12 +306,12 @@ export default function Stats() {
                         }
                         data-ocid={`stats.rivals.sort_${key}`}
                       >
-                        <span className="inline-flex items-center justify-end gap-1">
+                        <AppButton onClick={() => toggleSort(key)} tooltip={`Sort by ${label}`} className="inline-flex items-center justify-end gap-1">
                           {label}
                           {rivalSort === key ? (
                             <SortIcon asc={rivalAsc} />
                           ) : null}
-                        </span>
+                        </AppButton>
                       </th>
                     ))}
                   </tr>
@@ -449,14 +446,14 @@ export default function Stats() {
             <p className="text-sm text-muted-foreground mb-5">
               Play your first game to start tracking your stats.
             </p>
-            <button
+            <AppButton
               type="button"
               onClick={() => void navigate({ to: "/lobby" })}
               className="btn-primary text-sm px-5 py-2"
               data-ocid="stats.play_now_button"
             >
               Play Now
-            </button>
+            </AppButton>
           </div>
         )}
       </div>

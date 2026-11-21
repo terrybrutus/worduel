@@ -1,3 +1,8 @@
+import { AppButton } from "../components/AppButton";
+import { Maximize, Minimize, RefreshCw, WifiOff } from "lucide-react";
+import { toast } from "sonner";
+import { LOCAL_PREVIEW } from "../lib/localPreview";
+import { localGuest, gameWordLength, friendOrigin, localInviteOrigin } from "../lib/localBackend";
 import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -17,6 +22,7 @@ import {
   useLeaveGame,
   useRematchOffer,
   useRequestRematch,
+  useGameState,
 } from "../hooks/useBackend";
 import { useGame } from "../hooks/useGame";
 import { triggerHaptic } from "../hooks/useHapticEnabled";
@@ -27,6 +33,24 @@ import { getOpponentName } from "../types";
 
 const MAX_GUESSES = 6;
 const WORD_LENGTH = 5;
+
+function FullscreenButton() {
+  const [active, setActive] = useState(false);
+  useEffect(() => {
+    const changed = () => setActive(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", changed);
+    return () => document.removeEventListener("fullscreenchange", changed);
+  }, []);
+  if (!document.fullscreenEnabled) return null;
+  return <AppButton aria-label={active ? "Exit fullscreen" : "Enter fullscreen"}
+    className="flex h-11 w-11 shrink-0 items-center justify-center"
+    onClick={async () => {
+      try {
+        if (document.fullscreenElement) await document.exitFullscreen();
+        else await document.documentElement.requestFullscreen();
+      } catch { toast.error("Fullscreen is not available in this browser."); }
+    }}>{active ? <Minimize size={18} /> : <Maximize size={18} />}</AppButton>;
+}
 
 // ── Confetti ─────────────────────────────────────────────────────────────────
 const CONFETTI_COLORS = [
@@ -71,12 +95,15 @@ function OpponentGhostGrid({
   opponentName,
   opponentLeft,
   opponentGuessTileStates,
+  wordLength = 5,
 }: {
   guessCount: number;
   opponentName: string;
   opponentLeft: boolean;
   opponentGuessTileStates: TileState[][];
+  wordLength?: number;
 }) {
+  const WORD_LENGTH = wordLength;
   const rows = Array.from({ length: MAX_GUESSES }, (_, i) => i);
   const hasTileStates = opponentGuessTileStates.length > 0;
 
@@ -120,7 +147,8 @@ function OpponentGhostGrid({
                   <div
                     // biome-ignore lint/suspicious/noArrayIndexKey: grid column
                     key={colIdx}
-                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded border-2 transition-all duration-300 ${
+                    style={{ width: "var(--tile-size, 3rem)", height: "var(--tile-size, 3rem)" }}
+                    className={`opponent-empty rounded border-2 transition-colors duration-300 ${
                       isGuessed
                         ? "border-chart-1/60 bg-chart-1/35"
                         : "border-border/30 bg-card/40"
@@ -232,7 +260,7 @@ function WinScreen({
         transition={{ delay: 0.45 }}
         className="flex flex-col sm:flex-row gap-3 w-full max-w-xs"
       >
-        <button
+        <AppButton
           type="button"
           className="btn-game flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
           onClick={onRematch}
@@ -246,15 +274,15 @@ function WinScreen({
           ) : (
             "Play Again"
           )}
-        </button>
-        <button
+        </AppButton>
+        <AppButton
           type="button"
           className="btn-game flex-1 bg-muted text-foreground hover:bg-muted/80"
           onClick={onLobby}
           data-ocid="game.back_to_lobby_button"
         >
           Back to Lobby
-        </button>
+        </AppButton>
       </motion.div>
     </motion.div>
   );
@@ -362,7 +390,7 @@ function LossScreen({
         transition={{ delay: 0.5 }}
         className="flex flex-col sm:flex-row gap-3 w-full max-w-xs"
       >
-        <button
+        <AppButton
           type="button"
           className="btn-game flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
           onClick={onRematch}
@@ -376,15 +404,15 @@ function LossScreen({
           ) : (
             "Play Again"
           )}
-        </button>
-        <button
+        </AppButton>
+        <AppButton
           type="button"
           className="btn-game flex-1 bg-muted text-foreground hover:bg-muted/80"
           onClick={onLobby}
           data-ocid="game.back_to_lobby_button"
         >
           Back to Lobby
-        </button>
+        </AppButton>
       </motion.div>
     </motion.div>
   );
@@ -519,11 +547,13 @@ function VersusStatus({
 // ── Invite Link Copy ──────────────────────────────────────────────────────────
 function InviteLink({ token, gameId }: { token: string; gameId?: string }) {
   const [copied, setCopied] = useState(false);
+  const [origin, setOrigin] = useState(LOCAL_PREVIEW ? localInviteOrigin() : window.location.origin);
+  useEffect(() => { if (LOCAL_PREVIEW) void friendOrigin().then(setOrigin).catch(() => {}); }, []);
 
   const copyLink = useCallback(async () => {
     const url = gameId
-      ? `${window.location.origin}/game/join/${token}?gameId=${gameId}`
-      : `${window.location.origin}/game/join/${token}`;
+      ? `${origin}/game/join/${token}?gameId=${gameId}`
+      : `${origin}/game/join/${token}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
@@ -539,24 +569,24 @@ function InviteLink({ token, gameId }: { token: string; gameId?: string }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
-  }, [token, gameId]);
+  }, [token, gameId, origin]);
 
   return (
     <div className="flex flex-col gap-2 w-full">
       <p className="text-xs font-body text-muted-foreground text-center">
         Share this link with your opponent to start the game
       </p>
-      <button
+      <AppButton
         type="button"
         onClick={() => void copyLink()}
         className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-display font-bold text-sm hover:bg-primary/90 transition-colors"
         data-ocid="game.copy_invite_button"
       >
         {copied ? "✓ Copied!" : "📋 Copy Invite Link"}
-      </button>
+      </AppButton>
       <div className="px-3 py-2 rounded-lg bg-card border border-border text-center">
         <p className="text-[10px] font-mono text-muted-foreground break-all">
-          {window.location.origin}/game/join/{token}
+          {origin}/game/join/{token}
         </p>
       </div>
     </div>
@@ -603,14 +633,14 @@ function WaitingForOpponent({
         <span className="room-code text-base">{roomCode}</span>
       </div>
 
-      <button
+      <AppButton
         type="button"
         className="btn-game bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground text-sm px-4 py-2"
         onClick={onCancel}
         data-ocid="game.cancel_button"
       >
         Cancel
-      </button>
+      </AppButton>
     </div>
   );
 }
@@ -625,6 +655,9 @@ function VersusLayout({
   invalidWordMessage,
   isShaking: _isShaking,
   isMyTurn: _isMyTurn,
+  opponentCount,
+  opponentStates,
+  wordLength,
 }: {
   myGrid: React.ReactNode;
   opponentGrid: React.ReactNode;
@@ -634,9 +667,12 @@ function VersusLayout({
   invalidWordMessage: string | null;
   isShaking: boolean;
   isMyTurn: boolean;
+  opponentCount: number;
+  opponentStates: TileState[][];
+  wordLength: number;
 }) {
   return (
-    <div className="w-full flex flex-col gap-2 overflow-hidden">
+    <div className="duel-arena">
       {/* Invalid word toast */}
       <AnimatePresence>
         {invalidWordMessage && (
@@ -645,7 +681,7 @@ function VersusLayout({
             initial={{ opacity: 0, y: -6, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6 }}
-            className="invalid-word-error mx-auto max-w-xs"
+            className="invalid-word-error absolute top-0 left-1/2 -translate-x-1/2 z-10 max-w-xs"
             role="alert"
             data-ocid="game.invalid_word_error"
           >
@@ -655,35 +691,39 @@ function VersusLayout({
       </AnimatePresence>
 
       {/* Both boards always visible — scaled for mobile */}
-      <div className="flex gap-2 sm:gap-4 justify-center items-start w-full overflow-hidden">
+      <div className="duel-boards">
         {/* My grid */}
-        <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
+        <div className="board-zone player-zone">
           <div className="flex items-center gap-1 mb-1">
             <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-primary inline-block" />
             <span className="text-[9px] sm:text-xs font-display font-semibold text-primary uppercase tracking-wider truncate max-w-[80px] sm:max-w-[100px]">
               {myName} (You)
             </span>
           </div>
-          <div className="versus-board-scale">{myGrid}</div>
+          {myGrid}
         </div>
 
         {/* Divider */}
-        <div className="w-px self-stretch bg-border/40 mx-0.5 sm:mx-1 flex-shrink-0" />
 
         {/* Opponent ghost grid */}
-        <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
-          <div className="flex items-center gap-1 mb-1">
-            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-chart-1/70 inline-block" />
-            <span className="text-[9px] sm:text-xs font-display font-semibold text-muted-foreground uppercase tracking-wider truncate max-w-[80px] sm:max-w-[100px]">
-              {opponentName}
-            </span>
-          </div>
-          <div className="versus-board-scale">{opponentGrid}</div>
+        <div className="board-zone opponent-zone">
+          {opponentGrid}
         </div>
       </div>
 
       {/* Keyboard — always full width below both boards */}
-      <div className="w-full mt-1">{keyboard}</div>
+      <div className="mobile-opponent" data-ocid="game.mobile_opponent" aria-live="polite">
+        <div className="min-w-0"><p className="truncate text-xs font-semibold">{opponentName}</p><p className="text-xs text-muted-foreground">{opponentCount}/6 guesses</p></div>
+        <div className="flex shrink-0 flex-col gap-0.5" aria-label="Opponent color progress; letters hidden">
+          {Array.from({ length: 6 }, (_, row) => <div key={row} className="flex gap-0.5">
+            {Array.from({ length: wordLength }, (_, col) => {
+              const state = opponentStates[row]?.[col];
+              return <span key={col} className={`h-1.5 w-2 rounded-sm ${state === "correct" ? "bg-green-600" : state === "present" ? "bg-amber-500" : row < opponentCount ? "bg-neutral-600" : "bg-neutral-800"}`} />;
+            })}
+          </div>)}
+        </div>
+      </div>
+      <div className="duel-keyboard">{keyboard}</div>
     </div>
   );
 }
@@ -724,14 +764,14 @@ function RematchWaiting({
         <p className="text-xs text-muted-foreground font-body">
           Share the room code with your opponent so they can join.
         </p>
-        <button
+        <AppButton
           type="button"
           className="btn-game bg-muted text-muted-foreground hover:bg-muted/80 text-sm px-4 py-2 w-full"
           onClick={onLobby}
           data-ocid="game.rematch_waiting_lobby_button"
         >
           Back to Lobby
-        </button>
+        </AppButton>
       </motion.div>
     </div>
   );
@@ -756,7 +796,7 @@ function AcceptRematchBanner({
       <p className="font-display font-bold text-foreground text-base">
         Opponent wants a rematch!
       </p>
-      <button
+      <AppButton
         type="button"
         onClick={onAccept}
         disabled={isPending}
@@ -770,7 +810,7 @@ function AcceptRematchBanner({
         ) : (
           "Accept Rematch"
         )}
-      </button>
+      </AppButton>
     </motion.div>
   );
 }
@@ -778,11 +818,14 @@ function AcceptRematchBanner({
 // ── Main Game Page ─────────────────────────────────────────────────────────────
 export default function Game() {
   const navigate = useNavigate();
-  const sessionToken = localStorage.getItem(SESSION_KEY) ?? "";
+  const sessionToken = LOCAL_PREVIEW ? localGuest()?.token ?? "" : localStorage.getItem(SESSION_KEY) ?? "";
 
   const {
     gameState,
     isLoading,
+    connection,
+    loadError,
+    forceRefresh,
     playerName,
     isMyTurn,
     currentGuesses,
@@ -825,6 +868,7 @@ export default function Game() {
   const status = gameState?.status.__kind__;
   const answer = gameState?.answer ?? "";
   const roomCode = gameState?.roomCode ?? "";
+  const wordLength = gameWordLength(gameState);
   const opponentName = getOpponentName(gameState, playerName);
 
   // Terminal: game is fully over for this player
@@ -898,7 +942,8 @@ export default function Game() {
           setRematchRoomCode(data.roomCode);
           setRematchNewGameId(data.newGameId);
         },
-        onError: () => {
+        onError: (error) => {
+          toast.error(error instanceof Error ? error.message : "Could not start the rematch.");
           requestRematch.reset();
         },
       },
@@ -922,6 +967,12 @@ export default function Game() {
       void navigate({ to: "/lobby" });
     }
   }, [navigate, requestRematch, rematchNewGameId]);
+  const { data: rematchState } = useGameState(rematchNewGameId, rematchOffered ? sessionToken : null);
+  useEffect(() => {
+    if (rematchOffered && rematchState?.status.__kind__ === "playing" && rematchNewGameId) {
+      void navigate({ to: "/game/$gameId", params: { gameId: rematchNewGameId } });
+    }
+  }, [rematchOffered, rematchState, rematchNewGameId, navigate]);
 
   // ── PB: poll for rematch offer from PA ─────────────────────────────────────────
   // Only poll when game is in terminal state and this player has NOT initiated a rematch
@@ -955,7 +1006,7 @@ export default function Game() {
   ) : null;
 
   // ── Loading ────────────────────────────────────────────────────────────────────────
-  if (isLoading) {
+  if (isLoading && connection === "connected" && !loadError) {
     return (
       <div
         className="min-h-[100dvh] flex items-center justify-center bg-background"
@@ -972,15 +1023,16 @@ export default function Game() {
     return (
       <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-4 bg-background">
         {rematchWaitingOverlay}
-        <p className="text-muted-foreground font-body">Game not found.</p>
-        <button
+        <p role="status" className="max-w-sm px-4 text-center text-muted-foreground font-body">{loadError || (connection === "offline" ? "You're offline. Reconnect to load this game." : connection === "reconnecting" ? "Could not connect to the game. Your invitation is unchanged." : "Game not found.")}</p>
+        <AppButton className="flex min-h-11 items-center gap-2 px-4" onClick={forceRefresh}><RefreshCw size={16} />Retry connection</AppButton>
+        <AppButton
           type="button"
           className="btn-game bg-primary text-primary-foreground"
           onClick={handleLobby}
           data-ocid="game.back_to_lobby_button"
         >
           Back to Lobby
-        </button>
+        </AppButton>
       </div>
     );
   }
@@ -994,7 +1046,8 @@ export default function Game() {
   // ── Main layout ───────────────────────────────────────────────────────────
   return (
     <div
-      className="min-h-[100dvh] flex flex-col bg-background"
+      className={`flex flex-col bg-background ${!isTerminal && !isWaiting ? "game-live" : "min-h-[100dvh]"}`}
+      style={{ "--word-length": wordLength } as React.CSSProperties}
       data-ocid="game.page"
     >
       {rematchWaitingOverlay}
@@ -1002,8 +1055,8 @@ export default function Game() {
       {iWon && !opponentWonVersus && <Confetti />}
 
       {/* Header */}
-      <header className="bg-card border-b border-border px-4 py-3 flex items-center justify-between gap-3 shrink-0">
-        <button
+      <header className="game-header bg-card border-b border-border px-4 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
+        <AppButton
           type="button"
           className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors duration-200 font-body text-sm"
           onClick={handleLobby}
@@ -1011,9 +1064,9 @@ export default function Game() {
         >
           <span className="text-base">←</span>
           <span>Lobby</span>
-        </button>
+        </AppButton>
 
-        <div className="flex items-center gap-2">
+        <div className="game-room flex items-center gap-2">
           {/* Mode badge */}
           <span
             className={`px-2.5 py-0.5 rounded-full text-xs font-display font-bold uppercase tracking-wider border ${
@@ -1028,6 +1081,7 @@ export default function Game() {
 
           {/* Room code */}
           {roomCode && <span className="room-code text-xs">{roomCode}</span>}
+          <span className="text-xs text-muted-foreground">{wordLength} letters</span>
         </div>
 
         {/* Opponent status (versus header) */}
@@ -1041,19 +1095,28 @@ export default function Game() {
 
         {/* Leave button during active play */}
         {!isTerminal && !isWaiting && (
-          <button
+          <FullscreenButton />
+        )}
+        {!isTerminal && !isWaiting && (
+          <AppButton
             type="button"
             className="text-muted-foreground hover:text-destructive transition-colors duration-200 font-body text-sm"
             onClick={handleLeave}
             data-ocid="game.leave_button"
           >
             Leave
-          </button>
+          </AppButton>
         )}
       </header>
 
+      {(connection !== "connected" || loadError) && <div className="flex shrink-0 items-center justify-center gap-3 border-b border-border px-3 text-xs text-primary" data-ocid="game.connection_status">
+        <WifiOff size={16} />
+        <span role="status">{connection === "offline" ? "Offline" : loadError ? "Game unavailable" : "Reconnecting..."}</span>
+        <AppButton aria-label="Retry connection" tooltip={loadError || "Reconnect without leaving the game"} onClick={forceRefresh} className="flex min-h-11 shrink-0 items-center gap-1 px-2"><RefreshCw size={14} />Retry</AppButton>
+      </div>}
+
       {/* Main content */}
-      <main className="flex-1 flex flex-col items-center justify-start px-4 pt-4 pb-6 gap-4 overflow-y-auto">
+      <main className="game-main flex-1 min-h-0 flex flex-col items-center justify-start px-4 pt-4 pb-6 gap-4 overflow-y-auto">
         {/* Waiting for second player */}
         {isWaiting && (
           <WaitingForOpponent
@@ -1138,6 +1201,9 @@ export default function Game() {
             {/* Versus: side-by-side layout */}
             {isVersus ? (
               <VersusLayout
+                opponentCount={Number(opponentGuessCount)}
+                opponentStates={opponentGuessTileStates}
+                wordLength={wordLength}
                 myName={playerName}
                 opponentName={opponentName}
                 invalidWordMessage={invalidWordMessage}
@@ -1145,6 +1211,7 @@ export default function Game() {
                 isMyTurn={isMyTurn}
                 myGrid={
                   <TileGrid
+                    wordLength={wordLength}
                     guesses={currentGuesses}
                     currentInput={currentInput}
                     maxGuesses={MAX_GUESSES}
@@ -1154,6 +1221,7 @@ export default function Game() {
                 }
                 opponentGrid={
                   <OpponentGhostGrid
+                    wordLength={wordLength}
                     guessCount={Number(opponentGuessCount)}
                     opponentName={opponentName}
                     opponentLeft={opponentLeft}
@@ -1188,14 +1256,15 @@ export default function Game() {
                   )}
                 </AnimatePresence>
 
-                <TileGrid
+                <div className="coop-board"><TileGrid
+                  wordLength={wordLength}
                   guesses={currentGuesses}
                   currentInput={currentInput}
                   maxGuesses={MAX_GUESSES}
                   isFlipping={isFlipping}
                   isShaking={isShaking}
                   showPlayerLabels={true}
-                />
+                /></div>
 
                 <p className="text-xs font-body text-muted-foreground">
                   {MAX_GUESSES - currentGuesses.length} guess
@@ -1240,6 +1309,7 @@ export default function Game() {
               Your guesses
             </p>
             <TileGrid
+              wordLength={wordLength}
               guesses={currentGuesses}
               currentInput=""
               maxGuesses={currentGuesses.length}

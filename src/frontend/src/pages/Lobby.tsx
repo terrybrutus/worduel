@@ -1,3 +1,8 @@
+import { AppButton } from "../components/AppButton";
+import { QRCodeSVG } from "qrcode.react";
+import { LOCAL_PREVIEW } from "../lib/localPreview";
+import { friendOrigin, gameWordLength, localInviteOrigin } from "../lib/localBackend";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "../components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -110,7 +115,9 @@ function InviteModal({
   joinToken,
   onClose,
 }: InviteModalProps) {
-  const inviteUrl = `${window.location.origin}/game/join/${joinToken}?gameId=${gameId}`;
+  const [origin, setOrigin] = useState(LOCAL_PREVIEW ? localInviteOrigin() : window.location.origin);
+  useEffect(() => { if (LOCAL_PREVIEW) void friendOrigin().then(setOrigin).catch(() => {}); }, []);
+  const inviteUrl = `${origin}/game/join/${joinToken}?gameId=${gameId}`;
   const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
   const { sessionToken } = useAuth();
@@ -143,40 +150,37 @@ function InviteModal({
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      data-ocid="invite.dialog"
-    >
-      <div
-        className="absolute inset-0 bg-background/80 backdrop-blur-sm"
-        onClick={onClose}
-        onKeyDown={(e) => e.key === "Escape" && onClose()}
-        role="button"
-        tabIndex={-1}
-        aria-label="Close"
-      />
-      <div className="relative z-10 w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-2xl">
-        <button
+    <Dialog open={open} onOpenChange={value => { if (!value) onClose(); }}>
+      <DialogContent showCloseButton={false} onOpenAutoFocus={event => { event.preventDefault(); document.querySelector<HTMLDivElement>('[data-ocid="invite.dialog"]')?.focus(); }} onKeyDownCapture={event => { if (event.key === "Escape") { event.stopPropagation(); onClose(); } }} onCloseAutoFocus={event => { event.preventDefault(); document.querySelector<HTMLButtonElement>('[data-ocid="lobby.create_game_button"]')?.focus(); }} className="max-h-[90dvh] overflow-y-auto bg-card sm:max-w-sm" data-ocid="invite.dialog">
+        <AppButton
           type="button"
           onClick={onClose}
           className="absolute top-4 right-4 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
           data-ocid="invite.close_button"
-          aria-label="Close"
+          aria-label="Close invitation"
         >
           <X className="w-4 h-4" />
-        </button>
+        </AppButton>
 
         <div className="flex items-center gap-2 mb-1">
           <span className="w-2 h-2 rounded-full bg-primary animate-ping" />
-          <h2 className="font-display font-bold text-lg text-foreground">
+          <DialogTitle className="pr-10 font-display font-bold text-lg text-foreground">
             Private Game Created!
-          </h2>
+          </DialogTitle>
         </div>
-        <p className="text-sm text-muted-foreground mb-5">
-          Share this link with your opponent — they'll join instantly.
-        </p>
+        <DialogDescription className="text-sm text-muted-foreground">
+          Scan the code or share the invitation link to join.
+        </DialogDescription>
 
-        <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border/60 mb-3">
+        <figure className="m-0 flex flex-col items-center gap-2" data-ocid="invite.qr_code">
+          <div className="rounded-md bg-white p-2">
+            <QRCodeSVG value={inviteUrl} size={208} level="M" marginSize={4} bgColor="#ffffff" fgColor="#000000" role="img" aria-label={`Scan to join private game ${roomCode}`} />
+          </div>
+          <figcaption className="text-center text-sm font-semibold">Scan to join</figcaption>
+          {LOCAL_PREVIEW && <p className="text-center text-xs text-muted-foreground">Connect your phone to the same Wi-Fi.</p>}
+        </figure>
+
+        <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border/60">
           <div>
             <p className="text-xs text-muted-foreground">Room code</p>
             <p className="font-mono font-bold text-primary tracking-widest text-lg">
@@ -192,7 +196,7 @@ function InviteModal({
         </div>
 
         {/* Selectable URL so user can tap-and-hold to copy on mobile */}
-        <div className="p-3 rounded-xl bg-muted/30 border border-border/60 mb-4">
+        <div className="p-3 rounded-xl bg-muted/30 border border-border/60">
           <p
             className="text-xs font-mono text-muted-foreground break-all select-all cursor-text"
             title="Tap and hold to copy"
@@ -201,7 +205,7 @@ function InviteModal({
           </p>
         </div>
 
-        <button
+        <AppButton
           type="button"
           onClick={handleCopy}
           className="btn-primary w-full flex items-center justify-center gap-2"
@@ -213,9 +217,9 @@ function InviteModal({
             <Copy className="w-4 h-4" />
           )}
           {copied ? "Copied!" : "Copy Invite Link"}
-        </button>
-      </div>
-    </div>
+        </AppButton>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -252,7 +256,7 @@ function ActiveGameRow({
       className="flex items-center gap-2 p-3 rounded-xl border border-border/60 bg-muted/10 hover:bg-muted/20 hover:border-primary/40 transition-smooth"
       data-ocid={`lobby.active_games.item.${index}`}
     >
-      <button
+      <AppButton
         type="button"
         onClick={() => onNavigate(game.id)}
         className="flex-1 flex items-center justify-between gap-3 min-w-0 text-left"
@@ -268,12 +272,12 @@ function ActiveGameRow({
           </div>
           <p className="text-xs text-muted-foreground font-mono mt-0.5 truncate">
             {game.players.join(" vs ")} ·{" "}
-            {game.mode === GameMode.coop ? "Co-op" : "Versus"}
+            {game.mode === GameMode.coop ? "Co-op" : "Versus"} · {gameWordLength(game)} letters
           </p>
         </div>
         <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-      </button>
-      <button
+      </AppButton>
+      <AppButton
         type="button"
         onClick={handleLeave}
         disabled={leaving}
@@ -282,7 +286,7 @@ function ActiveGameRow({
         data-ocid={`lobby.active_games.leave_button.${index}`}
       >
         <X className="w-3.5 h-3.5" />
-      </button>
+      </AppButton>
     </div>
   );
 }
@@ -363,22 +367,17 @@ function ProfileSheet({
 }) {
   if (!open) return null;
   return (
-    <>
-      <div
-        className="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm"
-        onClick={onClose}
-        onKeyDown={(e) => e.key === "Escape" && onClose()}
-        role="button"
-        tabIndex={-1}
-        aria-label="Close"
-      />
-      <div
-        className="fixed right-0 top-0 h-full w-80 z-50 bg-card border-l border-border shadow-2xl"
+    <Dialog open={open} onOpenChange={value => { if (!value) onClose(); }}>
+      <DialogContent showCloseButton={false} aria-describedby={undefined}
+        onOpenAutoFocus={event => { event.preventDefault(); document.querySelector<HTMLDivElement>('[data-ocid="lobby.profile.sheet"]')?.focus(); }}
+        onKeyDownCapture={event => { if (event.key === "Escape") { event.stopPropagation(); onClose(); } }}
+        onCloseAutoFocus={event => { event.preventDefault(); document.querySelector<HTMLButtonElement>('[data-ocid="lobby.profile_button"]')?.focus(); }}
+        className="grid-rows-[auto_minmax(0,1fr)] left-auto right-0 top-0 h-dvh w-80 max-w-full translate-x-0 translate-y-0 gap-0 rounded-none bg-card p-0 sm:max-w-80"
         data-ocid="lobby.profile.sheet"
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-border/60">
-          <h2 className="font-display font-bold text-foreground">My Profile</h2>
-          <button
+          <DialogTitle className="font-display font-bold text-foreground">My Profile</DialogTitle>
+          <AppButton
             type="button"
             onClick={onClose}
             className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
@@ -386,14 +385,14 @@ function ProfileSheet({
             data-ocid="lobby.profile.close_button"
           >
             <X className="w-4 h-4" />
-          </button>
+          </AppButton>
         </div>
-        <div className="p-5 space-y-4 overflow-y-auto h-[calc(100%-64px)]">
+        <div className="min-h-0 p-5 space-y-4 overflow-y-auto">
           <div className="p-4 rounded-xl bg-muted/20 border border-border/60">
             <p className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
-              Logged in as
+              Playing as
             </p>
-            <p className="font-display font-bold text-lg text-foreground mt-1">
+            <p className="break-all font-display font-bold text-lg text-foreground mt-1">
               {username}
             </p>
             {isAdmin && (
@@ -425,25 +424,25 @@ function ProfileSheet({
               </div>
             ))}
           </div>
-          <button
+          <AppButton
             type="button"
             onClick={onViewStats}
             className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-border/60 text-sm font-display font-semibold hover:bg-muted/20 transition-smooth"
             data-ocid="lobby.profile.view_stats_button"
           >
             <TrendingUp className="w-4 h-4 text-primary" /> Full Stats
-          </button>
-          <button
+          </AppButton>
+          {!LOCAL_PREVIEW && <AppButton
             type="button"
             onClick={onLogout}
             className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-destructive/40 text-sm font-display font-semibold text-destructive hover:bg-destructive/10 transition-smooth"
             data-ocid="lobby.profile.logout_button"
           >
             <LogOut className="w-4 h-4" /> Sign Out
-          </button>
+          </AppButton>}
         </div>
-      </div>
-    </>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -493,6 +492,7 @@ export default function Lobby() {
 
   const [lobbyMode, setLobbyMode] = useState<LobbyMode>(null);
   const [gameMode, setGameMode] = useState<GameMode>(GameMode.versus);
+  const [wordLength, setWordLength] = useState<5 | 6 | 7>(5);
   const [isPrivate, setIsPrivate] = useState(false);
   const [roomPreset, setRoomPreset] = useState<RoomPreset>("classic");
   const [inviteData, setInviteData] = useState<{
@@ -532,7 +532,7 @@ export default function Lobby() {
       return;
     }
     createGame.mutate(
-      { sessionToken, mode: gameMode, isPrivate },
+      { sessionToken, mode: gameMode, isPrivate, wordLength },
       {
         onSuccess: (data) => {
           if (isPrivate && data.joinToken) {
@@ -623,7 +623,7 @@ export default function Lobby() {
   return (
     <div className="flex-1 flex flex-col bg-background" data-ocid="lobby.page">
       {/* Header */}
-      <header className="bg-card border-b border-border/60 px-4 py-3 flex items-center justify-between gap-3">
+      <header className="bg-card border-b border-border/60 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <h1 className="font-display font-extrabold text-xl text-foreground">
             Word<span className="text-primary text-glow">uel</span>
@@ -638,9 +638,9 @@ export default function Lobby() {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex max-w-full flex-wrap items-center justify-end gap-1 sm:gap-2">
           {isAdmin && (
-            <button
+            <AppButton
               type="button"
               onClick={() => void navigate({ to: "/admin" })}
               className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-primary/40 text-xs font-display font-bold text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
@@ -648,10 +648,10 @@ export default function Lobby() {
             >
               <Shield className="w-3 h-3" />
               Admin
-            </button>
+            </AppButton>
           )}
           {gamesNeedingAction.length > 0 && (
-            <button
+            <AppButton
               type="button"
               className="relative p-2 rounded-lg text-primary hover:bg-primary/10 transition-colors"
               onClick={() =>
@@ -665,12 +665,12 @@ export default function Lobby() {
             >
               <Bell className="w-4 h-4" />
               <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary animate-ping" />
-            </button>
+            </AppButton>
           )}
           {/* Theme toggle */}
-          <button
+          <AppButton
             type="button"
-            className="p-2 rounded-lg text-muted-foreground hover:text-foreground transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground transition-colors min-w-[44px] min-h-[44px] flex flex-col items-center justify-center gap-1 sm:flex-row"
             onClick={toggleTheme}
             aria-label={
               theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
@@ -711,19 +711,23 @@ export default function Lobby() {
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
               </svg>
             )}
-          </button>
+          <span className="text-[10px] sm:sr-only">Theme</span>
+          </AppButton>
 
           {/* Haptic toggle — only on devices that support vibration */}
           {supportsVibration && (
-            <button
+            <AppButton
               type="button"
-              className={`p-2 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center ${
+              className={`p-2 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex flex-col items-center justify-center gap-1 sm:flex-row ${
                 hapticEnabled
                   ? "text-primary hover:text-primary/80"
                   : "text-muted-foreground hover:text-foreground"
               }`}
               onClick={toggleHaptic}
-              aria-label={hapticEnabled ? "Disable haptics" : "Enable haptics"}
+              role="switch"
+              aria-label="Vibration"
+              aria-checked={hapticEnabled}
+              tooltip={hapticEnabled ? "Vibration on. Turn it off." : "Vibration off. Turn it on."}
               data-ocid="lobby.haptic_toggle"
             >
               {/* Phone vibrate icon */}
@@ -746,15 +750,19 @@ export default function Lobby() {
                   <path d="M9 9h6M9 12h6M9 15h4" strokeOpacity="0.6" />
                 )}
               </svg>
-            </button>
+            <span className="text-[10px] sm:sr-only">Vibration</span>
+          </AppButton>
           )}
 
           {/* Sound toggle */}
-          <button
+          <AppButton
             type="button"
-            className="p-2 rounded-lg text-muted-foreground hover:text-foreground transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground transition-colors min-w-[44px] min-h-[44px] flex flex-col items-center justify-center gap-1 sm:flex-row"
             onClick={toggleSound}
-            aria-label={soundEnabled ? "Mute sounds" : "Enable sounds"}
+            role="switch"
+            aria-label="Sound"
+            aria-checked={soundEnabled}
+            tooltip={soundEnabled ? "Sound on. Mute sounds." : "Sound off. Enable sounds."}
             data-ocid="lobby.sound_toggle"
           >
             {soundEnabled ? (
@@ -762,72 +770,33 @@ export default function Lobby() {
             ) : (
               <VolumeX className="w-4 h-4" />
             )}
-          </button>
-          <button
+          <span className="text-[10px] sm:sr-only">Sound</span>
+          </AppButton>
+          <AppButton
             type="button"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted/40 text-sm font-body font-medium text-foreground hover:bg-muted/60 transition-colors"
             onClick={() => setShowProfile(true)}
+            aria-label="Open profile"
             data-ocid="lobby.profile_button"
           >
             <span className="truncate max-w-[5rem] font-display">
               {user?.username}
             </span>
             <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-          </button>
+          </AppButton>
         </div>
       </header>
 
       <div className="flex-1 container mx-auto max-w-2xl px-4 py-5 space-y-5">
-        {/* Stats bar */}
-        <div className="grid grid-cols-4 gap-2">
-          {[
-            {
-              label: "W",
-              value: wins,
-              icon: <Trophy className="w-3 h-3" />,
-              accent: true,
-            },
-            { label: "L", value: losses, icon: null, accent: false },
-            {
-              label: "Win%",
-              value: `${winRate}%`,
-              icon: <TrendingUp className="w-3 h-3" />,
-              accent: false,
-            },
-            {
-              label: "Streak",
-              value: streak,
-              icon: <Flame className="w-3 h-3" />,
-              accent: streak > 0,
-            },
-          ].map(({ label, value, icon, accent }) => (
-            <div
-              key={label}
-              className={`rounded-xl p-2.5 text-center border ${
-                accent
-                  ? "bg-primary/10 border-primary/30"
-                  : "bg-card border-border/60"
-              }`}
-            >
-              <div
-                className={`flex items-center justify-center gap-1 mb-0.5 ${
-                  accent ? "text-primary" : "text-muted-foreground"
-                }`}
-              >
-                {icon}
-                <span className="text-[10px] font-mono uppercase tracking-widest">
-                  {label}
-                </span>
-              </div>
-              <p
-                className={`font-display font-bold text-base ${
-                  accent ? "text-primary" : "text-foreground"
-                }`}
-              >
-                {value}
-              </p>
-            </div>
-          ))}
+        <div className="grid gap-3 sm:grid-cols-3" aria-label="Play Worduel">
+          <AppButton type="button" onClick={() => { setIsPrivate(true); setRoomPreset("classic"); toggleMode("new"); }} aria-expanded={lobbyMode === "new"} className="min-h-24 rounded-lg border border-primary bg-primary/10 p-4 text-left font-bold text-primary"><Users className="mb-2 h-5 w-5" />Challenge a Friend</AppButton>
+          <AppButton type="button" onClick={() => toggleMode("join")} aria-expanded={lobbyMode === "join"} className="min-h-24 rounded-lg border border-border p-4 text-left font-bold"><Search className="mb-2 h-5 w-5" />Join a Game</AppButton>
+          <AppButton type="button" onClick={() => void navigate({ to: "/practice" })} className="min-h-24 rounded-lg border border-border p-4 text-left font-bold"><BookOpen className="mb-2 h-5 w-5" />Solo Practice</AppButton>
+        </div>
+        <div className="flex flex-wrap items-center gap-4 border-b border-border pb-4">
+          {<AppButton type="button" onClick={() => void navigate({ to: "/challenges" })} className="flex min-h-11 items-center gap-2 text-sm font-semibold"><CalendarDays className="h-4 w-4" />Daily &amp; Play-Later</AppButton>}
+          <AppButton type="button" onClick={() => void navigate({ to: "/word-bank" })} className="flex min-h-11 items-center gap-2 text-sm font-semibold"><BookMarked className="h-4 w-4" />Word Bank</AppButton>
+          <AppButton type="button" onClick={() => void navigate({ to: "/stats" })} className="flex min-h-11 items-center gap-2 text-sm font-semibold"><Trophy className="h-4 w-4" />My Stats</AppButton>
         </div>
 
         {/* Active games — only shown when games exist */}
@@ -864,198 +833,6 @@ export default function Lobby() {
           </div>
         )}
 
-        <div
-          className="grid gap-3 sm:grid-cols-4"
-          data-ocid="lobby.progression_cards"
-        >
-          <button
-            type="button"
-            onClick={() => void navigate({ to: "/practice" })}
-            className="rounded-xl border border-primary/50 bg-primary/10 p-4 text-left transition-smooth hover:bg-primary/15"
-            data-ocid="lobby.guest_practice_button"
-          >
-            <div className="flex items-center gap-2">
-              <Bot className="h-4 w-4 text-primary" />
-              <span className="font-display font-bold text-primary">
-                Play Guest
-              </span>
-            </div>
-            <p className="mt-2 text-xs font-body text-muted-foreground">
-              Try classic guessing or meaning practice without signing in.
-            </p>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickCreate("daily", false)}
-            disabled={createGame.isPending}
-            className="rounded-xl border border-primary/40 bg-primary/10 p-4 text-left transition-smooth hover:bg-primary/15 disabled:opacity-50"
-            data-ocid="lobby.daily_duel_button"
-          >
-            <div className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-primary" />
-              <span className="font-display font-bold text-primary">
-                Daily Duel
-              </span>
-            </div>
-            <p className="mt-2 text-xs font-body text-muted-foreground">
-              Start today&apos;s shared challenge and compare streaks.
-            </p>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickCreate("classic", true)}
-            disabled={createGame.isPending}
-            className="rounded-xl border border-border/60 bg-card p-4 text-left transition-smooth hover:border-primary/40"
-            data-ocid="lobby.async_challenge_button"
-          >
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="font-display font-bold text-foreground">
-                Send Challenge
-              </span>
-            </div>
-            <p className="mt-2 text-xs font-body text-muted-foreground">
-              Create an invite link your opponent can play later.
-            </p>
-          </button>
-          <button
-            type="button"
-            onClick={() => void navigate({ to: "/word-bank" })}
-            className="rounded-xl border border-border/60 bg-card p-4 text-left transition-smooth hover:border-primary/40"
-            data-ocid="lobby.word_bank_button"
-          >
-            <div className="flex items-center gap-2">
-              <BookMarked className="h-4 w-4 text-primary" />
-              <span className="font-display font-bold text-foreground">
-                Word Bank
-              </span>
-            </div>
-            <p className="mt-2 text-xs font-body text-muted-foreground">
-              Review saved words and confidence notes.
-            </p>
-          </button>
-        </div>
-
-        <div
-          className="rounded-xl border border-border/60 bg-card p-4"
-          data-ocid="lobby.pro_rooms_preview"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="font-display text-sm font-bold uppercase tracking-widest text-muted-foreground">
-                Coming Soon / Pro
-              </p>
-              <p className="mt-1 text-xs font-body text-muted-foreground">
-                Build custom word packs, host private rooms, and track learning
-                progress with groups.
-              </p>
-            </div>
-            <Badge variant="outline" className="border-primary/40 text-primary">
-              Pro later
-            </Badge>
-          </div>
-          <div className="mt-3 grid gap-2 sm:grid-cols-3">
-            {[
-              {
-                label: "Creator Packs",
-                detail: "Custom and themed vocabulary sets.",
-                icon: <BookOpen className="h-3.5 w-3.5" />,
-              },
-              {
-                label: "Private Rooms",
-                detail: "Invite-only practice spaces and leagues.",
-                icon: <Users className="h-3.5 w-3.5" />,
-              },
-              {
-                label: "Classroom Hosting",
-                detail: "Teacher, trainer, and team sessions.",
-                icon: <Trophy className="h-3.5 w-3.5" />,
-              },
-              {
-                label: "Progress Tracking",
-                detail: "Confidence trends and learning history.",
-                icon: <TrendingUp className="h-3.5 w-3.5" />,
-              },
-              {
-                label: "Spaced Review",
-                detail: "Review saved words at the right time.",
-                icon: <Flame className="h-3.5 w-3.5" />,
-              },
-              {
-                label: "Admin Dashboard",
-                detail: "Reports, branded links, and tournaments.",
-                icon: <Star className="h-3.5 w-3.5" />,
-              },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="rounded-lg border border-border/60 bg-muted/10 px-3 py-2"
-              >
-                <div className="flex items-center gap-1.5 text-[10px] font-display font-bold text-foreground">
-                  {item.icon}
-                  <span>{item.label}</span>
-                </div>
-                <p className="mt-1 text-[10px] text-muted-foreground">
-                  {item.detail}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Two-choice entry: Start New Game / Join a Game */}
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => toggleMode("new")}
-            className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 font-display font-bold text-sm transition-smooth ${
-              lobbyMode === "new"
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-border/60 bg-card text-foreground hover:border-primary/40 hover:bg-primary/5"
-            }`}
-            data-ocid="lobby.start_new_game_button"
-          >
-            <Plus
-              className={`w-5 h-5 ${
-                lobbyMode === "new" ? "text-primary" : "text-muted-foreground"
-              }`}
-            />
-            <span>Start a New Game</span>
-            <ChevronDown
-              className={`w-3.5 h-3.5 transition-transform ${
-                lobbyMode === "new"
-                  ? "rotate-180 text-primary"
-                  : "text-muted-foreground"
-              }`}
-            />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => toggleMode("join")}
-            className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 font-display font-bold text-sm transition-smooth ${
-              lobbyMode === "join"
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-border/60 bg-card text-foreground hover:border-primary/40 hover:bg-primary/5"
-            }`}
-            data-ocid="lobby.join_game_button"
-          >
-            <Search
-              className={`w-5 h-5 ${
-                lobbyMode === "join" ? "text-primary" : "text-muted-foreground"
-              }`}
-            />
-            <span>Join a Game</span>
-            <ChevronDown
-              className={`w-3.5 h-3.5 transition-transform ${
-                lobbyMode === "join"
-                  ? "rotate-180 text-primary"
-                  : "text-muted-foreground"
-              }`}
-            />
-          </button>
-        </div>
-
         {!user && (
           <div
             className="rounded-xl border border-border/60 bg-card p-4"
@@ -1071,7 +848,7 @@ export default function Lobby() {
                   banks, streaks, and multiplayer history.
                 </p>
               </div>
-              <button
+              <AppButton
                 type="button"
                 onClick={() => void navigate({ to: "/practice" })}
                 className="flex min-h-11 items-center gap-2 rounded-lg border border-primary/40 px-3 py-2 text-sm font-display font-bold text-primary hover:bg-primary/10"
@@ -1079,7 +856,7 @@ export default function Lobby() {
               >
                 <Play className="h-4 w-4" />
                 Play Now
-              </button>
+              </AppButton>
             </div>
           </div>
         )}
@@ -1090,12 +867,18 @@ export default function Lobby() {
             className="bg-card border border-border/60 rounded-xl p-4 space-y-4"
             data-ocid="lobby.create_game.section"
           >
+            {<fieldset className="flex flex-wrap gap-2">
+              <legend className="mb-2 text-sm font-semibold">Word length</legend>
+              {([5,6,7] as const).map(length => <label key={length} className={`flex min-h-11 items-center gap-2 rounded-md border px-3 py-2 text-sm ${wordLength === length ? "border-primary text-primary" : "border-border"}`}>
+                <input type="radio" name="duel-length" checked={wordLength === length} onChange={() => setWordLength(length)} />{length} letters
+              </label>)}
+            </fieldset>}
             <div>
               <p className="text-xs font-mono text-muted-foreground uppercase tracking-widest mb-2">
                 Visibility
               </p>
               <div className="grid grid-cols-2 gap-2">
-                <button
+                <AppButton
                   type="button"
                   onClick={() => setIsPrivate(false)}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border font-display font-semibold text-sm transition-smooth ${
@@ -1104,14 +887,15 @@ export default function Lobby() {
                       : "border-border bg-muted/20 text-muted-foreground hover:border-primary/40 hover:text-foreground"
                   }`}
                   data-ocid="lobby.privacy_public_tab"
+                  aria-pressed={!isPrivate}
                 >
                   <Globe className="w-4 h-4" />
                   <span>Public</span>
                   <span className="text-[10px] font-mono font-normal opacity-70">
                     Open to everyone
                   </span>
-                </button>
-                <button
+                </AppButton>
+                <AppButton
                   type="button"
                   onClick={() => setIsPrivate(true)}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border font-display font-semibold text-sm transition-smooth ${
@@ -1120,13 +904,14 @@ export default function Lobby() {
                       : "border-border bg-muted/20 text-muted-foreground hover:border-primary/40 hover:text-foreground"
                   }`}
                   data-ocid="lobby.privacy_private_tab"
+                  aria-pressed={isPrivate}
                 >
                   <Lock className="w-4 h-4" />
                   <span>Private</span>
                   <span className="text-[10px] font-mono font-normal opacity-70">
                     Invite link only
                   </span>
-                </button>
+                </AppButton>
               </div>
             </div>
 
@@ -1135,7 +920,7 @@ export default function Lobby() {
                 Mode
               </p>
               <div className="flex gap-2">
-                <button
+                <AppButton
                   type="button"
                   onClick={() => setGameMode(GameMode.versus)}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border font-display font-semibold text-sm transition-smooth ${
@@ -1144,11 +929,13 @@ export default function Lobby() {
                       : "border-border bg-muted/20 text-muted-foreground hover:border-primary/40 hover:text-foreground"
                   }`}
                   data-ocid="lobby.mode_versus_tab"
+                  aria-pressed={gameMode === GameMode.versus}
+                  tooltip="Race a friend to solve the same word."
                 >
                   <Zap className="w-4 h-4" />
                   Versus
-                </button>
-                <button
+                </AppButton>
+                <AppButton
                   type="button"
                   onClick={() => setGameMode(GameMode.coop)}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border font-display font-semibold text-sm transition-smooth ${
@@ -1157,38 +944,12 @@ export default function Lobby() {
                       : "border-border bg-muted/20 text-muted-foreground hover:border-primary/40 hover:text-foreground"
                   }`}
                   data-ocid="lobby.mode_coop_tab"
+                  aria-pressed={gameMode === GameMode.coop}
+                  tooltip="Share a board and take turns solving together."
                 >
                   <Users className="w-4 h-4" />
                   Co-op
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <p className="text-xs font-mono text-muted-foreground uppercase tracking-widest mb-2">
-                Room preset
-              </p>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {ROOM_PRESETS.map((preset) => (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() => setRoomPreset(preset.id)}
-                    className={`rounded-xl border p-3 text-left transition-smooth ${
-                      roomPreset === preset.id
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-muted/20 text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                    }`}
-                    data-ocid={`lobby.room_preset.${preset.id}`}
-                  >
-                    <span className="block text-xs font-display font-bold">
-                      {preset.label}
-                    </span>
-                    <span className="mt-1 block text-[10px] font-body opacity-80">
-                      {preset.detail}
-                    </span>
-                  </button>
-                ))}
+                </AppButton>
               </div>
             </div>
 
@@ -1201,7 +962,7 @@ export default function Lobby() {
                 : " Your game will appear in Open Games for anyone to join."}
             </p>
 
-            <button
+            <AppButton
               type="button"
               onClick={handleCreateGame}
               disabled={createGame.isPending}
@@ -1209,7 +970,7 @@ export default function Lobby() {
               data-ocid="lobby.create_game_button"
             >
               {createGame.isPending ? "Creating…" : "Create Game"}
-            </button>
+            </AppButton>
           </div>
         )}
 
@@ -1235,7 +996,7 @@ export default function Lobby() {
                   <input
                     type="text"
                     placeholder="ABCD"
-                    maxLength={4}
+                    maxLength={17}
                     value={joinCode}
                     onChange={(e) => {
                       const raw = e.target.value
@@ -1249,18 +1010,19 @@ export default function Lobby() {
                       if (e.key === "Enter") void handleJoinByCode();
                     }}
                     className="flex-1 min-w-0 px-2 py-2 text-sm font-mono tracking-widest uppercase bg-transparent text-foreground placeholder:text-muted-foreground/50 outline-none"
+                    aria-label="Room code"
                     data-ocid="lobby.join_code_input"
                   />
                 </div>
-                <button
+                <AppButton
                   type="button"
                   onClick={handleJoinByCode}
-                  disabled={joinCode.trim().length !== 4 || joinGame.isPending}
+                  disabled={![4,12].includes(joinCode.trim().length) || joinGame.isPending}
                   className="btn-primary px-5 disabled:opacity-50"
                   data-ocid="lobby.join_submit_button"
                 >
                   Join
-                </button>
+                </AppButton>
               </div>
               {joinError && (
                 <p
@@ -1313,7 +1075,7 @@ export default function Lobby() {
                     data-ocid="lobby.public_games.list"
                   >
                     {openPublicGames.map((game, i) => (
-                      <button
+                      <AppButton
                         key={game.id}
                         type="button"
                         onClick={() => {
@@ -1354,7 +1116,7 @@ export default function Lobby() {
                         <span className="text-xs font-display font-bold text-primary">
                           Join →
                         </span>
-                      </button>
+                      </AppButton>
                     ))}
                   </div>
                 </ScrollArea>
@@ -1370,14 +1132,14 @@ export default function Lobby() {
               <h2 className="font-display font-bold text-sm uppercase tracking-widest text-muted-foreground">
                 Recent Games
               </h2>
-              <button
+              <AppButton
                 type="button"
                 onClick={() => void navigate({ to: "/stats" })}
                 className="text-xs text-primary font-body hover:underline"
                 data-ocid="lobby.history.view_all_button"
               >
                 View all →
-              </button>
+              </AppButton>
             </div>
             <div className="space-y-2" data-ocid="lobby.history.list">
               {recentHistory.map((entry, i) => (
@@ -1389,17 +1151,8 @@ export default function Lobby() {
 
         {/* Quick nav */}
         <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => void navigate({ to: "/stats" })}
-            className="flex items-center gap-2 p-3 rounded-xl border border-border/60 bg-card hover:border-primary/40 transition-smooth text-sm font-display font-semibold"
-            data-ocid="lobby.view_stats_button"
-          >
-            <Crown className="w-4 h-4 text-primary" />
-            My Stats
-          </button>
           {isAdmin && (
-            <button
+            <AppButton
               type="button"
               onClick={() => void navigate({ to: "/admin" })}
               className="flex items-center gap-2 p-3 rounded-xl border border-border/60 bg-card hover:border-primary/40 transition-smooth text-sm font-display font-semibold"
@@ -1407,7 +1160,7 @@ export default function Lobby() {
             >
               <Shield className="w-4 h-4 text-primary" />
               Admin Panel
-            </button>
+            </AppButton>
           )}
         </div>
 

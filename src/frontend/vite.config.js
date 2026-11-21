@@ -2,6 +2,8 @@ import { fileURLToPath, URL } from "url";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import environment from "vite-plugin-environment";
+import wordListPath from "word-list";
+import { nativePreview, nativeGateway } from "./server/native-preview.mjs";
 
 const ii_url =
   process.env.DFX_NETWORK === "local"
@@ -30,14 +32,16 @@ export default defineConfig({
     },
   },
   server: {
+    fs: { deny: [".env", ".env.*", "*.{crt,pem}", "**/.git/**", "**/.worduel-native/**", "**/.worduel-local-games.json*", "**/.worduel-meanings.json*", "**/.worduel-challenges.json*"] },
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:4943",
+        target: nativeGateway(),
         changeOrigin: true,
       },
     },
   },
   plugins: [
+    nativePreview(),
     environment("all", { prefix: "CANISTER_" }),
     environment("all", { prefix: "DFX_" }),
     environment(["II_URL"]),
@@ -46,6 +50,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: [
+      { find: "worduel-dictionary", replacement: wordListPath.replaceAll("\\", "/") + "?raw" },
       {
         find: "declarations",
         replacement: fileURLToPath(new URL("../declarations", import.meta.url)),

@@ -1,0 +1,10 @@
+import { createRequire } from 'node:module';
+import { readFileSync,writeFileSync } from 'node:fs';
+const require=createRequire(new URL('../../src/frontend/package.json',import.meta.url));
+const path=require('word-list').default??require('word-list');
+const words=readFileSync(path,'utf8').split(/\r?\n/).filter(word=>/^[a-z]{6,7}$/.test(word));
+const chunks=[];
+for(let i=0;i<words.length;i+=1000)chunks.push(words.slice(i,i+1000));
+const generated=`// Generated from word-list 4.1.0 (MIT). Do not edit individual entries.\nimport Text "mo:core/Text";\nimport Iter "mo:core/Iter";\nmodule {\n${chunks.map((chunk,i)=>`  public func chunk${i}() : [Text] { ${JSON.stringify(chunk.join(' '))}.split(#char ' ').toArray() };`).join('\n')}\n  public func getAllChunks() : [[Text]] { [${chunks.map((_,i)=>`chunk${i}()`).join(',')}] };\n};\n`;
+writeFileSync(new URL('../../src/backend/lib/long-guess-word-list-data.mo',import.meta.url),generated);
+console.log(`Generated ${words.length} accepted 6/7-letter words.`);
