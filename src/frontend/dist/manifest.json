@@ -5,19 +5,18 @@
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0d0d0d",
-  "theme_color": "#d97706",
-  "orientation": "portrait",
+  "theme_color": "#111111",
   "icons": [
     {
-      "src": "/icons/icon-192.svg",
+      "src": "/icons/worduel-192-v2.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-512.svg",
+      "src": "/icons/worduel-512-v2.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]

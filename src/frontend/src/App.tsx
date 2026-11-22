@@ -55,18 +55,18 @@ function LoadingScreen({ onDone }: { onDone: () => void }) {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-background transition-opacity duration-400 ${
+      className={`safe-overlay fixed inset-0 z-50 flex flex-col items-center justify-center bg-background transition-opacity duration-400 ${
         done ? "opacity-0 pointer-events-none" : "opacity-100"
       }`}
       aria-label="Loading Worduel"
       aria-busy="true"
     >
       <div className="flex flex-col items-center gap-8">
-        <div className="flex gap-2">
+        <div className="flex gap-1 sm:gap-2">
           {TILES.map((letter, i) => (
             <div
               key={letter}
-              className={`w-11 h-11 sm:w-14 sm:h-14 flex items-center justify-center rounded-md border-2 font-display font-black text-xl sm:text-2xl select-none transition-all duration-300 ${
+              className={`w-9 h-9 sm:w-14 sm:h-14 flex items-center justify-center rounded-md border-2 font-display font-black text-xl sm:text-2xl select-none transition-all duration-300 ${
                 flipped[i]
                   ? i % 3 === 0
                     ? "tile-correct border-[oklch(0.55_0.18_142)] bg-[oklch(0.55_0.18_142)]"
@@ -98,7 +98,7 @@ function LoadingScreen({ onDone }: { onDone: () => void }) {
 function AuthModal({ onClose }: { onClose: () => void }) {
   return (
     <div
-      className="fixed inset-0 z-40 overflow-y-auto bg-background/95 px-4 py-8 backdrop-blur-sm"
+      className="safe-overlay fixed inset-0 z-40 overflow-y-auto bg-background/95 px-4 py-8 backdrop-blur-sm"
       data-ocid="auth_modal.dialog"
       aria-modal="true"
       aria-label="Sign in or create account"
@@ -170,7 +170,10 @@ function RootApp() {
   const showModal = loadingDone && !user && !modalDismissed && !allowGuestRoute;
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-background">
+    <div
+      className="app-shell flex flex-col bg-background"
+      data-ocid="app.shell"
+    >
       {/* Loading splash overlay — pure visual, never blocks RouterProvider */}
       {!loadingDone && <LoadingScreen onDone={() => setLoadingDone(true)} />}
 
@@ -183,7 +186,7 @@ function RootApp() {
        * NEVER move this above <RouterProvider>.
        */}
       {user && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-xl">
+        <div className="app-alert fixed left-1/2 -translate-x-1/2 z-50 px-4 w-full">
           <CrossGameAlert />
         </div>
       )}
@@ -191,6 +194,16 @@ function RootApp() {
       {/* Toaster: always mounted, inside router context */}
       <Toaster
         position="top-center"
+        offset={{
+          top: "calc(var(--safe-top) + 16px)",
+          left: "calc(var(--safe-left) + 16px)",
+          right: "calc(var(--safe-right) + 16px)",
+        }}
+        mobileOffset={{
+          top: "calc(var(--safe-top) + 16px)",
+          left: "calc(var(--safe-left) + 16px)",
+          right: "calc(var(--safe-right) + 16px)",
+        }}
         toastOptions={{ className: "font-body text-sm" }}
       />
 
@@ -279,7 +292,7 @@ const router = createRouter({
     challengeRoute,
   ]),
   defaultErrorComponent: ({ error }) => (
-    <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-4 bg-background px-6 text-center">
+    <div className="min-h-[var(--app-height)] flex flex-col items-center justify-center gap-4 bg-background px-6 text-center">
       <div className="text-4xl">⚠️</div>
       <p className="font-display font-bold text-foreground text-xl">
         Something went wrong

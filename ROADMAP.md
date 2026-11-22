@@ -1,5 +1,19 @@
 # WORDUEL Roadmap
 
+## Guest Continuity Follow-Up: November 21, 2026
+
+The app now uses the native Caffeine backend (the older local-only snapshot
+below predates that port). Returning visitors reuse a browser-stored guest
+session token. Guest records have separate backend data, but tokens expire
+after 30 days. Clearing storage, changing devices/browsers, or an isolated
+home-screen installation can create a new guest identity. Ordinary refreshes
+were tested to preserve the same guest. This is not permanent account recovery.
+
+Keep login on hold for now. When resuming accounts, prioritize recovering and
+merging guest Word Bank, stats, and history into a verified identity without
+silently losing progress. Also plan guest-record retention/cleanup; anonymous
+record creation must not be presented as durable cross-device account storage.
+
 ## Local Status: November 20, 2026
 
 This snapshot describes the unpushed local preview, not a verified public release.

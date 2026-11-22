@@ -162,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   if (!session)
     return createElement(
       "main",
-      { className: "mx-auto p-6 text-center" },
+      { className: "app-shell mx-auto p-6 text-center" },
       createElement(
         "p",
         { role: "status" },

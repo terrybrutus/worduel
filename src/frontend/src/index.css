@@ -4,6 +4,11 @@
 
 @layer base {
   :root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --app-height: calc(100dvh - var(--safe-top) - var(--safe-bottom));
     --font-display: "Space Grotesk";
     --font-body: "Figtree";
     --font-mono: "Geist Mono";
@@ -512,6 +517,46 @@
   margin-bottom: calc((1 - 0.72) * -100%);
 }
 
+/* Normal pages and viewport portals each consume the device insets once. */
+.app-shell {
+  min-height: 100dvh;
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+}
+.safe-overlay {
+  padding: calc(var(--safe-top) + 24px) calc(var(--safe-right) + 16px)
+    calc(var(--safe-bottom) + 24px) calc(var(--safe-left) + 16px);
+}
+.app-alert {
+  top: calc(var(--safe-top) + 16px);
+  left: calc(
+    var(--safe-left) +
+    (100% - var(--safe-left) - var(--safe-right)) /
+    2
+  );
+  max-width: min(36rem, calc(100% - var(--safe-left) - var(--safe-right)));
+}
+[data-slot="dialog-content"],
+[data-slot="alert-dialog-content"] {
+  top: calc(var(--safe-top) + var(--app-height) / 2);
+  left: calc(
+    var(--safe-left) +
+    (100% - var(--safe-left) - var(--safe-right)) /
+    2
+  );
+  max-height: calc(var(--app-height) - 32px);
+  width: calc(100% - var(--safe-left) - var(--safe-right) - 32px);
+  overflow-y: auto;
+}
+[data-slot="dialog-content"].safe-profile-panel {
+  top: var(--safe-top);
+  right: var(--safe-right);
+  left: auto;
+  height: var(--app-height);
+  max-height: var(--app-height);
+  max-width: calc(100% - var(--safe-left) - var(--safe-right));
+  width: min(20rem, calc(100% - var(--safe-left) - var(--safe-right)));
+}
+
 /* Active matches own the viewport; result screens and dialogs can still scroll. */
 html:has(.game-live),
 body:has(.game-live) {
@@ -529,8 +574,7 @@ body:has(.game-live) {
   z-index: 20;
   height: 100dvh;
   overflow: hidden;
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
 }
 .game-live .game-main {
   overflow: hidden;

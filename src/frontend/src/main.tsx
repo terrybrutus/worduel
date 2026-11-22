@@ -33,12 +33,13 @@ class AppErrorBoundary extends React.Component<
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            height: "100vh",
+            minHeight: "100dvh",
             background: "#0f1117",
             color: "#f8fafc",
             flexDirection: "column",
             gap: "16px",
-            padding: "24px",
+            padding:
+              "calc(env(safe-area-inset-top, 0px) + 24px) calc(env(safe-area-inset-right, 0px) + 24px) calc(env(safe-area-inset-bottom, 0px) + 24px) calc(env(safe-area-inset-left, 0px) + 24px)",
             textAlign: "center",
             fontFamily: "system-ui, sans-serif",
           }}

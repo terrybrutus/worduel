@@ -51,7 +51,7 @@ export default function JoinByToken() {
   const failure = error ? inviteError(error) : null;
   return (
     <main
-      className="flex min-h-[100dvh] flex-col items-center justify-center gap-5 bg-background px-6 text-center"
+      className="flex min-h-[var(--app-height)] flex-col items-center justify-center gap-5 bg-background px-6 text-center"
       data-ocid="join_by_token.page"
     >
       {failure ? (
