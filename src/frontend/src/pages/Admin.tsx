@@ -366,7 +366,7 @@ export default function Admin() {
   if (!user) {
     return (
       <div
-        className="min-h-[100dvh] flex flex-col items-center justify-center bg-background"
+        className="min-h-[var(--app-height)] flex flex-col items-center justify-center bg-background"
         data-ocid="admin.loading.page"
       >
         <LoadingSpinner size="lg" />
@@ -378,7 +378,7 @@ export default function Admin() {
   if (user && !isAdmin) {
     return (
       <div
-        className="min-h-[100dvh] flex flex-col items-center justify-center gap-6 bg-background px-6"
+        className="min-h-[var(--app-height)] flex flex-col items-center justify-center gap-6 bg-background px-6"
         data-ocid="admin.setup.page"
       >
         <div className="w-full max-w-sm bg-card border border-border/60 rounded-2xl p-6 space-y-4 shadow-sm">

@@ -34202,7 +34202,7 @@ function AuthProvider({ children }) {
   if (!session)
     return reactExports.createElement(
       "main",
-      { className: "mx-auto p-6 text-center" },
+      { className: "app-shell mx-auto p-6 text-center" },
       reactExports.createElement(
         "p",
         { role: "status" },
@@ -40972,7 +40972,7 @@ function Admin() {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
       "div",
       {
-        className: "min-h-[100dvh] flex flex-col items-center justify-center bg-background",
+        className: "min-h-[var(--app-height)] flex flex-col items-center justify-center bg-background",
         "data-ocid": "admin.loading.page",
         children: /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingSpinner, { size: "lg" })
       }
@@ -40982,7 +40982,7 @@ function Admin() {
     return /* @__PURE__ */ jsxRuntimeExports.jsxs(
       "div",
       {
-        className: "min-h-[100dvh] flex flex-col items-center justify-center gap-6 bg-background px-6",
+        className: "min-h-[var(--app-height)] flex flex-col items-center justify-center gap-6 bg-background px-6",
         "data-ocid": "admin.setup.page",
         children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "w-full max-w-sm bg-card border border-border/60 rounded-2xl p-6 space-y-4 shadow-sm", children: [
@@ -52900,7 +52900,7 @@ function RematchWaiting({
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
     "div",
     {
-      className: "fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm px-4",
+      className: "safe-overlay fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm px-4 overflow-y-auto",
       "data-ocid": "game.rematch_waiting",
       children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
         motion.div,
@@ -53132,7 +53132,7 @@ function Game() {
     return /* @__PURE__ */ jsxRuntimeExports.jsxs(
       "div",
       {
-        className: "min-h-[100dvh] flex items-center justify-center bg-background",
+        className: "min-h-[var(--app-height)] flex items-center justify-center bg-background",
         "data-ocid": "game.loading_state",
         children: [
           rematchWaitingOverlay,
@@ -53142,7 +53142,7 @@ function Game() {
     );
   }
   if (!gameState && !isLoading) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-h-[100dvh] flex flex-col items-center justify-center gap-4 bg-background", children: [
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-h-[var(--app-height)] flex flex-col items-center justify-center gap-4 bg-background", children: [
       rematchWaitingOverlay,
       /* @__PURE__ */ jsxRuntimeExports.jsx("output", { className: "block max-w-sm px-4 text-center text-muted-foreground font-body", children: loadError || (connection === "offline" ? "You're offline. Reconnect to load this game." : connection === "reconnecting" ? "Could not connect to the game. Your invitation is unchanged." : "Game not found.") }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -53174,7 +53174,7 @@ function Game() {
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(
     "div",
     {
-      className: `flex flex-col bg-background ${!isTerminal && !isWaiting ? "game-live" : "min-h-[100dvh]"}`,
+      className: `flex flex-col bg-background ${!isTerminal && !isWaiting ? "game-live" : "min-h-[var(--app-height)]"}`,
       style: { "--word-length": wordLength },
       "data-ocid": "game.page",
       children: [
@@ -53496,7 +53496,7 @@ function JoinByToken() {
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
     "main",
     {
-      className: "flex min-h-[100dvh] flex-col items-center justify-center gap-5 bg-background px-6 text-center",
+      className: "flex min-h-[var(--app-height)] flex-col items-center justify-center gap-5 bg-background px-6 text-center",
       "data-ocid": "join_by_token.page",
       children: failure ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { role: "alert", className: "max-w-sm space-y-2", children: [
@@ -56354,7 +56354,7 @@ function ProfileSheet({
               '[data-ocid="lobby.profile_button"]'
             )) == null ? void 0 : _a3.focus();
           },
-          className: "grid-rows-[auto_minmax(0,1fr)] left-auto right-0 top-0 h-dvh w-80 max-w-full translate-x-0 translate-y-0 gap-0 rounded-none bg-card p-0 sm:max-w-80",
+          className: "safe-profile-panel grid-rows-[auto_minmax(0,1fr)] left-auto right-0 top-0 h-dvh w-80 max-w-full translate-x-0 translate-y-0 gap-0 rounded-none bg-card p-0 sm:max-w-80",
           "data-ocid": "lobby.profile.sheet",
           children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between px-5 py-4 border-b border-border/60", children: [
@@ -57093,21 +57093,7 @@ function Lobby() {
           ]
         }
       ) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-center text-xs text-muted-foreground/50 font-body pb-2", children: [
-        "© ",
-        (/* @__PURE__ */ new Date()).getFullYear(),
-        ".",
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "a",
-          {
-            href: `https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`,
-            target: "_blank",
-            rel: "noopener noreferrer",
-            className: "hover:text-primary transition-colors",
-            children: "Built with love using caffeine.ai"
-          }
-        )
-      ] })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-center text-xs text-muted-foreground/50 font-body pb-2", children: "Created by Terry Brutus" })
     ] }),
     inviteData && /* @__PURE__ */ jsxRuntimeExports.jsx(
       InviteModal,
@@ -74594,14 +74580,14 @@ function LoadingScreen({ onDone }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
     "div",
     {
-      className: `fixed inset-0 z-50 flex flex-col items-center justify-center bg-background transition-opacity duration-400 ${done ? "opacity-0 pointer-events-none" : "opacity-100"}`,
+      className: `safe-overlay fixed inset-0 z-50 flex flex-col items-center justify-center bg-background transition-opacity duration-400 ${done ? "opacity-0 pointer-events-none" : "opacity-100"}`,
       "aria-label": "Loading Worduel",
       "aria-busy": "true",
       children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-center gap-8", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex gap-2", children: TILES.map((letter, i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex gap-1 sm:gap-2", children: TILES.map((letter, i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
           "div",
           {
-            className: `w-11 h-11 sm:w-14 sm:h-14 flex items-center justify-center rounded-md border-2 font-display font-black text-xl sm:text-2xl select-none transition-all duration-300 ${flipped[i] ? i % 3 === 0 ? "tile-correct border-[oklch(0.55_0.18_142)] bg-[oklch(0.55_0.18_142)]" : i % 3 === 1 ? "tile-present border-[oklch(0.65_0.15_66)] bg-[oklch(0.65_0.15_66)]" : "bg-muted border-muted-foreground/30 text-foreground" : "bg-card border-border/60 text-foreground"}`,
+            className: `w-9 h-9 sm:w-14 sm:h-14 flex items-center justify-center rounded-md border-2 font-display font-black text-xl sm:text-2xl select-none transition-all duration-300 ${flipped[i] ? i % 3 === 0 ? "tile-correct border-[oklch(0.55_0.18_142)] bg-[oklch(0.55_0.18_142)]" : i % 3 === 1 ? "tile-present border-[oklch(0.65_0.15_66)] bg-[oklch(0.65_0.15_66)]" : "bg-muted border-muted-foreground/30 text-foreground" : "bg-card border-border/60 text-foreground"}`,
             style: {
               transform: flipped[i] ? "rotateX(0deg)" : "rotateX(90deg)",
               transitionDelay: `${i * 0.05}s`
@@ -74620,7 +74606,7 @@ function AuthModal({ onClose }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
     "div",
     {
-      className: "fixed inset-0 z-40 overflow-y-auto bg-background/95 px-4 py-8 backdrop-blur-sm",
+      className: "safe-overlay fixed inset-0 z-40 overflow-y-auto bg-background/95 px-4 py-8 backdrop-blur-sm",
       "data-ocid": "auth_modal.dialog",
       "aria-modal": "true",
       "aria-label": "Sign in or create account",
@@ -74659,19 +74645,36 @@ function RootApp() {
   const [modalDismissed, setModalDismissed] = reactExports.useState(false);
   const allowGuestRoute = pathname === "/practice" || pathname === "/word-bank" || pathname === "/login";
   const showModal = loadingDone && !user && !modalDismissed && !allowGuestRoute;
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-h-[100dvh] flex flex-col bg-background", children: [
-    !loadingDone && /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingScreen, { onDone: () => setLoadingDone(true) }),
-    showModal && /* @__PURE__ */ jsxRuntimeExports.jsx(AuthModal, { onClose: () => setModalDismissed(true) }),
-    user && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-xl", children: /* @__PURE__ */ jsxRuntimeExports.jsx(CrossGameAlert, {}) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Toaster,
-      {
-        position: "top-center",
-        toastOptions: { className: "font-body text-sm" }
-      }
-    ),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(Outlet, {})
-  ] });
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "div",
+    {
+      className: "app-shell flex flex-col bg-background",
+      "data-ocid": "app.shell",
+      children: [
+        !loadingDone && /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingScreen, { onDone: () => setLoadingDone(true) }),
+        showModal && /* @__PURE__ */ jsxRuntimeExports.jsx(AuthModal, { onClose: () => setModalDismissed(true) }),
+        user && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "app-alert fixed left-1/2 -translate-x-1/2 z-50 px-4 w-full", children: /* @__PURE__ */ jsxRuntimeExports.jsx(CrossGameAlert, {}) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Toaster,
+          {
+            position: "top-center",
+            offset: {
+              top: "calc(var(--safe-top) + 16px)",
+              left: "calc(var(--safe-left) + 16px)",
+              right: "calc(var(--safe-right) + 16px)"
+            },
+            mobileOffset: {
+              top: "calc(var(--safe-top) + 16px)",
+              left: "calc(var(--safe-left) + 16px)",
+              right: "calc(var(--safe-right) + 16px)"
+            },
+            toastOptions: { className: "font-body text-sm" }
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Outlet, {})
+      ]
+    }
+  );
 }
 const rootRoute = createRootRoute({ component: RootLayout });
 const indexRoute = createRoute({
@@ -74748,7 +74751,7 @@ const router = createRouter({
     challengesRoute,
     challengeRoute
   ]),
-  defaultErrorComponent: ({ error }) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-h-[100dvh] flex flex-col items-center justify-center gap-4 bg-background px-6 text-center", children: [
+  defaultErrorComponent: ({ error }) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-h-[var(--app-height)] flex flex-col items-center justify-center gap-4 bg-background px-6 text-center", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-4xl", children: "⚠️" }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display font-bold text-foreground text-xl", children: "Something went wrong" }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground font-body text-sm max-w-xs", children: error instanceof Error ? error.message : String(error) }),
@@ -74786,12 +74789,12 @@ class AppErrorBoundary extends React$4.Component {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            height: "100vh",
+            minHeight: "100dvh",
             background: "#0f1117",
             color: "#f8fafc",
             flexDirection: "column",
             gap: "16px",
-            padding: "24px",
+            padding: "calc(env(safe-area-inset-top, 0px) + 24px) calc(env(safe-area-inset-right, 0px) + 24px) calc(env(safe-area-inset-bottom, 0px) + 24px) calc(env(safe-area-inset-left, 0px) + 24px)",
             textAlign: "center",
             fontFamily: "system-ui, sans-serif"
           },

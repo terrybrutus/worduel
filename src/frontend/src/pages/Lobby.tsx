@@ -460,7 +460,7 @@ function ProfileSheet({
             )
             ?.focus();
         }}
-        className="grid-rows-[auto_minmax(0,1fr)] left-auto right-0 top-0 h-dvh w-80 max-w-full translate-x-0 translate-y-0 gap-0 rounded-none bg-card p-0 sm:max-w-80"
+        className="safe-profile-panel grid-rows-[auto_minmax(0,1fr)] left-auto right-0 top-0 h-dvh w-80 max-w-full translate-x-0 translate-y-0 gap-0 rounded-none bg-card p-0 sm:max-w-80"
         data-ocid="lobby.profile.sheet"
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-border/60">
@@ -1264,15 +1264,7 @@ export default function Lobby() {
         </div>
 
         <p className="text-center text-xs text-muted-foreground/50 font-body pb-2">
-          © {new Date().getFullYear()}. 
-          <a
-            href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-primary transition-colors"
-          >
-            Built with love using caffeine.ai
-          </a>
+          Created by Terry Brutus
         </p>
       </div>
 

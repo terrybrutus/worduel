@@ -779,7 +779,7 @@ function RematchWaiting({
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm px-4"
+      className="safe-overlay fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm px-4 overflow-y-auto"
       data-ocid="game.rematch_waiting"
     >
       <motion.div
@@ -1066,7 +1066,7 @@ export default function Game() {
   if (isLoading && connection === "connected" && !loadError) {
     return (
       <div
-        className="min-h-[100dvh] flex items-center justify-center bg-background"
+        className="min-h-[var(--app-height)] flex items-center justify-center bg-background"
         data-ocid="game.loading_state"
       >
         {rematchWaitingOverlay}
@@ -1078,7 +1078,7 @@ export default function Game() {
   // ── Not found ──────────────────────────────────────────────────────────────────────
   if (!gameState && !isLoading) {
     return (
-      <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-4 bg-background">
+      <div className="min-h-[var(--app-height)] flex flex-col items-center justify-center gap-4 bg-background">
         {rematchWaitingOverlay}
         <output className="block max-w-sm px-4 text-center text-muted-foreground font-body">
           {loadError ||
@@ -1116,7 +1116,7 @@ export default function Game() {
   // ── Main layout ───────────────────────────────────────────────────────────
   return (
     <div
-      className={`flex flex-col bg-background ${!isTerminal && !isWaiting ? "game-live" : "min-h-[100dvh]"}`}
+      className={`flex flex-col bg-background ${!isTerminal && !isWaiting ? "game-live" : "min-h-[var(--app-height)]"}`}
       style={{ "--word-length": wordLength } as React.CSSProperties}
       data-ocid="game.page"
     >

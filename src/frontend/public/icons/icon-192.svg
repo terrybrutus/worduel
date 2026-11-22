@@ -1,18 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="40" fill="#0d0d0d"/>
-  <rect x="16" y="72" width="36" height="36" rx="7" fill="#d97706"/>
-  <rect x="56" y="72" width="36" height="36" rx="7" fill="#b45309"/>
-  <rect x="96" y="72" width="36" height="36" rx="7" fill="#292524"/>
-  <rect x="136" y="72" width="36" height="36" rx="7" fill="#1c1917"/>
-  <rect x="16" y="112" width="36" height="36" rx="7" fill="#1c1917"/>
-  <rect x="56" y="112" width="36" height="36" rx="7" fill="#b45309"/>
-  <rect x="96" y="112" width="36" height="36" rx="7" fill="#d97706"/>
-  <rect x="136" y="112" width="36" height="36" rx="7" fill="#f59e0b"/>
-  <text x="34" y="99" font-family="monospace" font-weight="900" font-size="22" fill="white" text-anchor="middle">W</text>
-  <text x="74" y="99" font-family="monospace" font-weight="900" font-size="22" fill="white" text-anchor="middle">O</text>
-  <text x="114" y="99" font-family="monospace" font-weight="900" font-size="22" fill="#d1d5db" text-anchor="middle">R</text>
-  <text x="154" y="99" font-family="monospace" font-weight="900" font-size="22" fill="#9ca3af" text-anchor="middle">D</text>
-  <text x="34" y="139" font-family="monospace" font-weight="900" font-size="22" fill="#9ca3af" text-anchor="middle">U</text>
-  <text x="74" y="139" font-family="monospace" font-weight="900" font-size="22" fill="white" text-anchor="middle">E</text>
-  <text x="114" y="139" font-family="monospace" font-weight="900" font-size="22" fill="white" text-anchor="middle">L</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 512 512">
+  <title>Worduel</title>
+  <rect width="192" height="192" fill="#111111"/>
+  <path fill="#fafafa" d="M106 156h51l33 138 40-88h41l42 88 34-138h51l-58 210h-47l-42-96-42 96h-47z"/>
+  <path fill="#f59e0b" d="M244 112h24l-4 16v52h28v14h-28l6 172-14 28-14-28 6-172h-28v-14h28v-52z"/>
 </svg>
