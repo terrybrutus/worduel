@@ -2,6 +2,7 @@ import GameTypes "types/game";
 import AuthTypes "types/auth-and-stats";
 import WordPoolTypes "types/word-pool";
 import AuthLib "lib/auth-and-stats";
+import AccountTransfer "lib/account-transfer";
 import GameMixin "mixins/game-api";
 import AuthMixin "mixins/auth-and-stats-api";
 import WordPoolMixin "mixins/word-pool-api";
@@ -93,6 +94,90 @@ actor {
   include ChallengeMixin(challenges,accounts,authSessions,customWords,knownValidWords);
   include MeaningMixin(meanings,quizCache,aiAttempts,aiUsage,authSessions,accounts);
 
+  // Caffeine's sign-in hook calls this after verifying the provider delegation.
+  // No implicit administrator enrollment and no email attributes are collected.
+  public shared({caller}) func _initialize_access_control() : async () {
+    if (caller.isAnonymous()) throw Error.reject("Sign in first");
+  };
+
+  func wordBankOwner(token : Text) : ?Text {
+    let name = switch (AuthLib.resolveSession(authSessions,token)) {case (?n) n;case null return null};
+    switch (accounts.get(name)) {case (?a) {if (a.isDisabled) return null};case null return null};
+    ?name;
+  };
+  public query func getWordBank(token : Text) : async AccountTransfer.Bank {
+    let name = switch (wordBankOwner(token)) {case (?n) n;case null throw Error.reject("Session expired or account unavailable")};
+    switch (wordBanks.get(name)) {case (?bank) bank;case null ({revision=0;payload="[]"})};
+  };
+  public func putWordBank(token : Text, revision : Nat, payload : Text) : async AccountTransfer.Bank {
+    let name = switch (wordBankOwner(token)) {case (?n) n;case null throw Error.reject("Session expired or account unavailable")};
+    let existing = switch (wordBanks.get(name)) {case (?bank) bank;case null ({revision=0;payload="[]"})};
+    if (existing.revision != revision) throw Error.reject("Word Bank changed on another device. Retry sync.");
+    let checked = switch (AccountTransfer.mergeWords([payload])) {case (#ok(p)) p;case (#err(e)) throw Error.reject(e)};
+    let bank = {revision=revision+1;payload=checked};
+    wordBanks.add(name,bank);
+    bank;
+  };
+
+  public shared({caller}) func signInAndCarryGuest(requestedUsername : Text, guestToken : Text, localWords : Text) : async {
+    #ok : { token : Text; username : Text; guestProgress : Text };
+    #err : Text;
+  } {
+    if (caller.isAnonymous()) return #err("Sign in with Google or Microsoft first.");
+    let name = requestedUsername.trim(#char ' ');
+    if (name.size() > 24) return #err("Use a username of up to 24 letters, numbers, underscores or hyphens.");
+    for (c in name.chars()) {
+      if (not ((c >= 'a' and c <= 'z') or (c >= 'A' and c <= 'Z') or (c >= '0' and c <= '9') or c == '_' or c == '-')) return #err("Use only letters, numbers, underscores or hyphens in your username.");
+    };
+    // Entropy is the only await: ownership checks and the transfer commit atomically after it.
+    let token = await AuthLib.generateToken("identity",0);
+    let owner = caller.toText();
+    let existing = AuthLib.findAccountByIdentity(accounts,owner);
+    switch (existing) { case (?a) { if (a.isDisabled) return #err("Account is disabled") }; case null {} };
+    var source : ?AuthTypes.PlayerAccount = null;
+    var progress = "none";
+    if (guestToken != "") {
+      switch (AuthLib.resolveSession(authSessions,guestToken)) {
+        case null { progress := "expired" };
+        case (?name) switch (accounts.get(name)) {
+          case (?account) {
+            if (account.passwordHash == "identity:merged:" # owner) progress := "already-merged"
+            else if (not account.isDisabled and account.passwordHash.startsWith(#text "identity:guest:")) {
+              source := ?account; progress := "merged";
+            } else return #err("Only your current guest progress can be transferred.");
+          };
+          case null return #err("Guest progress could not be verified.");
+        };
+      };
+    };
+    let targetName = switch (existing) { case (?a) a.username; case null "" };
+    switch (source) {
+      case (?guest) {
+        for (game in sessions.values()) {
+          if ((game.status == #playing or game.status == #waiting) and game.players.find(func(n) { n == guest.username }) != null and game.players.find(func(n) { n == targetName }) != null)
+            return #err("Finish the match between these players before combining their progress.");
+        };
+      };
+      case null {};
+    };
+    let emptyBank = {revision=0;payload="[]"};
+    let targetBank = switch (wordBanks.get(targetName)) { case (?b) b; case null emptyBank };
+    let guestBank = switch (source) { case (?a) switch (wordBanks.get(a.username)) {case (?b) b; case null emptyBank}; case null emptyBank };
+    let payload = switch (AccountTransfer.mergeWords([targetBank.payload,guestBank.payload,localWords])) { case (#ok(p)) p; case (#err(e)) return #err(e) };
+    let target = switch (existing) { case (?a) a; case null AuthLib.createIdentityAccount(accounts,requestedUsername,owner,#player) };
+    switch (source) {
+      case (?guest) {
+        AccountTransfer.moveProgress(guest.username,target.username,statsStore,gameHistory,opponentStore,sessions,rematchOffers,challenges);
+        guest.passwordHash := "identity:merged:" # owner;
+        guest.isDisabled := true;
+      };
+      case null {};
+    };
+    wordBanks.add(target.username,{revision=targetBank.revision+1;payload});
+    AuthLib.createSession(authSessions,token,target.username);
+    #ok({token;username=target.username;guestProgress=progress});
+  };
+
   public shared({caller}) func importLegacyCache(entries : [(Text,MeaningTypes.Meaning)], questions : [(Text,MeaningTypes.Quiz)], day : Int, dailyAttempts : Nat, monthlyAttempts : Nat) : async Bool {
     if (not caller.isController() or legacyCacheImported) return false;
     if (entries.size() > 5000 or questions.size() > 5000) throw Error.reject("Legacy cache is too large");
@@ -115,6 +200,12 @@ actor {
     switch (method) {
       case ("guest") { Wire.encode(to_candid(await registerGuest())) };
       case ("getMyProfile") { Wire.encode(to_candid(await getMyProfile(token))) };
+      case ("isGuestSession") {
+        let name = switch (AuthLib.resolveSession(authSessions,token)) {case (?n) n;case null throw Error.reject("Session expired")};
+        let account = switch (accounts.get(name)) {case (?a) a;case null throw Error.reject("Account unavailable")};
+        if (account.isDisabled) throw Error.reject("Account unavailable");
+        Wire.encode(to_candid(account.passwordHash.startsWith(#text "identity:guest:")));
+      };
       case ("getUsernameForSession") { Wire.encode(to_candid(await getUsernameForSession(token))) };
       case ("getMyStats") { Wire.encode(to_candid(await getMyStats(token))) };
       case ("logout") { await logout(token); "null" };

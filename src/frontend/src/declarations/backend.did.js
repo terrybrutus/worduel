@@ -147,6 +147,7 @@ export const RematchOffer = IDL.Record({
   'roomCode' : RoomCode,
   'joinToken' : JoinToken,
 });
+export const Bank = IDL.Record({ 'revision' : IDL.Nat, 'payload' : IDL.Text });
 export const Meaning = IDL.Record({
   'source' : IDL.Text,
   'aiEnhanced' : IDL.Bool,
@@ -193,6 +194,7 @@ export const GuessResultV2 = IDL.Variant({
 });
 
 export const idlService = IDL.Service({
+  '_initialize_access_control' : IDL.Func([], [], []),
   'acceptRematch' : IDL.Func([IDL.Text, GameId], [AcceptRematchResult], []),
   'addWord' : IDL.Func(
       [IDL.Text, IDL.Text],
@@ -260,6 +262,7 @@ export const idlService = IDL.Service({
       [IDL.Opt(IDL.Text)],
       ['query'],
     ),
+  'getWordBank' : IDL.Func([IDL.Text], [Bank], ['query']),
   'getWordCount' : IDL.Func([], [IDL.Nat], ['query']),
   'importLegacyCache' : IDL.Func(
       [
@@ -320,6 +323,7 @@ export const idlService = IDL.Service({
       [AuthResult],
       [],
     ),
+  'putWordBank' : IDL.Func([IDL.Text, IDL.Nat, IDL.Text], [Bank], []),
   'recordResult' : IDL.Func(
       [
         IDL.Text,
@@ -358,6 +362,20 @@ export const idlService = IDL.Service({
   'resetPlayerPassword' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text],
       [AuthResult],
+      [],
+    ),
+  'signInAndCarryGuest' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text],
+      [
+        IDL.Variant({
+          'ok' : IDL.Record({
+            'token' : IDL.Text,
+            'username' : IDL.Text,
+            'guestProgress' : IDL.Text,
+          }),
+          'err' : IDL.Text,
+        }),
+      ],
       [],
     ),
   'submitGuess' : IDL.Func([IDL.Text, GameId, IDL.Text], [GuessResultV2], []),
@@ -508,6 +526,7 @@ export const idlFactory = ({ IDL }) => {
     'roomCode' : RoomCode,
     'joinToken' : JoinToken,
   });
+  const Bank = IDL.Record({ 'revision' : IDL.Nat, 'payload' : IDL.Text });
   const Meaning = IDL.Record({
     'source' : IDL.Text,
     'aiEnhanced' : IDL.Bool,
@@ -545,6 +564,7 @@ export const idlFactory = ({ IDL }) => {
   const GuessResultV2 = IDL.Variant({ 'ok' : GameState, 'err' : GuessError });
   
   return IDL.Service({
+    '_initialize_access_control' : IDL.Func([], [], []),
     'acceptRematch' : IDL.Func([IDL.Text, GameId], [AcceptRematchResult], []),
     'addWord' : IDL.Func(
         [IDL.Text, IDL.Text],
@@ -620,6 +640,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Opt(IDL.Text)],
         ['query'],
       ),
+    'getWordBank' : IDL.Func([IDL.Text], [Bank], ['query']),
     'getWordCount' : IDL.Func([], [IDL.Nat], ['query']),
     'importLegacyCache' : IDL.Func(
         [
@@ -680,6 +701,7 @@ export const idlFactory = ({ IDL }) => {
         [AuthResult],
         [],
       ),
+    'putWordBank' : IDL.Func([IDL.Text, IDL.Nat, IDL.Text], [Bank], []),
     'recordResult' : IDL.Func(
         [
           IDL.Text,
@@ -722,6 +744,20 @@ export const idlFactory = ({ IDL }) => {
     'resetPlayerPassword' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text],
         [AuthResult],
+        [],
+      ),
+    'signInAndCarryGuest' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text],
+        [
+          IDL.Variant({
+            'ok' : IDL.Record({
+              'token' : IDL.Text,
+              'username' : IDL.Text,
+              'guestProgress' : IDL.Text,
+            }),
+            'err' : IDL.Text,
+          }),
+        ],
         [],
       ),
     'submitGuess' : IDL.Func([IDL.Text, GameId, IDL.Text], [GuessResultV2], []),

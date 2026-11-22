@@ -417,6 +417,8 @@ function ProfileSheet({
   streak,
   onViewStats,
   onLogout,
+  isGuest,
+  onSignIn,
 }: {
   open: boolean;
   onClose: () => void;
@@ -428,6 +430,8 @@ function ProfileSheet({
   streak: number;
   onViewStats: () => void;
   onLogout: () => void;
+  isGuest: boolean;
+  onSignIn: () => void;
 }) {
   if (!open) return null;
   return (
@@ -480,7 +484,7 @@ function ProfileSheet({
         <div className="min-h-0 p-5 space-y-4 overflow-y-auto">
           <div className="p-4 rounded-xl bg-muted/20 border border-border/60">
             <p className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
-              Playing as
+              {isGuest ? "Guest player" : "Your account"}
             </p>
             <p className="break-all font-display font-bold text-lg text-foreground mt-1">
               {username}
@@ -522,7 +526,14 @@ function ProfileSheet({
           >
             <TrendingUp className="w-4 h-4 text-primary" /> Full Stats
           </AppButton>
-          {!LOCAL_PREVIEW && (
+          {isGuest ? (
+            <AppButton
+              onClick={onSignIn}
+              className="min-h-11 w-full rounded-md border border-primary px-4 font-semibold text-primary"
+            >
+              Sign in to keep progress
+            </AppButton>
+          ) : (
             <AppButton
               type="button"
               onClick={onLogout}
@@ -544,7 +555,7 @@ type LobbyMode = null | "new" | "join";
 // ─── Main Lobby
 export default function Lobby() {
   const navigate = useNavigate();
-  const { user, sessionToken, isAdmin, logout } = useAuth();
+  const { user, sessionToken, isAdmin, logout, accountNotice } = useAuth();
   const { soundEnabled, toggleSound } = useSoundToggle();
   const { theme, toggleTheme } = useTheme();
   const { hapticEnabled, toggleHaptic, supportsVibration } = useHapticEnabled();
@@ -807,12 +818,16 @@ export default function Lobby() {
           <AppButton
             type="button"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted/40 text-sm font-body font-medium text-foreground hover:bg-muted/60 transition-colors"
-            onClick={() => setShowProfile(true)}
-            aria-label="Open profile"
+            onClick={() =>
+              user?.isGuest
+                ? void navigate({ to: "/login" })
+                : setShowProfile(true)
+            }
+            aria-label={user?.isGuest ? "Sign in" : "Open profile"}
             data-ocid="lobby.profile_button"
           >
             <span className="truncate max-w-[5rem] font-display">
-              {user?.username}
+              {user?.isGuest ? "Sign in" : user?.username}
             </span>
             <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
           </AppButton>
@@ -820,6 +835,11 @@ export default function Lobby() {
       </header>
 
       <div className="flex-1 container mx-auto max-w-2xl px-4 py-5 space-y-5">
+        {accountNotice && (
+          <output className="block text-sm text-muted-foreground">
+            {accountNotice}
+          </output>
+        )}
         <div className="grid gap-3 sm:grid-cols-3" aria-label="Play Worduel">
           <AppButton
             type="button"
@@ -1285,6 +1305,11 @@ export default function Lobby() {
         onClose={() => setShowProfile(false)}
         username={user?.username}
         isAdmin={isAdmin}
+        isGuest={user?.isGuest ?? true}
+        onSignIn={() => {
+          setShowProfile(false);
+          void navigate({ to: "/login" });
+        }}
         wins={wins}
         losses={losses}
         winRate={winRate}

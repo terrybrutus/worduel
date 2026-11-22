@@ -1,6 +1,23 @@
 # WORDUEL Roadmap
 
-## Guest Continuity Follow-Up: November 21, 2026
+## Account Sign-In: November 21, 2026
+
+Google and Microsoft sign-in now use Caffeine core-infrastructure 2.x, with a
+passkey fallback under Other sign-in options. Guest play remains available.
+The backend validates identity ownership and atomically transfers guest words,
+review metadata, stats, history, active rooms, and daily/replay runs. Existing
+accounts combine guest progress without counting the same transfer twice.
+Word Bank syncing uses private typed endpoints with revision conflict detection.
+No external auth service or email database was added; emails are not collected.
+
+Native Wasm tests cover account isolation, retries, concurrent transfers, daily
+progress, 1000-word banks, token expiry, and persistent upgrades. Browser tests
+cover cancellation, transfer, reload, two-browser restoration/sync and sign-out
+isolation, using a signed test identity with the external consent UI replaced.
+Actual Google/Microsoft consent must still be checked on the imported live HTTPS
+app. See `tools/ACCOUNT-SIGN-IN.md`. Word packs remain deferred.
+
+## Earlier Guest Continuity Findings: November 21, 2026
 
 The app now uses the native Caffeine backend (the older local-only snapshot
 below predates that port). Returning visitors reuse a browser-stored guest
@@ -9,7 +26,7 @@ after 30 days. Clearing storage, changing devices/browsers, or an isolated
 home-screen installation can create a new guest identity. Ordinary refreshes
 were tested to preserve the same guest. This is not permanent account recovery.
 
-Keep login on hold for now. When resuming accounts, prioritize recovering and
+Login was on hold at that point. The account work above now prioritizes recovering and
 merging guest Word Bank, stats, and history into a verified identity without
 silently losing progress. Also plan guest-record retention/cleanup; anonymous
 record creation must not be presented as durable cross-device account storage.

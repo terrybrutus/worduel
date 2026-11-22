@@ -256,6 +256,10 @@ export interface GameState {
     isPublic: boolean;
     roomCode: RoomCode;
 }
+export interface Bank {
+    revision: bigint;
+    payload: string;
+}
 export type GuessError = {
     __kind__: "notAWord";
     notAWord: null;
@@ -336,6 +340,7 @@ export enum Variant_win_draw_loss {
     loss = "loss"
 }
 export interface backendInterface {
+    _initialize_access_control(): Promise<void>;
     acceptRematch(sessionToken: string, originalGameId: GameId): Promise<AcceptRematchResult>;
     addWord(sessionToken: string, word: string): Promise<{
         __kind__: "ok";
@@ -375,6 +380,7 @@ export interface backendInterface {
     getRematchOffer(originalGameId: GameId): Promise<RematchOffer | null>;
     getSessionGameHistory(token: string): Promise<Array<GameHistoryEntry>>;
     getUsernameForSession(token: string): Promise<string | null>;
+    getWordBank(token: string): Promise<Bank>;
     getWordCount(): Promise<bigint>;
     importLegacyCache(entries: Array<[string, Meaning]>, questions: Array<[string, Quiz]>, day: bigint, dailyAttempts: bigint, monthlyAttempts: bigint): Promise<boolean>;
     importWords(sessionToken: string, words: Array<string>): Promise<{
@@ -404,6 +410,7 @@ export interface backendInterface {
         err: string;
     }>;
     provisionIdentityAdmin(username: string, identity: Principal): Promise<AuthResult>;
+    putWordBank(token: string, revision: bigint, payload: string): Promise<Bank>;
     recordResult(token: string, win: boolean, opponentName: string, outcome: Variant_win_draw_loss): Promise<AuthResult>;
     register(username: string, password: string): Promise<RegisterResult>;
     registerGuest(): Promise<{
@@ -429,6 +436,17 @@ export interface backendInterface {
         err: string;
     }>;
     resetPlayerPassword(token: string, username: string, newPassword: string): Promise<AuthResult>;
+    signInAndCarryGuest(requestedUsername: string, guestToken: string, localWords: string): Promise<{
+        __kind__: "ok";
+        ok: {
+            token: string;
+            username: string;
+            guestProgress: string;
+        };
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     submitGuess(sessionToken: string, gameId: GameId, word: string): Promise<GuessResultV2>;
     validateGuessWord(word: string): Promise<boolean>;
     validateGuessWordDebug(word: string): Promise<WordValidationDebug>;
@@ -436,6 +454,20 @@ export interface backendInterface {
 import type { AcceptRematchResult as _AcceptRematchResult, AdminSetupInfo as _AdminSetupInfo, Alternative as _Alternative, AuthResult as _AuthResult, CreateGameResult as _CreateGameResult, CreatePrivateGameResult as _CreatePrivateGameResult, ExitReason as _ExitReason, GameHistoryEntry as _GameHistoryEntry, GameId as _GameId, GameMode as _GameMode, GameState as _GameState, GameStateWithRole as _GameStateWithRole, GameStatus as _GameStatus, GameSummary as _GameSummary, Guess as _Guess, GuessError as _GuessError, GuessResultV2 as _GuessResultV2, JoinResult as _JoinResult, JoinToken as _JoinToken, LeaveResult as _LeaveResult, LoginResult as _LoginResult, PlayerInfo as _PlayerInfo, PlayerName as _PlayerName, PlayerOutcome as _PlayerOutcome, PlayerStats as _PlayerStats, Quiz as _Quiz, RegisterResult as _RegisterResult, RematchOffer as _RematchOffer, Role as _Role, RoomCode as _RoomCode, Sentence as _Sentence, SessionToken as _SessionToken, TileState as _TileState, Timestamp as _Timestamp } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
+    async _initialize_access_control(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor._initialize_access_control();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor._initialize_access_control();
+            return result;
+        }
+    }
     async acceptRematch(arg0: string, arg1: GameId): Promise<AcceptRematchResult> {
         if (this.processError) {
             try {
@@ -826,6 +858,20 @@ export class Backend implements backendInterface {
             return from_candid_opt_n32(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getWordBank(arg0: string): Promise<Bank> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getWordBank(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getWordBank(arg0);
+            return result;
+        }
+    }
     async getWordCount(): Promise<bigint> {
         if (this.processError) {
             try {
@@ -1037,6 +1083,20 @@ export class Backend implements backendInterface {
             return from_candid_AuthResult_n4(this._uploadFile, this._downloadFile, result);
         }
     }
+    async putWordBank(arg0: string, arg1: bigint, arg2: string): Promise<Bank> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.putWordBank(arg0, arg1, arg2);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.putWordBank(arg0, arg1, arg2);
+            return result;
+        }
+    }
     async recordResult(arg0: string, arg1: boolean, arg2: string, arg3: Variant_win_draw_loss): Promise<AuthResult> {
         if (this.processError) {
             try {
@@ -1140,18 +1200,42 @@ export class Backend implements backendInterface {
             return from_candid_AuthResult_n4(this._uploadFile, this._downloadFile, result);
         }
     }
+    async signInAndCarryGuest(arg0: string, arg1: string, arg2: string): Promise<{
+        __kind__: "ok";
+        ok: {
+            token: string;
+            username: string;
+            guestProgress: string;
+        };
+    } | {
+        __kind__: "err";
+        err: string;
+    }> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.signInAndCarryGuest(arg0, arg1, arg2);
+                return from_candid_variant_n63(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.signInAndCarryGuest(arg0, arg1, arg2);
+            return from_candid_variant_n63(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async submitGuess(arg0: string, arg1: GameId, arg2: string): Promise<GuessResultV2> {
         if (this.processError) {
             try {
                 const result = await this.actor.submitGuess(arg0, arg1, arg2);
-                return from_candid_GuessResultV2_n63(this._uploadFile, this._downloadFile, result);
+                return from_candid_GuessResultV2_n64(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.submitGuess(arg0, arg1, arg2);
-            return from_candid_GuessResultV2_n63(this._uploadFile, this._downloadFile, result);
+            return from_candid_GuessResultV2_n64(this._uploadFile, this._downloadFile, result);
         }
     }
     async validateGuessWord(arg0: string): Promise<boolean> {
@@ -1213,11 +1297,11 @@ function from_candid_GameStatus_n23(_uploadFile: (file: ExternalBlob) => Promise
 function from_candid_GameSummary_n42(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _GameSummary): GameSummary {
     return from_candid_record_n43(_uploadFile, _downloadFile, value);
 }
-function from_candid_GuessError_n65(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _GuessError): GuessError {
-    return from_candid_variant_n66(_uploadFile, _downloadFile, value);
+function from_candid_GuessError_n66(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _GuessError): GuessError {
+    return from_candid_variant_n67(_uploadFile, _downloadFile, value);
 }
-function from_candid_GuessResultV2_n63(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _GuessResultV2): GuessResultV2 {
-    return from_candid_variant_n64(_uploadFile, _downloadFile, value);
+function from_candid_GuessResultV2_n64(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _GuessResultV2): GuessResultV2 {
+    return from_candid_variant_n65(_uploadFile, _downloadFile, value);
 }
 function from_candid_Guess_n34(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Guess): Guess {
     return from_candid_record_n35(_uploadFile, _downloadFile, value);
@@ -1690,7 +1774,34 @@ function from_candid_variant_n62(_uploadFile: (file: ExternalBlob) => Promise<Ui
         err: value.err
     } : value;
 }
-function from_candid_variant_n64(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n63(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    ok: {
+        token: string;
+        username: string;
+        guestProgress: string;
+    };
+} | {
+    err: string;
+}): {
+    __kind__: "ok";
+    ok: {
+        token: string;
+        username: string;
+        guestProgress: string;
+    };
+} | {
+    __kind__: "err";
+    err: string;
+} {
+    return "ok" in value ? {
+        __kind__: "ok",
+        ok: value.ok
+    } : "err" in value ? {
+        __kind__: "err",
+        err: value.err
+    } : value;
+}
+function from_candid_variant_n65(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     ok: _GameState;
 } | {
     err: _GuessError;
@@ -1706,10 +1817,10 @@ function from_candid_variant_n64(_uploadFile: (file: ExternalBlob) => Promise<Ui
         ok: from_candid_GameState_n21(_uploadFile, _downloadFile, value.ok)
     } : "err" in value ? {
         __kind__: "err",
-        err: from_candid_GuessError_n65(_uploadFile, _downloadFile, value.err)
+        err: from_candid_GuessError_n66(_uploadFile, _downloadFile, value.err)
     } : value;
 }
-function from_candid_variant_n66(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n67(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     notAWord: null;
 } | {
     gameError: string;
