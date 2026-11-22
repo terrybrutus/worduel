@@ -1,8 +1,8 @@
-import { AppButton } from "../components/AppButton";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, BookOpen, RotateCcw, Trophy, UserPlus } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { type Guess, TileState } from "../backend";
+import { AppButton } from "../components/AppButton";
 import {
   Keyboard,
   playInvalidSound,
@@ -14,10 +14,13 @@ import { TileGrid } from "../components/TileGrid";
 import { useAuth } from "../hooks/useAuth";
 import { triggerHaptic, useHapticEnabled } from "../hooks/useHapticEnabled";
 import { useSoundEnabled } from "../hooks/useSoundEnabled";
+import {
+  LONGER_ANSWERS,
+  LONGER_GUESSES,
+  type WordLength,
+} from "../lib/longerWords";
 import { PRACTICE_ANSWERS, PRACTICE_GUESSES } from "../lib/practiceDictionary";
-import { LONGER_ANSWERS, LONGER_GUESSES, type WordLength } from "../lib/longerWords";
 
-const WORD_LENGTH = 5;
 const MAX_GUESSES = 6;
 
 type PracticeStatus = "playing" | "won" | "lost";
@@ -108,20 +111,6 @@ const MEANING_CARDS: MeaningCard[] = [
   },
 ];
 
-function getMiniTileClass(state: TileState | null): string {
-  const base = "h-5 w-5 rounded border";
-  switch (state) {
-    case TileState.correct:
-      return `${base} tile-correct`;
-    case TileState.present:
-      return `${base} tile-present`;
-    case TileState.absent:
-      return `${base} tile-absent`;
-    default:
-      return `${base} border-border/60 bg-muted/30`;
-  }
-}
-
 function randomIndex(max: number): number {
   if (max <= 1) return 0;
   const cryptoApi = globalThis.crypto;
@@ -134,7 +123,8 @@ function randomIndex(max: number): number {
 }
 
 function pickAnswer(previous?: string, length: WordLength = 5): string {
-  const answers: readonly string[] = length === 5 ? PRACTICE_ANSWERS : LONGER_ANSWERS[length];
+  const answers: readonly string[] =
+    length === 5 ? PRACTICE_ANSWERS : LONGER_ANSWERS[length];
   if (answers.length === 0) return "crane";
   if (answers.length === 1) return answers[0];
   let next = answers[randomIndex(answers.length)];
@@ -286,7 +276,11 @@ export default function Practice() {
         }
 
         const normalized = currentInput.toLowerCase();
-        if (!(wordLength === 5 ? PRACTICE_GUESSES : LONGER_GUESSES).has(normalized)) {
+        if (
+          !(wordLength === 5 ? PRACTICE_GUESSES : LONGER_GUESSES).has(
+            normalized,
+          )
+        ) {
           rejectInput("Not a word");
           return;
         }
@@ -329,6 +323,7 @@ export default function Practice() {
       rejectInput,
       soundEnabled,
       wordLength,
+      WORD_LENGTH,
     ],
   );
 
@@ -386,7 +381,10 @@ export default function Practice() {
             </div>
             <AppButton
               type="button"
-              onClick={(event) => { event.currentTarget.blur(); reset(); }}
+              onClick={(event) => {
+                event.currentTarget.blur();
+                reset();
+              }}
               className="flex min-h-11 items-center gap-2 rounded-lg border border-primary/40 px-3 py-2 text-sm font-display font-bold text-primary hover:bg-primary/10"
               data-ocid="practice.new_round_button"
               tooltip="Start a fresh word at the selected length."
@@ -416,9 +414,16 @@ export default function Practice() {
                 <AppButton
                   key={option.mode}
                   type="button"
-                  onClick={(event) => { event.currentTarget.blur(); switchMode(option.mode); }}
+                  onClick={(event) => {
+                    event.currentTarget.blur();
+                    switchMode(option.mode);
+                  }}
                   aria-pressed={selected}
-                  tooltip={option.mode === "guess" ? "Find the hidden word in six guesses." : "Choose a definition for a longer word."}
+                  tooltip={
+                    option.mode === "guess"
+                      ? "Find the hidden word in six guesses."
+                      : "Choose a definition for a longer word."
+                  }
                   className={`rounded-lg border px-3 py-2 text-left transition-smooth ${
                     selected
                       ? "border-primary bg-primary/10 text-primary"
@@ -438,10 +443,24 @@ export default function Practice() {
           </div>
           {isGuessMode && (
             <fieldset className="mt-3 flex flex-wrap items-center gap-2">
-              <legend className="mb-2 text-sm font-semibold">Word length</legend>
-              {([5, 6, 7] as const).map(length => (
-                <label key={length} className={`flex min-h-11 items-center gap-2 rounded-md border px-3 py-2 text-sm ${wordLength === length ? "border-primary text-primary" : "border-border"}`}>
-                  <input type="radio" name="word-length" value={length} checked={wordLength === length} onChange={() => { setWordLength(length); reset("guess", length); }} />
+              <legend className="mb-2 text-sm font-semibold">
+                Word length
+              </legend>
+              {([5, 6, 7] as const).map((length) => (
+                <label
+                  key={length}
+                  className={`flex min-h-11 items-center gap-2 rounded-md border px-3 py-2 text-sm ${wordLength === length ? "border-primary text-primary" : "border-border"}`}
+                >
+                  <input
+                    type="radio"
+                    name="word-length"
+                    value={length}
+                    checked={wordLength === length}
+                    onChange={() => {
+                      setWordLength(length);
+                      reset("guess", length);
+                    }}
+                  />
                   {length} letters
                 </label>
               ))}
@@ -538,7 +557,9 @@ export default function Practice() {
                     </div>
                   </div>
                   <p className="mt-2 text-xs text-muted-foreground">
-                    {isFinished ? "Round complete." : "Six guesses to find the word."}
+                    {isFinished
+                      ? "Round complete."
+                      : "Six guesses to find the word."}
                   </p>
                 </>
               ) : (
@@ -582,7 +603,6 @@ export default function Practice() {
               </AppButton>
             )}
           </aside>
-
         </main>
       </div>
     </div>

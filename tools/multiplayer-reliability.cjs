@@ -9,7 +9,7 @@ const origin=process.env.WORDUEL_TEST_ORIGIN || 'http://127.0.0.1:43992';
   context.on('page',page=>page.on('pageerror',error=>errors.push(error.message)));
   await context.route('**/src/lib/localBackend.ts*',async route=>{
    const response=await route.fetch();let body=await response.text();
-   body=body.replace(/(export async function localCall\([^\n]+\) \{)/,'$1\n if (method === "wordMeaning") return {definition:"A test meaning.",example:"A test example.",source:"Test dictionary",sourceUrl:""}; if (method === "wordQuiz") return {status:"not-configured"}; if(sessionStorage.getItem("__hangJoin")==="yes" && method === "joinByToken") return new Promise(()=>{}); if(window.__failReads && method === "getGameState") throw new Error("Simulated lost connection"); if(window.__loseGuess && method === "submitGuess") {window.__loseGuess=false; await localCall(method,args,timeoutMs); throw new Error("Simulated lost response");}');
+   body=body.replace(/(export async function localCall\([^)]*\)\s*\{)/,'$1\n if (method === "wordMeaning") return {definition:"A test meaning.",example:"A test example.",source:"Test dictionary",sourceUrl:""}; if (method === "wordQuiz") return {status:"not-configured"}; if(sessionStorage.getItem("__hangJoin")==="yes" && method === "joinByToken") return new Promise(()=>{}); if(window.__failReads && method === "getGameState") throw new Error("Simulated lost connection"); if(window.__loseGuess && method === "submitGuess") {window.__loseGuess=false; await localCall(method,args,timeoutMs); throw new Error("Simulated lost response");}');
    assert(body.includes('Simulated lost connection'));await route.fulfill({response,body,contentType:'application/javascript'});
   });
  }

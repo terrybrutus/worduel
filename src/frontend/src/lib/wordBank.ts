@@ -53,7 +53,9 @@ export function saveWordBank(
   entries: SavedWordEntry[],
 ) {
   localStorage.setItem(wordBankKey(username), JSON.stringify(entries));
-  window.dispatchEvent(new CustomEvent("worduel-bank-changed",{detail:{username}}));
+  window.dispatchEvent(
+    new CustomEvent("worduel-bank-changed", { detail: { username } }),
+  );
 }
 
 export function mergeGuestWordBankIntoUser(username: string): number {
@@ -115,7 +117,13 @@ export function saveWord(
   word: string,
   definition: string,
   confidence: Confidence | null,
-  attribution?: { source: string; sourceUrl: string; example?: string; aiEnhanced?: boolean; originalDefinition?: string },
+  attribution?: {
+    source: string;
+    sourceUrl: string;
+    example?: string;
+    aiEnhanced?: boolean;
+    originalDefinition?: string;
+  },
 ): SavedWordEntry[] {
   const normalized = word.toLowerCase();
   const now = Date.now();
@@ -134,11 +142,16 @@ export function saveWord(
     confidence: confidence ?? previous?.confidence ?? null,
     savedAt: previous?.savedAt ?? now,
     lastSeenAt: now,
-    nextReviewAt: confidence === "knew" ? null : previous?.nextReviewAt ?? now,
+    nextReviewAt:
+      confidence === "knew" ? null : (previous?.nextReviewAt ?? now),
   };
   const next = [nextEntry, ...withoutWord];
   saveWordBank(username, next);
-  if (nextEntry.confidence) localStorage.setItem(confidenceKey(username, normalized), nextEntry.confidence);
+  if (nextEntry.confidence)
+    localStorage.setItem(
+      confidenceKey(username, normalized),
+      nextEntry.confidence,
+    );
   return next;
 }
 
@@ -162,7 +175,14 @@ export function updateSavedWordConfidence(
   const normalized = word.toLowerCase();
   const entries = loadWordBank(username);
   const next = entries.map((entry) =>
-    entry.word === normalized ? { ...entry, confidence, nextReviewAt: confidence === "knew" ? null : Date.now(), reviewStreak: 0 } : entry,
+    entry.word === normalized
+      ? {
+          ...entry,
+          confidence,
+          nextReviewAt: confidence === "knew" ? null : Date.now(),
+          reviewStreak: 0,
+        }
+      : entry,
   );
   saveWordBank(username, next);
   localStorage.setItem(confidenceKey(username, normalized), confidence);
@@ -170,19 +190,35 @@ export function updateSavedWordConfidence(
 }
 
 export function isReviewDue(entry: SavedWordEntry, now = Date.now()): boolean {
-  return entry.confidence !== "knew" && entry.nextReviewAt !== null && (entry.nextReviewAt ?? 0) <= now;
+  return (
+    entry.confidence !== "knew" &&
+    entry.nextReviewAt !== null &&
+    (entry.nextReviewAt ?? 0) <= now
+  );
 }
 
-export function recordWordReview(username: string | undefined, word: string, remembered: boolean): SavedWordEntry[] {
+export function recordWordReview(
+  username: string | undefined,
+  word: string,
+  remembered: boolean,
+): SavedWordEntry[] {
   const entries = loadWordBank(username);
-  const next = entries.map(entry => {
+  const next = entries.map((entry) => {
     if (entry.word !== word.toLowerCase()) return entry;
     const streak = remembered ? (entry.reviewStreak ?? 0) + 1 : 0;
     const days = Math.min(30, 2 ** streak);
-    return { ...entry, reviewStreak: streak, confidence: remembered ? "guessed" as const : "unknown" as const,
-      nextReviewAt: Date.now() + (remembered ? days * 86400000 : 600000), lastSeenAt: Date.now() };
+    return {
+      ...entry,
+      reviewStreak: streak,
+      confidence: remembered ? ("guessed" as const) : ("unknown" as const),
+      nextReviewAt: Date.now() + (remembered ? days * 86400000 : 600000),
+      lastSeenAt: Date.now(),
+    };
   });
   saveWordBank(username, next);
-  localStorage.setItem(confidenceKey(username, word), remembered ? "guessed" : "unknown");
+  localStorage.setItem(
+    confidenceKey(username, word),
+    remembered ? "guessed" : "unknown",
+  );
   return next;
 }

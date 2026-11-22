@@ -219,7 +219,8 @@ export function Keyboard({ guesses, onKey, disabled = false }: KeyboardProps) {
       // Let input fields, textareas, and contentEditable handle their own keypresses
       const target = e.target as HTMLElement;
       if (
-        (target.tagName === "INPUT" && (target as HTMLInputElement).type !== "radio") ||
+        (target.tagName === "INPUT" &&
+          (target as HTMLInputElement).type !== "radio") ||
         target.tagName === "TEXTAREA" ||
         target.isContentEditable
       ) {

@@ -1,4 +1,3 @@
-import { localBackend, createLocalMatch } from "../lib/localBackend";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   GameHistoryEntry,
@@ -11,6 +10,7 @@ import type {
   WordValidationDebug,
 } from "../backend";
 import { GameMode } from "../backend";
+import { createLocalMatch, localBackend } from "../lib/localBackend";
 
 function useBackendActor() {
   return { actor: localBackend, isFetching: false };
@@ -92,7 +92,12 @@ export function useCreateGame() {
       wordLength?: number;
     }) => {
       if (!actor) throw new Error("Not connected");
-      const result = await createLocalMatch(sessionToken, mode, isPrivate, wordLength);
+      const result = await createLocalMatch(
+        sessionToken,
+        mode,
+        isPrivate,
+        wordLength,
+      );
       if (result.__kind__ === "err") throw new Error(result.err);
       return result.ok;
     },

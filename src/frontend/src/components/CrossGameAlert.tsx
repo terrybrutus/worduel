@@ -1,10 +1,10 @@
-import { AppButton } from "./AppButton";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { BookOpen, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { GameSummary } from "../backend";
 import { useAuth } from "../hooks/useAuth";
 import { useMyActiveGames } from "../hooks/useBackend";
+import { AppButton } from "./AppButton";
 
 function useCurrentGameId(): string | null {
   const state = useRouterState();
