@@ -1,8 +1,3 @@
-import { AppButton } from "../components/AppButton";
-import { QRCodeSVG } from "qrcode.react";
-import { LOCAL_PREVIEW } from "../lib/localPreview";
-import { friendOrigin, gameWordLength, localInviteOrigin } from "../lib/localBackend";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "../components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -36,10 +31,18 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { GameMode } from "../backend";
 import type { GameHistoryEntry, GameSummary } from "../backend";
+import { AppButton } from "../components/AppButton";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "../components/ui/dialog";
 import { useAuth } from "../hooks/useAuth";
 import {
   useCreateGame,
@@ -53,6 +56,12 @@ import {
 } from "../hooks/useBackend";
 import { useHapticEnabled } from "../hooks/useHapticEnabled";
 import { useTheme } from "../hooks/useTheme";
+import {
+  friendOrigin,
+  gameWordLength,
+  localInviteOrigin,
+} from "../lib/localBackend";
+import { LOCAL_PREVIEW } from "../lib/localPreview";
 import { SOUND_KEY, isGameStatus } from "../types";
 
 // ─── Sound toggle
@@ -115,8 +124,15 @@ function InviteModal({
   joinToken,
   onClose,
 }: InviteModalProps) {
-  const [origin, setOrigin] = useState(LOCAL_PREVIEW ? localInviteOrigin() : window.location.origin);
-  useEffect(() => { if (LOCAL_PREVIEW) void friendOrigin().then(setOrigin).catch(() => {}); }, []);
+  const [origin, setOrigin] = useState(
+    LOCAL_PREVIEW ? localInviteOrigin() : window.location.origin,
+  );
+  useEffect(() => {
+    if (LOCAL_PREVIEW)
+      void friendOrigin()
+        .then(setOrigin)
+        .catch(() => {});
+  }, []);
   const inviteUrl = `${origin}/game/join/${joinToken}?gameId=${gameId}`;
   const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
@@ -150,8 +166,37 @@ function InviteModal({
   if (!open) return null;
 
   return (
-    <Dialog open={open} onOpenChange={value => { if (!value) onClose(); }}>
-      <DialogContent showCloseButton={false} onOpenAutoFocus={event => { event.preventDefault(); document.querySelector<HTMLDivElement>('[data-ocid="invite.dialog"]')?.focus(); }} onKeyDownCapture={event => { if (event.key === "Escape") { event.stopPropagation(); onClose(); } }} onCloseAutoFocus={event => { event.preventDefault(); document.querySelector<HTMLButtonElement>('[data-ocid="lobby.create_game_button"]')?.focus(); }} className="max-h-[90dvh] overflow-y-auto bg-card sm:max-w-sm" data-ocid="invite.dialog">
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        if (!value) onClose();
+      }}
+    >
+      <DialogContent
+        showCloseButton={false}
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          document
+            .querySelector<HTMLDivElement>('[data-ocid="invite.dialog"]')
+            ?.focus();
+        }}
+        onKeyDownCapture={(event) => {
+          if (event.key === "Escape") {
+            event.stopPropagation();
+            onClose();
+          }
+        }}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          document
+            .querySelector<HTMLButtonElement>(
+              '[data-ocid="lobby.create_game_button"]',
+            )
+            ?.focus();
+        }}
+        className="max-h-[90dvh] overflow-y-auto bg-card sm:max-w-sm"
+        data-ocid="invite.dialog"
+      >
         <AppButton
           type="button"
           onClick={onClose}
@@ -172,12 +217,30 @@ function InviteModal({
           Scan the code or share the invitation link to join.
         </DialogDescription>
 
-        <figure className="m-0 flex flex-col items-center gap-2" data-ocid="invite.qr_code">
+        <figure
+          className="m-0 flex flex-col items-center gap-2"
+          data-ocid="invite.qr_code"
+        >
           <div className="rounded-md bg-white p-2">
-            <QRCodeSVG value={inviteUrl} size={208} level="M" marginSize={4} bgColor="#ffffff" fgColor="#000000" role="img" aria-label={`Scan to join private game ${roomCode}`} />
+            <QRCodeSVG
+              value={inviteUrl}
+              size={208}
+              level="M"
+              marginSize={4}
+              bgColor="#ffffff"
+              fgColor="#000000"
+              role="img"
+              aria-label={`Scan to join private game ${roomCode}`}
+            />
           </div>
-          <figcaption className="text-center text-sm font-semibold">Scan to join</figcaption>
-          {LOCAL_PREVIEW && <p className="text-center text-xs text-muted-foreground">Connect your phone to the same Wi-Fi.</p>}
+          <figcaption className="text-center text-sm font-semibold">
+            Scan to join
+          </figcaption>
+          {LOCAL_PREVIEW && (
+            <p className="text-center text-xs text-muted-foreground">
+              Connect your phone to the same Wi-Fi.
+            </p>
+          )}
         </figure>
 
         <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border/60">
@@ -272,7 +335,8 @@ function ActiveGameRow({
           </div>
           <p className="text-xs text-muted-foreground font-mono mt-0.5 truncate">
             {game.players.join(" vs ")} ·{" "}
-            {game.mode === GameMode.coop ? "Co-op" : "Versus"} · {gameWordLength(game)} letters
+            {game.mode === GameMode.coop ? "Co-op" : "Versus"} ·{" "}
+            {gameWordLength(game)} letters
           </p>
         </div>
         <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
@@ -367,16 +431,42 @@ function ProfileSheet({
 }) {
   if (!open) return null;
   return (
-    <Dialog open={open} onOpenChange={value => { if (!value) onClose(); }}>
-      <DialogContent showCloseButton={false} aria-describedby={undefined}
-        onOpenAutoFocus={event => { event.preventDefault(); document.querySelector<HTMLDivElement>('[data-ocid="lobby.profile.sheet"]')?.focus(); }}
-        onKeyDownCapture={event => { if (event.key === "Escape") { event.stopPropagation(); onClose(); } }}
-        onCloseAutoFocus={event => { event.preventDefault(); document.querySelector<HTMLButtonElement>('[data-ocid="lobby.profile_button"]')?.focus(); }}
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        if (!value) onClose();
+      }}
+    >
+      <DialogContent
+        showCloseButton={false}
+        aria-describedby={undefined}
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          document
+            .querySelector<HTMLDivElement>('[data-ocid="lobby.profile.sheet"]')
+            ?.focus();
+        }}
+        onKeyDownCapture={(event) => {
+          if (event.key === "Escape") {
+            event.stopPropagation();
+            onClose();
+          }
+        }}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          document
+            .querySelector<HTMLButtonElement>(
+              '[data-ocid="lobby.profile_button"]',
+            )
+            ?.focus();
+        }}
         className="grid-rows-[auto_minmax(0,1fr)] left-auto right-0 top-0 h-dvh w-80 max-w-full translate-x-0 translate-y-0 gap-0 rounded-none bg-card p-0 sm:max-w-80"
         data-ocid="lobby.profile.sheet"
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-border/60">
-          <DialogTitle className="font-display font-bold text-foreground">My Profile</DialogTitle>
+          <DialogTitle className="font-display font-bold text-foreground">
+            My Profile
+          </DialogTitle>
           <AppButton
             type="button"
             onClick={onClose}
@@ -432,14 +522,16 @@ function ProfileSheet({
           >
             <TrendingUp className="w-4 h-4 text-primary" /> Full Stats
           </AppButton>
-          {!LOCAL_PREVIEW && <AppButton
-            type="button"
-            onClick={onLogout}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-destructive/40 text-sm font-display font-semibold text-destructive hover:bg-destructive/10 transition-smooth"
-            data-ocid="lobby.profile.logout_button"
-          >
-            <LogOut className="w-4 h-4" /> Sign Out
-          </AppButton>}
+          {!LOCAL_PREVIEW && (
+            <AppButton
+              type="button"
+              onClick={onLogout}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-destructive/40 text-sm font-display font-semibold text-destructive hover:bg-destructive/10 transition-smooth"
+              data-ocid="lobby.profile.logout_button"
+            >
+              <LogOut className="w-4 h-4" /> Sign Out
+            </AppButton>
+          )}
         </div>
       </DialogContent>
     </Dialog>
@@ -448,39 +540,6 @@ function ProfileSheet({
 
 // ─── Lobby mode type
 type LobbyMode = null | "new" | "join";
-type RoomPreset = "classic" | "daily" | "family" | "classroom" | "tournament";
-
-const ROOM_PRESETS: Array<{
-  id: RoomPreset;
-  label: string;
-  detail: string;
-}> = [
-  {
-    id: "classic",
-    label: "Classic",
-    detail: "Standard shared word list",
-  },
-  {
-    id: "daily",
-    label: "Daily Duel",
-    detail: "Same-day challenge framing",
-  },
-  {
-    id: "family",
-    label: "Family Pack",
-    detail: "Private room starter",
-  },
-  {
-    id: "classroom",
-    label: "Classroom",
-    detail: "Vocabulary practice starter",
-  },
-  {
-    id: "tournament",
-    label: "Tournament",
-    detail: "Host-ready room framing",
-  },
-];
 
 // ─── Main Lobby
 export default function Lobby() {
@@ -494,7 +553,6 @@ export default function Lobby() {
   const [gameMode, setGameMode] = useState<GameMode>(GameMode.versus);
   const [wordLength, setWordLength] = useState<5 | 6 | 7>(5);
   const [isPrivate, setIsPrivate] = useState(false);
-  const [roomPreset, setRoomPreset] = useState<RoomPreset>("classic");
   const [inviteData, setInviteData] = useState<{
     gameId: string;
     roomCode: string;
@@ -536,40 +594,6 @@ export default function Lobby() {
       {
         onSuccess: (data) => {
           if (isPrivate && data.joinToken) {
-            setInviteData({
-              gameId: data.gameId,
-              roomCode: data.roomCode,
-              joinToken: data.joinToken,
-            });
-          } else {
-            void navigate({
-              to: "/game/$gameId",
-              params: { gameId: data.gameId },
-            });
-          }
-        },
-        onError: (err) =>
-          toast.error(
-            err instanceof Error ? err.message : "Failed to create game",
-          ),
-      },
-    );
-  };
-
-  const handleQuickCreate = (preset: RoomPreset, privateGame: boolean) => {
-    setRoomPreset(preset);
-    setGameMode(GameMode.versus);
-    setIsPrivate(privateGame);
-    setLobbyMode("new");
-    if (!sessionToken) {
-      toast.info("Play guest practice now, or sign in for multiplayer.");
-      return;
-    }
-    createGame.mutate(
-      { sessionToken, mode: GameMode.versus, isPrivate: privateGame },
-      {
-        onSuccess: (data) => {
-          if (privateGame && data.joinToken) {
             setInviteData({
               gameId: data.gameId,
               roomCode: data.roomCode,
@@ -711,7 +735,7 @@ export default function Lobby() {
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
               </svg>
             )}
-          <span className="text-[10px] sm:sr-only">Theme</span>
+            <span className="text-[10px] sm:sr-only">Theme</span>
           </AppButton>
 
           {/* Haptic toggle — only on devices that support vibration */}
@@ -727,7 +751,11 @@ export default function Lobby() {
               role="switch"
               aria-label="Vibration"
               aria-checked={hapticEnabled}
-              tooltip={hapticEnabled ? "Vibration on. Turn it off." : "Vibration off. Turn it on."}
+              tooltip={
+                hapticEnabled
+                  ? "Vibration on. Turn it off."
+                  : "Vibration off. Turn it on."
+              }
               data-ocid="lobby.haptic_toggle"
             >
               {/* Phone vibrate icon */}
@@ -750,8 +778,8 @@ export default function Lobby() {
                   <path d="M9 9h6M9 12h6M9 15h4" strokeOpacity="0.6" />
                 )}
               </svg>
-            <span className="text-[10px] sm:sr-only">Vibration</span>
-          </AppButton>
+              <span className="text-[10px] sm:sr-only">Vibration</span>
+            </AppButton>
           )}
 
           {/* Sound toggle */}
@@ -762,7 +790,11 @@ export default function Lobby() {
             role="switch"
             aria-label="Sound"
             aria-checked={soundEnabled}
-            tooltip={soundEnabled ? "Sound on. Mute sounds." : "Sound off. Enable sounds."}
+            tooltip={
+              soundEnabled
+                ? "Sound on. Mute sounds."
+                : "Sound off. Enable sounds."
+            }
             data-ocid="lobby.sound_toggle"
           >
             {soundEnabled ? (
@@ -770,7 +802,7 @@ export default function Lobby() {
             ) : (
               <VolumeX className="w-4 h-4" />
             )}
-          <span className="text-[10px] sm:sr-only">Sound</span>
+            <span className="text-[10px] sm:sr-only">Sound</span>
           </AppButton>
           <AppButton
             type="button"
@@ -789,14 +821,63 @@ export default function Lobby() {
 
       <div className="flex-1 container mx-auto max-w-2xl px-4 py-5 space-y-5">
         <div className="grid gap-3 sm:grid-cols-3" aria-label="Play Worduel">
-          <AppButton type="button" onClick={() => { setIsPrivate(true); setRoomPreset("classic"); toggleMode("new"); }} aria-expanded={lobbyMode === "new"} className="min-h-24 rounded-lg border border-primary bg-primary/10 p-4 text-left font-bold text-primary"><Users className="mb-2 h-5 w-5" />Challenge a Friend</AppButton>
-          <AppButton type="button" onClick={() => toggleMode("join")} aria-expanded={lobbyMode === "join"} className="min-h-24 rounded-lg border border-border p-4 text-left font-bold"><Search className="mb-2 h-5 w-5" />Join a Game</AppButton>
-          <AppButton type="button" onClick={() => void navigate({ to: "/practice" })} className="min-h-24 rounded-lg border border-border p-4 text-left font-bold"><BookOpen className="mb-2 h-5 w-5" />Solo Practice</AppButton>
+          <AppButton
+            type="button"
+            onClick={() => {
+              setIsPrivate(true);
+              toggleMode("new");
+            }}
+            aria-expanded={lobbyMode === "new"}
+            className="min-h-24 rounded-lg border border-primary bg-primary/10 p-4 text-left font-bold text-primary"
+          >
+            <Users className="mb-2 h-5 w-5" />
+            Challenge a Friend
+          </AppButton>
+          <AppButton
+            type="button"
+            onClick={() => toggleMode("join")}
+            aria-expanded={lobbyMode === "join"}
+            className="min-h-24 rounded-lg border border-border p-4 text-left font-bold"
+          >
+            <Search className="mb-2 h-5 w-5" />
+            Join a Game
+          </AppButton>
+          <AppButton
+            type="button"
+            onClick={() => void navigate({ to: "/practice" })}
+            className="min-h-24 rounded-lg border border-border p-4 text-left font-bold"
+          >
+            <BookOpen className="mb-2 h-5 w-5" />
+            Solo Practice
+          </AppButton>
         </div>
         <div className="flex flex-wrap items-center gap-4 border-b border-border pb-4">
-          {<AppButton type="button" onClick={() => void navigate({ to: "/challenges" })} className="flex min-h-11 items-center gap-2 text-sm font-semibold"><CalendarDays className="h-4 w-4" />Daily &amp; Play-Later</AppButton>}
-          <AppButton type="button" onClick={() => void navigate({ to: "/word-bank" })} className="flex min-h-11 items-center gap-2 text-sm font-semibold"><BookMarked className="h-4 w-4" />Word Bank</AppButton>
-          <AppButton type="button" onClick={() => void navigate({ to: "/stats" })} className="flex min-h-11 items-center gap-2 text-sm font-semibold"><Trophy className="h-4 w-4" />My Stats</AppButton>
+          {
+            <AppButton
+              type="button"
+              onClick={() => void navigate({ to: "/challenges" })}
+              className="flex min-h-11 items-center gap-2 text-sm font-semibold"
+            >
+              <CalendarDays className="h-4 w-4" />
+              Daily &amp; Play-Later
+            </AppButton>
+          }
+          <AppButton
+            type="button"
+            onClick={() => void navigate({ to: "/word-bank" })}
+            className="flex min-h-11 items-center gap-2 text-sm font-semibold"
+          >
+            <BookMarked className="h-4 w-4" />
+            Word Bank
+          </AppButton>
+          <AppButton
+            type="button"
+            onClick={() => void navigate({ to: "/stats" })}
+            className="flex min-h-11 items-center gap-2 text-sm font-semibold"
+          >
+            <Trophy className="h-4 w-4" />
+            My Stats
+          </AppButton>
         </div>
 
         {/* Active games — only shown when games exist */}
@@ -867,12 +948,27 @@ export default function Lobby() {
             className="bg-card border border-border/60 rounded-xl p-4 space-y-4"
             data-ocid="lobby.create_game.section"
           >
-            {<fieldset className="flex flex-wrap gap-2">
-              <legend className="mb-2 text-sm font-semibold">Word length</legend>
-              {([5,6,7] as const).map(length => <label key={length} className={`flex min-h-11 items-center gap-2 rounded-md border px-3 py-2 text-sm ${wordLength === length ? "border-primary text-primary" : "border-border"}`}>
-                <input type="radio" name="duel-length" checked={wordLength === length} onChange={() => setWordLength(length)} />{length} letters
-              </label>)}
-            </fieldset>}
+            {
+              <fieldset className="flex flex-wrap gap-2">
+                <legend className="mb-2 text-sm font-semibold">
+                  Word length
+                </legend>
+                {([5, 6, 7] as const).map((length) => (
+                  <label
+                    key={length}
+                    className={`flex min-h-11 items-center gap-2 rounded-md border px-3 py-2 text-sm ${wordLength === length ? "border-primary text-primary" : "border-border"}`}
+                  >
+                    <input
+                      type="radio"
+                      name="duel-length"
+                      checked={wordLength === length}
+                      onChange={() => setWordLength(length)}
+                    />
+                    {length} letters
+                  </label>
+                ))}
+              </fieldset>
+            }
             <div>
               <p className="text-xs font-mono text-muted-foreground uppercase tracking-widest mb-2">
                 Visibility
@@ -1017,7 +1113,10 @@ export default function Lobby() {
                 <AppButton
                   type="button"
                   onClick={handleJoinByCode}
-                  disabled={![4,12].includes(joinCode.trim().length) || joinGame.isPending}
+                  disabled={
+                    ![4, 12].includes(joinCode.trim().length) ||
+                    joinGame.isPending
+                  }
                   className="btn-primary px-5 disabled:opacity-50"
                   data-ocid="lobby.join_submit_button"
                 >

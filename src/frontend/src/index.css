@@ -513,12 +513,16 @@
 }
 
 /* Active matches own the viewport; result screens and dialogs can still scroll. */
-html:has(.game-live), body:has(.game-live) {
+html:has(.game-live),
+body:has(.game-live) {
   height: 100dvh;
   overflow: hidden;
   overscroll-behavior: none;
 }
-#root:has(.game-live) { height: 100dvh; overflow: hidden; }
+#root:has(.game-live) {
+  height: 100dvh;
+  overflow: hidden;
+}
 .game-live {
   position: fixed;
   inset: 0;
@@ -533,7 +537,11 @@ html:has(.game-live), body:has(.game-live) {
   padding: 12px 16px 8px;
   gap: 8px;
   container-type: size;
-  --tile-size: min(72px, calc((100cqh - 250px) / 6), calc((100cqw - 48px) / var(--word-length) - 4px));
+  --tile-size: min(
+    72px,
+    calc((100cqh - 250px) / 6),
+    calc((100cqw - 48px) / var(--word-length) - 4px)
+  );
 }
 .duel-arena {
   display: flex;
@@ -563,15 +571,40 @@ html:has(.game-live), body:has(.game-live) {
   justify-content: center;
 }
 .board-zone > * {
-  --tile-size: min(76px, calc((100cqh - 80px) / 6), calc((100cqw - 16px) / var(--word-length) - 4px));
+  --tile-size: min(
+    76px,
+    calc((100cqh - 80px) / 6),
+    calc((100cqw - 16px) / var(--word-length) - 4px)
+  );
 }
-.game-live [data-ocid="game.tile_grid"] { --tile-size: inherit !important; }
-.board-zone [data-ocid="game.tile_grid"] { --tile-size: min(76px, calc((100cqh - 80px) / 6), calc((100cqw - 16px) / var(--word-length) - 4px)) !important; }
-.game-live .tile, .game-live .opponent-empty { flex-shrink: 0; transition-property: background-color, border-color, color, transform; }
-.game-live [data-ocid="game.tile_grid"] button { min-height: 0 !important; }
-.duel-keyboard { width: calc((100% - 48px) / 2); flex-shrink: 0; }
-.game-live [data-ocid="game.keyboard"] { max-width: 500px; }
-.mobile-opponent { display: none; }
+.game-live [data-ocid="game.tile_grid"] {
+  --tile-size: inherit !important;
+}
+.board-zone [data-ocid="game.tile_grid"] {
+  --tile-size: min(
+    76px,
+    calc((100cqh - 80px) / 6),
+    calc((100cqw - 16px) / var(--word-length) - 4px)
+  ) !important;
+}
+.game-live .tile,
+.game-live .opponent-empty {
+  flex-shrink: 0;
+  transition-property: background-color, border-color, color, transform;
+}
+.game-live [data-ocid="game.tile_grid"] button {
+  min-height: 0 !important;
+}
+.duel-keyboard {
+  width: calc((100% - 48px) / 2);
+  flex-shrink: 0;
+}
+.game-live [data-ocid="game.keyboard"] {
+  max-width: 500px;
+}
+.mobile-opponent {
+  display: none;
+}
 .coop-board {
   flex: 1;
   min-height: 0;
@@ -582,23 +615,63 @@ html:has(.game-live), body:has(.game-live) {
   justify-content: center;
 }
 .game-live .coop-board [data-ocid="game.tile_grid"] {
-  --tile-size: min(76px, calc((100cqh - 28px) / 6), calc((100cqw - 60px) / var(--word-length) - 4px)) !important;
+  --tile-size: min(
+    76px,
+    calc((100cqh - 28px) / 6),
+    calc((100cqw - 60px) / var(--word-length) - 4px)
+  ) !important;
 }
-.game-live [data-ocid="game.coop_turn_indicator"] { flex-shrink: 0; }
+.game-live [data-ocid="game.coop_turn_indicator"] {
+  flex-shrink: 0;
+}
 @media (max-width: 639px) {
-  .game-live .game-header { padding: 2px 8px; gap: 2px; flex-wrap: nowrap; }
-  .game-live .game-header > [data-ocid="game.opponent_status"] { display: none; }
-  .game-live .game-room { flex: 1; justify-content: center; gap: 4px; min-width: 0; }
-  .game-live .game-room .room-code { display: none; }
-  .game-live .game-header [data-ocid="game.lobby_link"] { font-size: 12px; }
-  .game-live .game-header [data-ocid="game.leave_button"] { font-size: 12px; }
-  .game-live .game-main { padding: 6px 6px 4px; gap: 4px; }
-  .duel-arena { gap: 6px; }
-  .duel-boards { display: flex; gap: 0; }
-  .player-zone { width: 100%; }
-  .opponent-zone { display: none; }
-  .board-zone > *, .board-zone [data-ocid="game.tile_grid"] {
-    --tile-size: min(64px, calc((100cqh - 30px) / 6), calc((100cqw - 16px) / var(--word-length) - 4px)) !important;
+  .game-live .game-header {
+    padding: 2px 8px;
+    gap: 2px;
+    flex-wrap: nowrap;
+  }
+  .game-live .game-header > [data-ocid="game.opponent_status"] {
+    display: none;
+  }
+  .game-live .game-room {
+    flex: 1;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+  }
+  .game-live .game-room .room-code {
+    display: none;
+  }
+  .game-live .game-header [data-ocid="game.lobby_link"] {
+    font-size: 12px;
+  }
+  .game-live .game-header [data-ocid="game.leave_button"] {
+    font-size: 12px;
+  }
+  .game-live .game-main {
+    padding: 6px 6px 4px;
+    gap: 4px;
+  }
+  .duel-arena {
+    gap: 6px;
+  }
+  .duel-boards {
+    display: flex;
+    gap: 0;
+  }
+  .player-zone {
+    width: 100%;
+  }
+  .opponent-zone {
+    display: none;
+  }
+  .board-zone > *,
+  .board-zone [data-ocid="game.tile_grid"] {
+    --tile-size: min(
+      64px,
+      calc((100cqh - 30px) / 6),
+      calc((100cqw - 16px) / var(--word-length) - 4px)
+    ) !important;
   }
   .mobile-opponent {
     display: flex;
@@ -611,15 +684,30 @@ html:has(.game-live), body:has(.game-live) {
     padding: 4px 10px;
     border-block: 1px solid oklch(var(--border));
   }
-  .duel-keyboard { width: 100%; }
-  .game-live [data-ocid="game.keyboard"] button { height: 44px; }
-  .game-live [data-ocid="game.keyboard"] { gap: 5px; }
-  .game-live [data-ocid="game.coop_waiting_label"] { display: none; }
+  .duel-keyboard {
+    width: 100%;
+  }
+  .game-live [data-ocid="game.keyboard"] button {
+    height: 44px;
+  }
+  .game-live [data-ocid="game.keyboard"] {
+    gap: 5px;
+  }
+  .game-live [data-ocid="game.coop_waiting_label"] {
+    display: none;
+  }
 }
 @media (max-height: 550px) and (min-width: 640px) {
-  .game-live [data-ocid="game.keyboard"] button { height: 36px; }
-  .board-zone > *, .board-zone [data-ocid="game.tile_grid"] {
-    --tile-size: min(76px, calc((100cqh - 50px) / 6), calc((100cqw - 16px) / var(--word-length) - 4px)) !important;
+  .game-live [data-ocid="game.keyboard"] button {
+    height: 36px;
+  }
+  .board-zone > *,
+  .board-zone [data-ocid="game.tile_grid"] {
+    --tile-size: min(
+      76px,
+      calc((100cqh - 50px) / 6),
+      calc((100cqw - 16px) / var(--word-length) - 4px)
+    ) !important;
   }
 }
 

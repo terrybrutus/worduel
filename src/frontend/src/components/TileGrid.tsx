@@ -1,5 +1,5 @@
-import { TileState } from "../backend";
 import type { CSSProperties } from "react";
+import { TileState } from "../backend";
 import type { Guess } from "../backend";
 import { SubmittedWord } from "./SubmittedWord";
 
@@ -52,7 +52,13 @@ export function TileCell({
   return (
     <div
       className={`${inputClass} select-none`}
-      style={{ width: "var(--tile-size, 3rem)", height: "var(--tile-size, 3rem)", ...(isFlipping && hasState ? { animation: `tileFlip 0.6s ease-in-out ${flipDelay}s both` } : {}) }}
+      style={{
+        width: "var(--tile-size, 3rem)",
+        height: "var(--tile-size, 3rem)",
+        ...(isFlipping && hasState
+          ? { animation: `tileFlip 0.6s ease-in-out ${flipDelay}s both` }
+          : {}),
+      }}
       aria-label={letter ? `${letter}${state ? `, ${state}` : ""}` : "empty"}
     >
       {letter && (
@@ -66,8 +72,6 @@ export function TileCell({
     </div>
   );
 }
-
-const WORD_LENGTH = 5;
 
 function PlayerDot({ playerNum }: { playerNum: bigint }) {
   const isP1 = Number(playerNum) === 1;
@@ -147,7 +151,14 @@ export function TileGrid({
     <div
       className="flex flex-col items-center gap-1"
       data-ocid="game.tile_grid"
-      style={wordLength > 5 ? { width: "100%", "--tile-size": `min(2.75rem, calc((100vw - 72px) / ${wordLength} - 4px))` } as CSSProperties : undefined}
+      style={
+        wordLength > 5
+          ? ({
+              width: "100%",
+              "--tile-size": `min(2.75rem, calc((100vw - 72px) / ${wordLength} - 4px))`,
+            } as CSSProperties)
+          : undefined
+      }
     >
       {label && <p className="result-player-label mb-1">{label}</p>}
       {rows.map((row, rowIdx) => {
@@ -177,19 +188,28 @@ export function TileGrid({
             {row.isSubmitted && !hideSubmittedLetters ? (
               <SubmittedWord word={guesses[rowIdx].word}>
                 {row.letters.map((letter, colIdx) => (
-                  <TileCell key={colIdx} letter={letter} state={row.states[colIdx]} flipDelay={isFlippingRow ? colIdx * 0.1 : 0} isFlipping={isFlippingRow} />
+                  <TileCell
+                    // biome-ignore lint/suspicious/noArrayIndexKey: Board columns are fixed positions, never reordered.
+                    key={colIdx}
+                    letter={letter}
+                    state={row.states[colIdx]}
+                    flipDelay={isFlippingRow ? colIdx * 0.1 : 0}
+                    isFlipping={isFlippingRow}
+                  />
                 ))}
               </SubmittedWord>
-            ) : row.letters.map((letter, colIdx) => (
-              <TileCell
-                // biome-ignore lint/suspicious/noArrayIndexKey: tile columns are positional
-                key={colIdx}
-                letter={letter}
-                state={row.states[colIdx]}
-                flipDelay={isFlippingRow ? colIdx * 0.1 : 0}
-                isFlipping={isFlippingRow}
-              />
-            ))}
+            ) : (
+              row.letters.map((letter, colIdx) => (
+                <TileCell
+                  // biome-ignore lint/suspicious/noArrayIndexKey: tile columns are positional
+                  key={colIdx}
+                  letter={letter}
+                  state={row.states[colIdx]}
+                  flipDelay={isFlippingRow ? colIdx * 0.1 : 0}
+                  isFlipping={isFlippingRow}
+                />
+              ))
+            )}
           </div>
         );
       })}

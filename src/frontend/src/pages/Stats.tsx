@@ -1,4 +1,3 @@
-import { AppButton } from "../components/AppButton";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "@tanstack/react-router";
@@ -16,6 +15,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useState } from "react";
+import { AppButton } from "../components/AppButton";
 import { useAuth } from "../hooks/useAuth";
 import {
   useMyGameHistory,
@@ -306,7 +306,11 @@ export default function Stats() {
                         }
                         data-ocid={`stats.rivals.sort_${key}`}
                       >
-                        <AppButton onClick={() => toggleSort(key)} tooltip={`Sort by ${label}`} className="inline-flex items-center justify-end gap-1">
+                        <AppButton
+                          onClick={() => toggleSort(key)}
+                          tooltip={`Sort by ${label}`}
+                          className="inline-flex items-center justify-end gap-1"
+                        >
                           {label}
                           {rivalSort === key ? (
                             <SortIcon asc={rivalAsc} />

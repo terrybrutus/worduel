@@ -15,6 +15,7 @@ import { CrossGameAlert } from "./components/CrossGameAlert";
 import { LoadingSpinner } from "./components/LoadingSpinner";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import Admin from "./pages/Admin";
+import { ChallengeRound, Challenges } from "./pages/Challenges";
 import Game from "./pages/Game";
 import JoinByToken from "./pages/JoinByToken";
 import Lobby from "./pages/Lobby";
@@ -22,7 +23,6 @@ import Login, { LoginModal } from "./pages/Login";
 import Practice from "./pages/Practice";
 import Stats from "./pages/Stats";
 import WordBank from "./pages/WordBank";
-import { Challenges, ChallengeRound } from "./pages/Challenges";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 2, staleTime: 1000 } },
@@ -224,7 +224,7 @@ const gameRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/game/$gameId",
   component: function GameRoute() {
-    const path = useRouterState({ select: state => state.location.pathname });
+    const path = useRouterState({ select: (state) => state.location.pathname });
     return <Game key={path} />;
   },
 });
@@ -248,8 +248,16 @@ const wordBankRoute = createRoute({
   path: "/word-bank",
   component: WordBank,
 });
-const challengesRoute = createRoute({ getParentRoute: () => rootRoute, path: "/challenges", component: Challenges });
-const challengeRoute = createRoute({ getParentRoute: () => rootRoute, path: "/challenge/$token", component: ChallengeRound });
+const challengesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/challenges",
+  component: Challenges,
+});
+const challengeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/challenge/$token",
+  component: ChallengeRound,
+});
 const joinByTokenRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/game/join/$joinToken",

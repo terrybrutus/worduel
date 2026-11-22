@@ -1,4 +1,3 @@
-import { AppButton } from "./AppButton";
 import {
   Brain,
   CheckCircle2,
@@ -11,7 +10,6 @@ import { useMemo, useState } from "react";
 import { GameMode } from "../backend";
 import { useAuth } from "../hooks/useAuth";
 import { useWordMeaning } from "../hooks/useWordMeaning";
-import { MeaningAttribution } from "./MeaningAttribution";
 import {
   type Confidence,
   confidenceKey,
@@ -20,6 +18,8 @@ import {
   saveWord,
   updateSavedWordConfidence,
 } from "../lib/wordBank";
+import { AppButton } from "./AppButton";
+import { MeaningAttribution } from "./MeaningAttribution";
 
 const MAX_GUESSES = 6;
 
@@ -152,10 +152,8 @@ export function LearningRecap({
   const recap = useMemo(() => {
     if (!hasWord)
       return "The backend did not send the answer for this finished game.";
-    if (opponentWon)
-      return "Your opponent solved it first.";
-    if (won)
-      return "You solved the word.";
+    if (opponentWon) return "Your opponent solved it first.";
+    if (won) return "You solved the word.";
     return "The answer is revealed. Try another round when you are ready.";
   }, [hasWord, opponentWon, won]);
 
@@ -163,13 +161,22 @@ export function LearningRecap({
     setSaveError("");
     try {
       if (value !== "knew") {
-        saveWord(user?.username, normalized, meaning.definition, value, meaning);
+        saveWord(
+          user?.username,
+          normalized,
+          meaning.definition,
+          value,
+          meaning,
+        );
         updateSavedWordConfidence(user?.username, normalized, value);
         setSaved(true);
-      } else if (saved) updateSavedWordConfidence(user?.username, normalized, value);
-    setConfidence(value);
-    if (key) localStorage.setItem(key, value);
-    } catch { setSaveError("Could not save. Browser storage may be unavailable."); }
+      } else if (saved)
+        updateSavedWordConfidence(user?.username, normalized, value);
+      setConfidence(value);
+      if (key) localStorage.setItem(key, value);
+    } catch {
+      setSaveError("Could not save. Browser storage may be unavailable.");
+    }
   };
 
   const handleCopy = () => {
@@ -182,14 +189,22 @@ export function LearningRecap({
   const handleSaveWord = () => {
     if (!hasWord) return;
     try {
-    if (saved) {
-      removeWord(user?.username, normalized);
-      setSaved(false);
-      return;
+      if (saved) {
+        removeWord(user?.username, normalized);
+        setSaved(false);
+        return;
+      }
+      saveWord(
+        user?.username,
+        normalized,
+        meaning.definition,
+        confidence,
+        meaning,
+      );
+      setSaved(true);
+    } catch {
+      setSaveError("Could not save. Browser storage may be unavailable.");
     }
-    saveWord(user?.username, normalized, meaning.definition, confidence, meaning);
-    setSaved(true);
-    } catch { setSaveError("Could not save. Browser storage may be unavailable."); }
   };
 
   return (
@@ -218,9 +233,18 @@ export function LearningRecap({
       </div>
 
       <p className="mt-3 text-sm font-body text-foreground">
-        {hasWord ? meaning.definition || (meaning.loading ? "Looking up meaning..." : "Definition unavailable right now.") : "Answer unavailable."}
+        {hasWord
+          ? meaning.definition ||
+            (meaning.loading
+              ? "Looking up meaning..."
+              : "Definition unavailable right now.")
+          : "Answer unavailable."}
       </p>
-      {meaning.example && <p className="mt-2 text-xs text-muted-foreground">Example: {meaning.example}</p>}
+      {meaning.example && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Example: {meaning.example}
+        </p>
+      )}
       <MeaningAttribution {...meaning} />
       <p className="mt-2 text-xs text-muted-foreground">{recap}</p>
 
@@ -237,7 +261,13 @@ export function LearningRecap({
                 key={option.value}
                 type="button"
                 onClick={() => handleConfidence(option.value)}
-                tooltip={option.value === "knew" ? "Skip automatic reviews for this word." : option.value === "guessed" ? "Save this word for review." : "Save this new word and put it first in review."}
+                tooltip={
+                  option.value === "knew"
+                    ? "Skip automatic reviews for this word."
+                    : option.value === "guessed"
+                      ? "Save this word for review."
+                      : "Save this new word and put it first in review."
+                }
                 disabled={!hasWord || !meaning.definition}
                 className={`flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg border px-2 py-2 text-[10px] font-display font-bold transition-smooth disabled:opacity-50 ${
                   selected
@@ -252,9 +282,26 @@ export function LearningRecap({
             );
           })}
         </div>
-        {confidence && <p role="status" className="mt-2 text-xs text-muted-foreground">{confidence === "knew" ? "No automatic review. You can still save it." : "Saved for review in Word Bank."}</p>}
-        {confidence && confidence !== "knew" && <a href="/word-bank" className="mt-2 inline-block text-sm text-primary underline">Review saved words</a>}
-        {saveError && <p role="alert" className="mt-2 text-sm text-destructive">{saveError}</p>}
+        {confidence && (
+          <output className="block mt-2 text-xs text-muted-foreground">
+            {confidence === "knew"
+              ? "No automatic review. You can still save it."
+              : "Saved for review in Word Bank."}
+          </output>
+        )}
+        {confidence && confidence !== "knew" && (
+          <a
+            href="/word-bank"
+            className="mt-2 inline-block text-sm text-primary underline"
+          >
+            Review saved words
+          </a>
+        )}
+        {saveError && (
+          <p role="alert" className="mt-2 text-sm text-destructive">
+            {saveError}
+          </p>
+        )}
         <AppButton
           type="button"
           onClick={handleSaveWord}

@@ -1,13 +1,11 @@
-import { AppButton } from "../components/AppButton";
-import { Maximize, Minimize, RefreshCw, WifiOff } from "lucide-react";
-import { toast } from "sonner";
-import { LOCAL_PREVIEW } from "../lib/localPreview";
-import { localGuest, gameWordLength, friendOrigin, localInviteOrigin } from "../lib/localBackend";
 import { useNavigate } from "@tanstack/react-router";
+import { Maximize, Minimize, RefreshCw, WifiOff } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { GameMode, PlayerOutcome, type TileState } from "../backend";
 import type { Guess } from "../backend";
+import { AppButton } from "../components/AppButton";
 import {
   Keyboard,
   playInvalidSound,
@@ -19,20 +17,26 @@ import { LoadingSpinner } from "../components/LoadingSpinner";
 import { TileCell, TileGrid } from "../components/TileGrid";
 import {
   useAcceptRematch,
+  useGameState,
   useLeaveGame,
   useRematchOffer,
   useRequestRematch,
-  useGameState,
 } from "../hooks/useBackend";
 import { useGame } from "../hooks/useGame";
 import { triggerHaptic } from "../hooks/useHapticEnabled";
 import { useHapticEnabled } from "../hooks/useHapticEnabled";
 import { useSoundEnabled } from "../hooks/useSoundEnabled";
+import {
+  friendOrigin,
+  gameWordLength,
+  localGuest,
+  localInviteOrigin,
+} from "../lib/localBackend";
+import { LOCAL_PREVIEW } from "../lib/localPreview";
 import { SESSION_KEY } from "../types";
 import { getOpponentName } from "../types";
 
 const MAX_GUESSES = 6;
-const WORD_LENGTH = 5;
 
 function FullscreenButton() {
   const [active, setActive] = useState(false);
@@ -42,14 +46,22 @@ function FullscreenButton() {
     return () => document.removeEventListener("fullscreenchange", changed);
   }, []);
   if (!document.fullscreenEnabled) return null;
-  return <AppButton aria-label={active ? "Exit fullscreen" : "Enter fullscreen"}
-    className="flex h-11 w-11 shrink-0 items-center justify-center"
-    onClick={async () => {
-      try {
-        if (document.fullscreenElement) await document.exitFullscreen();
-        else await document.documentElement.requestFullscreen();
-      } catch { toast.error("Fullscreen is not available in this browser."); }
-    }}>{active ? <Minimize size={18} /> : <Maximize size={18} />}</AppButton>;
+  return (
+    <AppButton
+      aria-label={active ? "Exit fullscreen" : "Enter fullscreen"}
+      className="flex h-11 w-11 shrink-0 items-center justify-center"
+      onClick={async () => {
+        try {
+          if (document.fullscreenElement) await document.exitFullscreen();
+          else await document.documentElement.requestFullscreen();
+        } catch {
+          toast.error("Fullscreen is not available in this browser.");
+        }
+      }}
+    >
+      {active ? <Minimize size={18} /> : <Maximize size={18} />}
+    </AppButton>
+  );
 }
 
 // ── Confetti ─────────────────────────────────────────────────────────────────
@@ -147,7 +159,10 @@ function OpponentGhostGrid({
                   <div
                     // biome-ignore lint/suspicious/noArrayIndexKey: grid column
                     key={colIdx}
-                    style={{ width: "var(--tile-size, 3rem)", height: "var(--tile-size, 3rem)" }}
+                    style={{
+                      width: "var(--tile-size, 3rem)",
+                      height: "var(--tile-size, 3rem)",
+                    }}
                     className={`opponent-empty rounded border-2 transition-colors duration-300 ${
                       isGuessed
                         ? "border-chart-1/60 bg-chart-1/35"
@@ -547,8 +562,15 @@ function VersusStatus({
 // ── Invite Link Copy ──────────────────────────────────────────────────────────
 function InviteLink({ token, gameId }: { token: string; gameId?: string }) {
   const [copied, setCopied] = useState(false);
-  const [origin, setOrigin] = useState(LOCAL_PREVIEW ? localInviteOrigin() : window.location.origin);
-  useEffect(() => { if (LOCAL_PREVIEW) void friendOrigin().then(setOrigin).catch(() => {}); }, []);
+  const [origin, setOrigin] = useState(
+    LOCAL_PREVIEW ? localInviteOrigin() : window.location.origin,
+  );
+  useEffect(() => {
+    if (LOCAL_PREVIEW)
+      void friendOrigin()
+        .then(setOrigin)
+        .catch(() => {});
+  }, []);
 
   const copyLink = useCallback(async () => {
     const url = gameId
@@ -706,21 +728,40 @@ function VersusLayout({
         {/* Divider */}
 
         {/* Opponent ghost grid */}
-        <div className="board-zone opponent-zone">
-          {opponentGrid}
-        </div>
+        <div className="board-zone opponent-zone">{opponentGrid}</div>
       </div>
 
       {/* Keyboard — always full width below both boards */}
-      <div className="mobile-opponent" data-ocid="game.mobile_opponent" aria-live="polite">
-        <div className="min-w-0"><p className="truncate text-xs font-semibold">{opponentName}</p><p className="text-xs text-muted-foreground">{opponentCount}/6 guesses</p></div>
-        <div className="flex shrink-0 flex-col gap-0.5" aria-label="Opponent color progress; letters hidden">
-          {Array.from({ length: 6 }, (_, row) => <div key={row} className="flex gap-0.5">
-            {Array.from({ length: wordLength }, (_, col) => {
-              const state = opponentStates[row]?.[col];
-              return <span key={col} className={`h-1.5 w-2 rounded-sm ${state === "correct" ? "bg-green-600" : state === "present" ? "bg-amber-500" : row < opponentCount ? "bg-neutral-600" : "bg-neutral-800"}`} />;
-            })}
-          </div>)}
+      <div
+        className="mobile-opponent"
+        data-ocid="game.mobile_opponent"
+        aria-live="polite"
+      >
+        <div className="min-w-0">
+          <p className="truncate text-xs font-semibold">{opponentName}</p>
+          <p className="text-xs text-muted-foreground">
+            {opponentCount}/6 guesses
+          </p>
+        </div>
+        <div
+          className="flex shrink-0 flex-col gap-0.5"
+          aria-label="Opponent color progress; letters hidden"
+        >
+          {Array.from({ length: 6 }, (_, row) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: Guess rows have fixed positions.
+            <div key={row} className="flex gap-0.5">
+              {Array.from({ length: wordLength }, (_, col) => {
+                const state = opponentStates[row]?.[col];
+                return (
+                  <span
+                    // biome-ignore lint/suspicious/noArrayIndexKey: Progress columns have fixed positions.
+                    key={col}
+                    className={`h-1.5 w-2 rounded-sm ${state === "correct" ? "bg-green-600" : state === "present" ? "bg-amber-500" : row < opponentCount ? "bg-neutral-600" : "bg-neutral-800"}`}
+                  />
+                );
+              })}
+            </div>
+          ))}
         </div>
       </div>
       <div className="duel-keyboard">{keyboard}</div>
@@ -818,7 +859,9 @@ function AcceptRematchBanner({
 // ── Main Game Page ─────────────────────────────────────────────────────────────
 export default function Game() {
   const navigate = useNavigate();
-  const sessionToken = LOCAL_PREVIEW ? localGuest()?.token ?? "" : localStorage.getItem(SESSION_KEY) ?? "";
+  const sessionToken = LOCAL_PREVIEW
+    ? (localGuest()?.token ?? "")
+    : (localStorage.getItem(SESSION_KEY) ?? "");
 
   const {
     gameState,
@@ -943,7 +986,11 @@ export default function Game() {
           setRematchNewGameId(data.newGameId);
         },
         onError: (error) => {
-          toast.error(error instanceof Error ? error.message : "Could not start the rematch.");
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : "Could not start the rematch.",
+          );
           requestRematch.reset();
         },
       },
@@ -967,10 +1014,20 @@ export default function Game() {
       void navigate({ to: "/lobby" });
     }
   }, [navigate, requestRematch, rematchNewGameId]);
-  const { data: rematchState } = useGameState(rematchNewGameId, rematchOffered ? sessionToken : null);
+  const { data: rematchState } = useGameState(
+    rematchNewGameId,
+    rematchOffered ? sessionToken : null,
+  );
   useEffect(() => {
-    if (rematchOffered && rematchState?.status.__kind__ === "playing" && rematchNewGameId) {
-      void navigate({ to: "/game/$gameId", params: { gameId: rematchNewGameId } });
+    if (
+      rematchOffered &&
+      rematchState?.status.__kind__ === "playing" &&
+      rematchNewGameId
+    ) {
+      void navigate({
+        to: "/game/$gameId",
+        params: { gameId: rematchNewGameId },
+      });
     }
   }, [rematchOffered, rematchState, rematchNewGameId, navigate]);
 
@@ -1023,8 +1080,21 @@ export default function Game() {
     return (
       <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-4 bg-background">
         {rematchWaitingOverlay}
-        <p role="status" className="max-w-sm px-4 text-center text-muted-foreground font-body">{loadError || (connection === "offline" ? "You're offline. Reconnect to load this game." : connection === "reconnecting" ? "Could not connect to the game. Your invitation is unchanged." : "Game not found.")}</p>
-        <AppButton className="flex min-h-11 items-center gap-2 px-4" onClick={forceRefresh}><RefreshCw size={16} />Retry connection</AppButton>
+        <output className="block max-w-sm px-4 text-center text-muted-foreground font-body">
+          {loadError ||
+            (connection === "offline"
+              ? "You're offline. Reconnect to load this game."
+              : connection === "reconnecting"
+                ? "Could not connect to the game. Your invitation is unchanged."
+                : "Game not found.")}
+        </output>
+        <AppButton
+          className="flex min-h-11 items-center gap-2 px-4"
+          onClick={forceRefresh}
+        >
+          <RefreshCw size={16} />
+          Retry connection
+        </AppButton>
         <AppButton
           type="button"
           className="btn-game bg-primary text-primary-foreground"
@@ -1081,7 +1151,9 @@ export default function Game() {
 
           {/* Room code */}
           {roomCode && <span className="room-code text-xs">{roomCode}</span>}
-          <span className="text-xs text-muted-foreground">{wordLength} letters</span>
+          <span className="text-xs text-muted-foreground">
+            {wordLength} letters
+          </span>
         </div>
 
         {/* Opponent status (versus header) */}
@@ -1094,9 +1166,7 @@ export default function Game() {
         )}
 
         {/* Leave button during active play */}
-        {!isTerminal && !isWaiting && (
-          <FullscreenButton />
-        )}
+        {!isTerminal && !isWaiting && <FullscreenButton />}
         {!isTerminal && !isWaiting && (
           <AppButton
             type="button"
@@ -1109,11 +1179,30 @@ export default function Game() {
         )}
       </header>
 
-      {(connection !== "connected" || loadError) && <div className="flex shrink-0 items-center justify-center gap-3 border-b border-border px-3 text-xs text-primary" data-ocid="game.connection_status">
-        <WifiOff size={16} />
-        <span role="status">{connection === "offline" ? "Offline" : loadError ? "Game unavailable" : "Reconnecting..."}</span>
-        <AppButton aria-label="Retry connection" tooltip={loadError || "Reconnect without leaving the game"} onClick={forceRefresh} className="flex min-h-11 shrink-0 items-center gap-1 px-2"><RefreshCw size={14} />Retry</AppButton>
-      </div>}
+      {(connection !== "connected" || loadError) && (
+        <div
+          className="flex shrink-0 items-center justify-center gap-3 border-b border-border px-3 text-xs text-primary"
+          data-ocid="game.connection_status"
+        >
+          <WifiOff size={16} />
+          <output className="block">
+            {connection === "offline"
+              ? "Offline"
+              : loadError
+                ? "Game unavailable"
+                : "Reconnecting..."}
+          </output>
+          <AppButton
+            aria-label="Retry connection"
+            tooltip={loadError || "Reconnect without leaving the game"}
+            onClick={forceRefresh}
+            className="flex min-h-11 shrink-0 items-center gap-1 px-2"
+          >
+            <RefreshCw size={14} />
+            Retry
+          </AppButton>
+        </div>
+      )}
 
       {/* Main content */}
       <main className="game-main flex-1 min-h-0 flex flex-col items-center justify-start px-4 pt-4 pb-6 gap-4 overflow-y-auto">
@@ -1256,15 +1345,17 @@ export default function Game() {
                   )}
                 </AnimatePresence>
 
-                <div className="coop-board"><TileGrid
-                  wordLength={wordLength}
-                  guesses={currentGuesses}
-                  currentInput={currentInput}
-                  maxGuesses={MAX_GUESSES}
-                  isFlipping={isFlipping}
-                  isShaking={isShaking}
-                  showPlayerLabels={true}
-                /></div>
+                <div className="coop-board">
+                  <TileGrid
+                    wordLength={wordLength}
+                    guesses={currentGuesses}
+                    currentInput={currentInput}
+                    maxGuesses={MAX_GUESSES}
+                    isFlipping={isFlipping}
+                    isShaking={isShaking}
+                    showPlayerLabels={true}
+                  />
+                </div>
 
                 <p className="text-xs font-body text-muted-foreground">
                   {MAX_GUESSES - currentGuesses.length} guess

@@ -16,7 +16,21 @@ const mockDictionaryDebug = (word = "crane"): WordValidationDebug => ({
   backendBuild: "mock-backend",
 });
 
+const nativeBackendRequired = async (): Promise<never> => {
+  throw new Error("This feature requires the native Worduel backend, not preview fixtures.");
+};
+
 export const mockBackend: backendInterface = {
+  appCall: nativeBackendRequired,
+  challengeCall: nativeBackendRequired,
+  meaningCall: nativeBackendRequired,
+  createSizedGame: nativeBackendRequired,
+  getMyProfile: async () => null,
+  getMyRematchOffer: async () => null,
+  getSessionGameHistory: async () => [],
+  importLegacyCache: async () => false,
+  provisionIdentityAdmin: async () => ({ __kind__: "err", err: "Admin changes require the native backend." }),
+  registerGuest: async () => ({ token: "session-token-preview-guest", username: "GuestPlayer" }),
   addWord: async () => ({ __kind__: "ok", ok: BigInt(1) }),
   changePassword: async () => ({ __kind__: "ok", ok: null }),
   checkAndForceTimeouts: async () => undefined,
@@ -45,6 +59,7 @@ export const mockBackend: backendInterface = {
     __kind__: "ok",
     ok: {
       id: "game-1",
+      wordLength: BigInt(5),
       playerNum: BigInt(1),
       status: { __kind__: "playing", playing: null },
       currentTurnPlayer: "WordMaster",
@@ -130,6 +145,7 @@ export const mockBackend: backendInterface = {
     __kind__: "ok",
     ok: {
       id: "game-joined-1",
+      wordLength: BigInt(5),
       playerNum: BigInt(2),
       status: { __kind__: "playing", playing: null },
       currentTurnPlayer: "Host",
@@ -152,6 +168,7 @@ export const mockBackend: backendInterface = {
     __kind__: "ok",
     ok: {
       id: "game-pub-joined",
+      wordLength: BigInt(5),
       playerNum: BigInt(2),
       status: { __kind__: "playing", playing: null },
       currentTurnPlayer: "Host",
@@ -220,6 +237,7 @@ export const mockBackend: backendInterface = {
     __kind__: "ok",
     ok: {
       id: "game-1",
+      wordLength: BigInt(5),
       playerNum: BigInt(1),
       status: { __kind__: "playing", playing: null },
       currentTurnPlayer: "GuestPlayer",
