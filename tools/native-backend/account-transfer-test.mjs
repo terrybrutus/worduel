@@ -1,0 +1,108 @@
+import assert from 'node:assert/strict';
+import { fileURLToPath } from 'node:url';
+import { PocketIc, PocketIcServer } from '@dfinity/pic';
+import { Principal } from '@icp-sdk/core/principal';
+import { idlFactory } from '../../src/frontend/src/declarations/backend.did.js';
+
+const server = await PocketIcServer.start();
+let pic;
+try {
+  pic = await PocketIc.create(server.getUrl());
+  const wasm = process.env.WORDUEL_WASM || fileURLToPath(new URL('../../.worduel-native/build/backend.wasm',import.meta.url));
+  const {actor,canisterId} = await pic.setupCanister({idlFactory,wasm});
+  const owner = Principal.fromUint8Array(Uint8Array.of(11,22,33));
+  const attacker = Principal.fromUint8Array(Uint8Array.of(44,55,66));
+  const call = async (token,method,args=[]) => JSON.parse(await actor.appCall(token,method,JSON.stringify(args)));
+  const word = (name,time=1) => ({word:name,definition:'A meaning for '+name,confidence:'unknown',savedAt:1,lastSeenAt:time,nextReviewAt:100,reviewStreak:2});
+  const bank = token => actor.getWordBank(token);
+  const stats = async token => (await actor.getMyStats(token))[0];
+  const guest = await actor.registerGuest();
+  const friend = await actor.registerGuest();
+  await call(guest.token,'wordBankPut',[0,JSON.stringify([word('crane')])]);
+  const played = (await actor.createPrivateGame(guest.token,{versus:null})).ok;
+  await actor.joinByToken(friend.token,played.joinToken,[played.gameId]);
+  await actor.leaveGame(friend.token,played.gameId);
+  const waiting = (await actor.createPrivateGame(guest.token,{versus:null})).ok;
+  const daily = await call(guest.token,'dailyChallenge',[6]);
+  await call(guest.token,'submitChallengeGuess',[daily.id,'absent']);
+  assert.equal((await stats(guest.token)).totalWins,1n);
+  assert('err' in await actor.signInAndCarryGuest('Terry',guest.token,'[]'));
+  await assert.rejects(()=>actor._initialize_access_control());
+  actor.setPrincipal(owner);
+  await actor._initialize_access_control();
+  const first = (await actor.signInAndCarryGuest('Terry',guest.token,JSON.stringify([word('banks',5)]))).ok;
+  assert.equal(first.username,'Terry');
+  assert.equal(first.guestProgress,'merged');
+  assert.equal((await stats(first.token)).totalWins,1n);
+  assert.equal((await actor.getSessionGameHistory(first.token)).length,1);
+  assert.deepEqual(JSON.parse((await bank(first.token)).payload).map(w=>w.word).sort(),['banks','crane']);
+  assert.equal(JSON.parse((await bank(first.token)).payload).find(w=>w.word==='crane').reviewStreak,2);
+  assert('ok' in await actor.getGameState(first.token,waiting.gameId));
+  assert.equal((await call(first.token,'challengeState',[daily.id])).guesses.length,1);
+  assert.deepEqual(await actor.getUsernameForSession(guest.token),[]);
+  await assert.rejects(()=>bank(guest.token));
+  const retried = (await actor.signInAndCarryGuest('Ignored',guest.token,'[]')).ok;
+  assert.equal(retried.username,'Terry');
+  assert.equal(retried.guestProgress,'already-merged');
+  assert.equal((await stats(retried.token)).totalWins,1n);
+  actor.setPrincipal(attacker);
+  assert('err' in await actor.signInAndCarryGuest('Attacker',guest.token,'[]'));
+  assert('err' in await actor.signInAndCarryGuest('Attacker',first.token,'[]'));
+  console.log('PASS: anonymous rejection, guest proof, claimed-guest isolation, private bank access, active rooms, idempotent retry and unsynced local words.');
+
+  actor.setPrincipal(Principal.anonymous());
+  const nextGuest = await actor.registerGuest();
+  await call(nextGuest.token,'wordBankPut',[0,JSON.stringify([word('pride',8),word('crane',10)])]);
+  const secondGame = (await actor.createPrivateGame(nextGuest.token,{versus:null})).ok;
+  await actor.joinByToken(friend.token,secondGame.joinToken,[secondGame.gameId]);
+  await actor.leaveGame(friend.token,secondGame.gameId);
+  actor.setPrincipal(owner);
+  const [one,two] = await Promise.all([
+    actor.signInAndCarryGuest('OtherName',nextGuest.token,'[]'),
+    actor.signInAndCarryGuest('OtherName',nextGuest.token,'[]'),
+  ]);
+  assert('ok' in one && 'ok' in two);
+  assert.equal(one.ok.username,'Terry');
+  assert.equal((await stats(one.ok.token)).totalWins,2n);
+  assert.equal((await actor.getSessionGameHistory(one.ok.token)).length,2);
+  assert.equal(JSON.parse((await bank(one.ok.token)).payload).length,3);
+  assert.equal(JSON.parse((await bank(one.ok.token)).payload).find(w=>w.word==='crane').lastSeenAt,10);
+  assert.equal((await actor.getMyProfile(one.ok.token))[0].role.player,null);
+  const restored = (await actor.signInAndCarryGuest('Ignored','','[]')).ok;
+  assert.equal(restored.username,'Terry');
+  assert.equal((await stats(restored.token)).totalWins,2n);
+  assert.equal(JSON.parse((await bank(restored.token)).payload).length,3);
+  console.log('PASS: returning account combines guest progress once, concurrent retries do not double stats, review metadata survives, second-device identity restores the same account.');
+
+  actor.setPrincipal(Principal.anonymous());
+  const capacityGuest = await actor.registerGuest();
+  actor.setPrincipal(owner);
+  const tooMany = JSON.stringify(Array.from({length:1001},(_,i)=>word('test'+i)));
+  assert('err' in await actor.signInAndCarryGuest('Terry',capacityGuest.token,tooMany));
+  assert.equal((await actor.getUsernameForSession(capacityGuest.token))[0],capacityGuest.username);
+  assert.equal((await stats(restored.token)).totalWins,2n);
+  const beforeUpgrade = await bank(restored.token);
+  await pic.upgradeCanister({canisterId,wasm,upgradeModeOptions:{skip_pre_upgrade:[],wasm_memory_persistence:[{keep:null}]}});
+  assert.deepEqual(await bank(restored.token),beforeUpgrade);
+  assert.equal((await stats(restored.token)).totalWins,2n);
+  await pic.advanceTime(31*86400*1000); await pic.tick();
+  assert.deepEqual(await actor.getUsernameForSession(restored.token),[]);
+  const renewed = (await actor.signInAndCarryGuest('Ignored','','[]')).ok;
+  assert.equal(renewed.username,'Terry');
+  assert.equal((await stats(renewed.token)).totalWins,2n);
+  assert.equal(JSON.parse((await bank(renewed.token)).payload).length,3);
+  const expired = (await actor.signInAndCarryGuest('Ignored',capacityGuest.token,JSON.stringify([word('learn')]))).ok;
+  assert.equal(expired.guestProgress,'expired');
+  assert.equal(JSON.parse((await bank(expired.token)).payload).length,4);
+  actor.setPrincipal(attacker);
+  const wide = (await actor.signInAndCarryGuest('WideBank','',JSON.stringify(Array.from({length:1000},(_,i)=>word('test'+i))))).ok;
+  const largeBank = await bank(wide.token);
+  assert.equal(JSON.parse(largeBank.payload).length,1000);
+  const resynced = await actor.putWordBank(wide.token,largeBank.revision,largeBank.payload);
+  assert.equal(JSON.parse(resynced.payload).length,1000);
+  await assert.rejects(()=>actor.putWordBank(wide.token,largeBank.revision,largeBank.payload));
+  console.log('PASS: capacity failure leaves guest progress claimable, real Wasm upgrade preserves account data, expired account tokens recover through identity, expired guests are reported honestly.');
+} finally {
+  if(pic) await pic.tearDown();
+  await server.stop();
+}

@@ -148,7 +148,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
 //
 function RootLayout() {
   return (
-    <InternetIdentityProvider>
+    <InternetIdentityProvider withAttributes={false}>
       <AuthProvider>
         <RootApp />
       </AuthProvider>
@@ -157,7 +157,7 @@ function RootLayout() {
 }
 
 function RootApp() {
-  const { user } = useAuth();
+  const { user, isConnecting } = useAuth();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
@@ -168,6 +168,13 @@ function RootApp() {
     pathname === "/word-bank" ||
     pathname === "/login";
   const showModal = loadingDone && !user && !modalDismissed && !allowGuestRoute;
+
+  if (isConnecting)
+    return (
+      <main className="app-shell flex items-center justify-center px-6 text-center">
+        <output>Keeping your words and stats...</output>
+      </main>
+    );
 
   return (
     <div

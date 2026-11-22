@@ -12,7 +12,9 @@ export function nativePreview(){return {name:'worduel-native-preview',apply:'ser
     res.setHeader('Content-Type','application/json');res.setHeader('Cache-Control','no-store');
     if(path==='/env.json') {
       const value=config();if(!value){res.statusCode=503;res.end(JSON.stringify({error:'Start the native Motoko backend.'}));return;}
-      res.end(JSON.stringify({backend_canister_id:value.backend_canister_id,backend_host:'',worduel_local:true,project_id:'worduel-local',ii_derivation_origin:'',storage_gateway_url:''}));
+      const host=req.headers.host || 'localhost:43992';
+      const backendHost=`http://${host.replace(/^127\.0\.0\.1(?=:)/,'localhost')}`;
+      res.end(JSON.stringify({backend_canister_id:value.backend_canister_id,backend_host:backendHost,worduel_local:true,project_id:'worduel-local',storage_gateway_url:''}));
     } else {
       const port=server.httpServer?.address()?.port || 43992;
       const origins=Object.values(networkInterfaces()).flat().filter(item=>item && item.family==='IPv4' && !item.internal).map(item=>`http://${item.address}:${port}`);

@@ -21,6 +21,10 @@ const nativeBackendRequired = async (): Promise<never> => {
 };
 
 export const mockBackend: backendInterface = {
+  getWordBank: nativeBackendRequired,
+  putWordBank: nativeBackendRequired,
+  _initialize_access_control: nativeBackendRequired,
+  signInAndCarryGuest: nativeBackendRequired,
   appCall: nativeBackendRequired,
   challengeCall: nativeBackendRequired,
   meaningCall: nativeBackendRequired,

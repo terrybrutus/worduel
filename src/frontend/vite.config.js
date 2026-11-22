@@ -8,7 +8,7 @@ import { nativePreview, nativeGateway } from "./server/native-preview.mjs";
 const ii_url =
   process.env.DFX_NETWORK === "local"
     ? `http://rdmx6-jaaaa-aaaaa-aaadq-cai.localhost:8081/`
-    : `https://identity.internetcomputer.org/`;
+    : `https://id.ai/`;
 
 process.env.II_URL = process.env.II_URL || ii_url;
 process.env.STORAGE_GATEWAY_URL =
@@ -44,7 +44,7 @@ export default defineConfig({
     nativePreview(),
     environment("all", { prefix: "CANISTER_" }),
     environment("all", { prefix: "DFX_" }),
-    environment(["II_URL"]),
+    environment({II_URL: undefined, II_CANISTER_ID: null}),
     environment(["STORAGE_GATEWAY_URL"]),
     react(),
   ],

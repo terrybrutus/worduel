@@ -239,11 +239,21 @@ export default function WordBank() {
       {quiz === null && (
         <output className="block text-xs text-muted-foreground">
           {syncStatus === "synced"
-            ? "Saved in this browser and backed up to Worduel."
+            ? user?.isGuest
+              ? "Saved for this guest session. Sign in to keep it across devices."
+              : "Saved to your account and available on your other devices."
             : syncStatus === "local"
               ? "Saved on this device. Sync will retry."
               : "Saved in this browser. Syncing with Worduel..."}
         </output>
+      )}
+      {quiz === null && user?.isGuest && (
+        <AppButton
+          className={button}
+          onClick={() => void navigate({ to: "/login" })}
+        >
+          Sign in to keep words and stats
+        </AppButton>
       )}
       {error && (
         <p role="alert" className="text-sm text-destructive">

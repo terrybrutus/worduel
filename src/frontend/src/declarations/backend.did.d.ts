@@ -19,6 +19,7 @@ export interface AdminSetupInfo {
 export interface Alternative { 'word' : string, 'definition' : string }
 export type AuthResult = { 'ok' : null } |
   { 'err' : string };
+export interface Bank { 'revision' : bigint, 'payload' : string }
 export type CreateGameResult = {
     'ok' : { 'gameId' : GameId, 'roomCode' : RoomCode, 'joinToken' : JoinToken }
   } |
@@ -169,6 +170,7 @@ export interface WordValidationDebug {
   'normalized' : string,
 }
 export interface _SERVICE {
+  '_initialize_access_control' : ActorMethod<[], undefined>,
   'acceptRematch' : ActorMethod<[string, GameId], AcceptRematchResult>,
   'addWord' : ActorMethod<
     [string, string],
@@ -213,6 +215,7 @@ export interface _SERVICE {
   'getRematchOffer' : ActorMethod<[GameId], [] | [RematchOffer]>,
   'getSessionGameHistory' : ActorMethod<[string], Array<GameHistoryEntry>>,
   'getUsernameForSession' : ActorMethod<[string], [] | [string]>,
+  'getWordBank' : ActorMethod<[string], Bank>,
   'getWordCount' : ActorMethod<[], bigint>,
   'importLegacyCache' : ActorMethod<
     [Array<[string, Meaning]>, Array<[string, Quiz]>, bigint, bigint, bigint],
@@ -242,6 +245,7 @@ export interface _SERVICE {
       { 'err' : string }
   >,
   'provisionIdentityAdmin' : ActorMethod<[string, Principal], AuthResult>,
+  'putWordBank' : ActorMethod<[string, bigint, string], Bank>,
   'recordResult' : ActorMethod<
     [
       string,
@@ -272,6 +276,17 @@ export interface _SERVICE {
       { 'err' : string }
   >,
   'resetPlayerPassword' : ActorMethod<[string, string, string], AuthResult>,
+  'signInAndCarryGuest' : ActorMethod<
+    [string, string, string],
+    {
+        'ok' : {
+          'token' : string,
+          'username' : string,
+          'guestProgress' : string,
+        }
+      } |
+      { 'err' : string }
+  >,
   'submitGuess' : ActorMethod<[string, GameId, string], GuessResultV2>,
   'validateGuessWord' : ActorMethod<[string], boolean>,
   'validateGuessWordDebug' : ActorMethod<[string], WordValidationDebug>,

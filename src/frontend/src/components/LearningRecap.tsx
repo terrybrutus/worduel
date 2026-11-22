@@ -314,7 +314,7 @@ export function LearningRecap({
           data-ocid="learning_recap.save_word_button"
         >
           <Star className="h-4 w-4" />
-          {user
+          {user && !user.isGuest
             ? saved
               ? "Saved to Word Bank"
               : "Save to Word Bank"
@@ -323,7 +323,7 @@ export function LearningRecap({
               : "Save on This Device"}
         </AppButton>
         <p className="mt-2 text-[11px] text-muted-foreground">
-          {user
+          {user && !user.isGuest
             ? "Saved words appear in Word Memory Bank."
             : saved
               ? "Saved in this browser. Sign in to keep it with your account."
@@ -331,7 +331,7 @@ export function LearningRecap({
         </p>
       </div>
 
-      {!user && (
+      {(!user || user.isGuest) && (
         <AppButton
           type="button"
           onClick={() => window.location.assign("/login?redirect=/word-bank")}

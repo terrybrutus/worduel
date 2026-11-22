@@ -67,6 +67,7 @@ fs.mkdirSync(output, { recursive: true });
           await page.getByText('Created by Terry Brutus', { exact: true }).waitFor();
           assert.equal(await page.getByText('Built with love using caffeine.ai').count(), 0);
           await page.screenshot({ path: output + '/lobby-safe-' + name + '.png' });
+          if (await page.locator('[data-ocid="lobby.profile_button"]').getAttribute('aria-label') === 'Sign in') continue;
           await page.locator('[data-ocid="lobby.profile_button"]').click();
           await page.locator('[data-ocid="lobby.profile.sheet"]').evaluate(async panel => {
             await Promise.all(panel.getAnimations().map(animation => animation.finished.catch(() => {})));

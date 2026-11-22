@@ -25,11 +25,11 @@ importers:
   src/frontend:
     dependencies:
       '@caffeineai/core-infrastructure':
-        specifier: ^0.3.0
-        version: 0.3.0(@dfinity/agent@3.3.1(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/hashes@1.8.0))(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/identity-secp256k1@3.3.1(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/curves@1.9.7)(@noble/hashes@1.8.0))(@dfinity/identity@3.3.1(@dfinity/agent@3.3.1(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/hashes@1.8.0))(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/curves@1.9.7)(@noble/hashes@1.8.0))(@dfinity/principal@3.3.1)
+        specifier: ^2.0.1
+        version: 2.0.1(@caffeineai/object-storage@1.1.0)
       '@caffeineai/object-storage':
-        specifier: 0.1.1
-        version: 0.1.1(@dfinity/agent@3.3.1(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/hashes@1.8.0))(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/identity-secp256k1@3.3.1(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/curves@1.9.7)(@noble/hashes@1.8.0))(@dfinity/identity@3.3.1(@dfinity/agent@3.3.1(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/hashes@1.8.0))(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/curves@1.9.7)(@noble/hashes@1.8.0))(@dfinity/principal@3.3.1)
+        specifier: 1.1.0
+        version: 1.1.0
       '@dfinity/agent':
         specifier: ~3.3.0
         version: 3.3.1(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/hashes@1.8.0)
@@ -45,9 +45,12 @@ importers:
       '@dfinity/principal':
         specifier: ~3.3.0
         version: 3.3.1
+      '@icp-sdk/auth':
+        specifier: 9.0.0
+        version: 9.0.0(@icp-sdk/core@5.3.0)
       '@icp-sdk/core':
-        specifier: ~4.1.0
-        version: 4.1.1(@dfinity/agent@3.3.1(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/hashes@1.8.0))(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/identity-secp256k1@3.3.1(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/curves@1.9.7)(@noble/hashes@1.8.0))(@dfinity/identity@3.3.1(@dfinity/agent@3.3.1(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/hashes@1.8.0))(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/curves@1.9.7)(@noble/hashes@1.8.0))(@dfinity/principal@3.3.1)
+        specifier: ~5.3.0
+        version: 5.3.0
       '@radix-ui/react-accordion':
         specifier: ^1.1.2
         version: 1.2.12(@types/react-dom@19.1.11(@types/react@19.1.17))(@types/react@19.1.17)(react-dom@19.1.5(react@19.1.5))(react@19.1.5)
@@ -435,6 +438,9 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@borewit/text-codec@0.2.3':
+    resolution: {integrity: sha512-49CycTz1aAZmvFcwkeFyhud1HUmRIB5Tabf7ALV+VA4Iu85MTfz2cUwzPagMFAdVBvrWdkCxG67I30tUwwpKsw==}
+
   '@bramus/specificity@2.4.2':
     resolution: {integrity: sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw==}
     hasBin: true
@@ -446,8 +452,16 @@ packages:
   '@caffeineai/core-infrastructure@0.3.0':
     resolution: {integrity: sha512-8BVQr+bdpAhhVdjhfem0sWY3NDaUsztez1FKBbHvF1RY1xgqNN5eVPyNjDrP/tenhNibvruD40WZur7EBZvieg==}
 
+  '@caffeineai/core-infrastructure@2.0.1':
+    resolution: {integrity: sha512-IP7qrgGEf/EoeNEsKqZNybpb8Aaq2b0oQPNCVs4ptv8ow6PHPvJSi1JqBoJmf8FO5XUu1+NU6J+fkDT5cnauhA==}
+    peerDependencies:
+      '@caffeineai/object-storage': ^1.0.0
+
   '@caffeineai/object-storage@0.1.1':
     resolution: {integrity: sha512-EUcLvxi8Y/2rNeV3R3J6DChFb0L3pHLh1W1CR9iHAOWDOWqVarXNgNcZvQjEhD5SzEzUMp5TdGZ8uLb43H1brQ==}
+
+  '@caffeineai/object-storage@1.1.0':
+    resolution: {integrity: sha512-kuFINrInihb812waEOtK5JG7aWqYHvG2rdNUSoNafwAI2BhYpQqRzFQ8pV32THE4J3r+MqwV8kmEmQU4Opa94w==}
 
   '@csstools/color-helpers@6.0.2':
     resolution: {integrity: sha512-LMGQLS9EuADloEFkcTBR3BwV/CGHV7zyDxVRtVDTwdI2Ca4it0CCVTT9wCkxSgokjE5Ho41hEPgb8OEUwoXr6Q==}
@@ -709,6 +723,11 @@ packages:
   '@floating-ui/utils@0.2.11':
     resolution: {integrity: sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==}
 
+  '@icp-sdk/auth@9.0.0':
+    resolution: {integrity: sha512-ZAyQZiLSH0OjbSJs+rZRfdHLOvNF0kdrQqKPSgFEtYPElgBweY8Umu/TORlCu/yOtF7ssKIG7TTyXhfDjaW09A==}
+    peerDependencies:
+      '@icp-sdk/core': ^5
+
   '@icp-sdk/core@4.0.2':
     resolution: {integrity: sha512-tiNXiLbzc4+CJV2R/sk8Iw9WREZ32SmwPPvt5qYUaQDs6A8iftr03alCkVa+Frx4CKqbeVrJehsp07Ms7ZaHWA==}
     peerDependencies:
@@ -726,6 +745,14 @@ packages:
       '@dfinity/identity': 3.3.1
       '@dfinity/identity-secp256k1': 3.3.1
       '@dfinity/principal': 3.3.1
+
+  '@icp-sdk/core@5.3.0':
+    resolution: {integrity: sha512-wOGPY7shB2cCuC+yXrpVd36xD5/tWZCOI9Cthe8a4SY34evoAHNmxaUN5VP28AdxVv6AVH7cfgasx4hbgk8vkg==}
+
+  '@icp-sdk/signer@5.6.3':
+    resolution: {integrity: sha512-wkQJ+MFBIdhCMXKc3NYAgiCSSqB3Gh9UnuzoP9DisPA6gMQ1mTXG9cO5eyEdfJyR08xTx9AsK7MEOBhxwd41YA==}
+    peerDependencies:
+      '@icp-sdk/core': ^5
 
   '@img/colour@1.1.0':
     resolution: {integrity: sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ==}
@@ -2034,6 +2061,13 @@ packages:
   '@tanstack/store@0.7.7':
     resolution: {integrity: sha512-xa6pTan1bcaqYDS9BDpSiS63qa6EoDkPN9RsRaxHuDdVDNntzq3xNwR5YKTU/V3SkSyC9T4YVOPh2zRQN0nhIQ==}
 
+  '@tokenizer/inflate@0.4.1':
+    resolution: {integrity: sha512-2mAv+8pkG6GIZiF1kNg1jAjh27IDxEPKwdGul3snfztFerfPGI1LjDezZp3i7BElXompqEtPmoPx6c2wgtWsOA==}
+    engines: {node: '>=18'}
+
+  '@tokenizer/token@0.3.0':
+    resolution: {integrity: sha512-OvjF+z51L3ov0OyAU0duzsYuvO01PH7x4t6DJx+guahgTnBHkhJdG7soQeTSFLWN3efnHyibZ4Z8l2EuWwJN3A==}
+
   '@tweenjs/tween.js@23.1.3':
     resolution: {integrity: sha512-vJmvvwFxYuGnF2axRtPYocag6Clbb5YS7kLL+SO/TeVFzHqDIWrNKYtcsPMibjDx9O+bu+psAy9NKfWklassUA==}
 
@@ -2797,6 +2831,10 @@ packages:
   file-type@12.4.2:
     resolution: {integrity: sha512-UssQP5ZgIOKelfsaB5CuGAL+Y+q7EmONuiwF3N5HAH0t27rvrttgi6Ra9k/+DVaY9UF6+ybxu5pOXLUdA8N7Vg==}
     engines: {node: '>=8'}
+
+  file-type@21.3.4:
+    resolution: {integrity: sha512-Ievi/yy8DS3ygGvT47PjSfdFoX+2isQueoYP1cntFW1JLYAuS4GD7NUPGg4zv2iZfV52uDyk5w5Z0TdpRS6Q1g==}
+    engines: {node: '>=20'}
 
   file-type@3.9.0:
     resolution: {integrity: sha512-RLoqTXE8/vPmMuTI88DAzhMYC99I8BWv7zYP4A1puo5HIjEJ5EX48ighy4ZyKMG9EDXxBgW6e++cn7d1xuFghA==}
@@ -4015,6 +4053,10 @@ packages:
     resolution: {integrity: sha512-aulFJcD6YK8V1G7iRB5tigAP4TsHBZZrOV8pjV++zdUwmeV8uzbY7yn6h9MswN62adStNZFuCIx4haBnRuMDaw==}
     engines: {node: '>=18'}
 
+  strtok3@10.8.0:
+    resolution: {integrity: sha512-e6bW3fD6V01DPmcbLfNtn0cjsiHvTKS/hivgbzqYMfHb/nLes4QQ0H5QBxlkPQayF4xv08AvlSgptGwN86Eemw==}
+    engines: {node: '>=18'}
+
   stylis@4.3.6:
     resolution: {integrity: sha512-yQ3rwFWRfwNUY7H5vpU0wfdkNSnvnJinhF9830Swlaxl03zsOjCfmX0ugac+3LtK0lYSgwL/KXc8oYL3mG4YFQ==}
 
@@ -4124,6 +4166,10 @@ packages:
   toggle-selection@1.0.6:
     resolution: {integrity: sha512-BiZS+C1OS8g/q2RRbJmy59xpyghNBqrr6k5L/uKBGRsTfxmu3ffiRnd8mlGPUVayg8pvfi5urfnu8TU7DVOkLQ==}
 
+  token-types@6.2.0:
+    resolution: {integrity: sha512-s9euYHM//T3loJtbNUYdbAzsMlvKBeRS+XCLFy+UGosMQH19Hwjap5k19i4PPAEJJBsVIpMpVTxl4fIqCuNfUg==}
+    engines: {node: '>=14.16'}
+
   tough-cookie@6.0.1:
     resolution: {integrity: sha512-LktZQb3IeoUWB9lqR5EWTHgW/VTITCXg4D21M+lvybRVdylLrRMnqaIONLVb5mav8vM19m44HIcGq4qASeu2Qw==}
     engines: {node: '>=16'}
@@ -4169,6 +4215,10 @@ packages:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
     engines: {node: '>=14.17'}
     hasBin: true
+
+  uint8array-extras@1.6.0:
+    resolution: {integrity: sha512-8iAasVS4wUx0gPLjH8Xtz2PeDzTSiy8QiLGu2DT3X5GU+egFEQhpnbtkehbAwjvDcxIERmCYcysiODFmE3Ud0Q==}
+    engines: {node: '>=18'}
 
   unbzip2-stream@1.4.3:
     resolution: {integrity: sha512-mlExGW4w71ebDJviH16lQLtZS32VKqsSfk80GCfUlwT/4/hNRFsoscrF/c++9xinkMzECL1uL9DDwXqFWkruPg==}
@@ -4570,6 +4620,8 @@ snapshots:
   '@biomejs/cli-win32-x64@1.9.4':
     optional: true
 
+  '@borewit/text-codec@0.2.3': {}
+
   '@bramus/specificity@2.4.2':
     dependencies:
       css-tree: 3.2.1
@@ -4592,6 +4644,14 @@ snapshots:
       - '@dfinity/identity-secp256k1'
       - '@dfinity/principal'
 
+  '@caffeineai/core-infrastructure@2.0.1(@caffeineai/object-storage@1.1.0)':
+    dependencies:
+      '@caffeineai/object-storage': 1.1.0
+      '@icp-sdk/auth': 9.0.0(@icp-sdk/core@5.3.0)
+      '@icp-sdk/core': 5.3.0
+      '@tanstack/react-query': 5.95.2(react@19.1.5)
+      react: 19.1.5
+
   '@caffeineai/object-storage@0.1.1(@dfinity/agent@3.3.1(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/hashes@1.8.0))(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/identity-secp256k1@3.3.1(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/curves@1.9.7)(@noble/hashes@1.8.0))(@dfinity/identity@3.3.1(@dfinity/agent@3.3.1(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/hashes@1.8.0))(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/curves@1.9.7)(@noble/hashes@1.8.0))(@dfinity/principal@3.3.1)':
     dependencies:
       '@icp-sdk/core': 4.1.1(@dfinity/agent@3.3.1(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/hashes@1.8.0))(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/identity-secp256k1@3.3.1(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/curves@1.9.7)(@noble/hashes@1.8.0))(@dfinity/identity@3.3.1(@dfinity/agent@3.3.1(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/hashes@1.8.0))(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/curves@1.9.7)(@noble/hashes@1.8.0))(@dfinity/principal@3.3.1)
@@ -4601,6 +4661,13 @@ snapshots:
       - '@dfinity/identity'
       - '@dfinity/identity-secp256k1'
       - '@dfinity/principal'
+
+  '@caffeineai/object-storage@1.1.0':
+    dependencies:
+      '@icp-sdk/core': 5.3.0
+      file-type: 21.3.4
+    transitivePeerDependencies:
+      - supports-color
 
   '@csstools/color-helpers@6.0.2': {}
 
@@ -4781,6 +4848,12 @@ snapshots:
 
   '@floating-ui/utils@0.2.11': {}
 
+  '@icp-sdk/auth@9.0.0(@icp-sdk/core@5.3.0)':
+    dependencies:
+      '@icp-sdk/core': 5.3.0
+      '@icp-sdk/signer': 5.6.3(@icp-sdk/core@5.3.0)
+      idb: 7.1.1
+
   '@icp-sdk/core@4.0.2(@dfinity/agent@3.3.1(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/hashes@1.8.0))(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/identity-secp256k1@3.3.1(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/curves@1.9.7)(@noble/hashes@1.8.0))(@dfinity/identity@3.3.1(@dfinity/agent@3.3.1(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/hashes@1.8.0))(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/curves@1.9.7)(@noble/hashes@1.8.0))(@dfinity/principal@3.3.1)':
     dependencies:
       '@dfinity/agent': 3.3.1(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/hashes@1.8.0)
@@ -4796,6 +4869,19 @@ snapshots:
       '@dfinity/identity': 3.3.1(@dfinity/agent@3.3.1(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/hashes@1.8.0))(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/curves@1.9.7)(@noble/hashes@1.8.0)
       '@dfinity/identity-secp256k1': 3.3.1(@dfinity/candid@3.3.1(@dfinity/principal@3.3.1))(@dfinity/principal@3.3.1)(@noble/curves@1.9.7)(@noble/hashes@1.8.0)
       '@dfinity/principal': 3.3.1
+
+  '@icp-sdk/core@5.3.0':
+    dependencies:
+      '@dfinity/cbor': 0.2.2
+      '@noble/curves': 1.9.7
+      '@noble/hashes': 1.8.0
+      '@scure/bip32': 1.7.0
+      '@scure/bip39': 1.6.0
+      asn1js: 3.0.7
+
+  '@icp-sdk/signer@5.6.3(@icp-sdk/core@5.3.0)':
+    dependencies:
+      '@icp-sdk/core': 5.3.0
 
   '@img/colour@1.1.0': {}
 
@@ -6093,6 +6179,15 @@ snapshots:
 
   '@tanstack/store@0.7.7': {}
 
+  '@tokenizer/inflate@0.4.1':
+    dependencies:
+      debug: 4.4.3
+      token-types: 6.2.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@tokenizer/token@0.3.0': {}
+
   '@tweenjs/tween.js@23.1.3': {}
 
   '@tybys/wasm-util@0.10.2':
@@ -6878,6 +6973,15 @@ snapshots:
       is-unicode-supported: 2.1.0
 
   file-type@12.4.2: {}
+
+  file-type@21.3.4:
+    dependencies:
+      '@tokenizer/inflate': 0.4.1
+      strtok3: 10.8.0
+      token-types: 6.2.0
+      uint8array-extras: 1.6.0
+    transitivePeerDependencies:
+      - supports-color
 
   file-type@3.9.0: {}
 
@@ -8213,6 +8317,10 @@ snapshots:
 
   strip-final-newline@4.0.0: {}
 
+  strtok3@10.8.0:
+    dependencies:
+      '@tokenizer/token': 0.3.0
+
   stylis@4.3.6: {}
 
   sucrase@3.35.1:
@@ -8366,6 +8474,12 @@ snapshots:
 
   toggle-selection@1.0.6: {}
 
+  token-types@6.2.0:
+    dependencies:
+      '@borewit/text-codec': 0.2.3
+      '@tokenizer/token': 0.3.0
+      ieee754: 1.2.1
+
   tough-cookie@6.0.1:
     dependencies:
       tldts: 7.4.3
@@ -8411,6 +8525,8 @@ snapshots:
       is-typed-array: 1.1.15
 
   typescript@5.9.3: {}
+
+  uint8array-extras@1.6.0: {}
 
   unbzip2-stream@1.4.3:
     dependencies:

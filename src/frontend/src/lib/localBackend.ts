@@ -8,6 +8,8 @@ const IDENTITY = "__worduel_native_guest__";
 export interface LocalGuest {
   token: string;
   username: string;
+  isGuest?: boolean;
+  guestProgress?: string;
 }
 export function localGuest(): LocalGuest | null {
   try {
@@ -17,13 +19,53 @@ export function localGuest(): LocalGuest | null {
   }
 }
 interface NativeService {
+  getWordBank: (
+    token: string,
+  ) => Promise<{ revision: bigint; payload: string }>;
+  putWordBank: (
+    token: string,
+    revision: bigint,
+    payload: string,
+  ) => Promise<{ revision: bigint; payload: string }>;
   appCall: (token: string, method: string, args: string) => Promise<string>;
   loginWithIdentity: (
     name: string,
   ) => Promise<{ ok: string } | { err: string }>;
+  signInAndCarryGuest: (
+    name: string,
+    guestToken: string,
+    words: string,
+  ) => Promise<
+    | { ok: { token: string; username: string; guestProgress: string } }
+    | { err: string }
+  >;
 }
 const idlFactory: IDL.InterfaceFactory = ({ IDL }) =>
   IDL.Service({
+    getWordBank: IDL.Func(
+      [IDL.Text],
+      [IDL.Record({ revision: IDL.Nat, payload: IDL.Text })],
+      ["query"],
+    ),
+    putWordBank: IDL.Func(
+      [IDL.Text, IDL.Nat, IDL.Text],
+      [IDL.Record({ revision: IDL.Nat, payload: IDL.Text })],
+      [],
+    ),
+    signInAndCarryGuest: IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text],
+      [
+        IDL.Variant({
+          ok: IDL.Record({
+            token: IDL.Text,
+            username: IDL.Text,
+            guestProgress: IDL.Text,
+          }),
+          err: IDL.Text,
+        }),
+      ],
+      [],
+    ),
     appCall: IDL.Func([IDL.Text, IDL.Text, IDL.Text], [IDL.Text], []),
     loginWithIdentity: IDL.Func(
       [IDL.Text],
@@ -128,6 +170,18 @@ export async function localCall<T>(
     return (await response.json()) as T;
   }
   const token = localGuest()?.token ?? localStorage.getItem(SESSION_KEY) ?? "";
+  if (method === "wordBankGet" || method === "wordBankPut") {
+    const actor = await nativeActor();
+    const bank =
+      method === "wordBankGet"
+        ? await readWithDeadline(() => actor.getWordBank(token), timeoutMs)
+        : await actor.putWordBank(
+            token,
+            BigInt(Number(args[0])),
+            String(args[1]),
+          );
+    return { revision: Number(bank.revision), payload: bank.payload } as T;
+  }
   const request = async () =>
     (await nativeActor()).appCall(
       token,
@@ -173,12 +227,17 @@ export function connectLocalGuest(): Promise<LocalGuest> {
       if (
         existing &&
         (await localCall<string | null>("getUsernameForSession")) ===
-          existing.username
-      )
-        return existing;
+          existing.username &&
+        (await localCall<boolean>("isGuestSession"))
+      ) {
+        const guest = { ...existing, isGuest: true };
+        storeNativeSession(guest);
+        return guest;
+      }
       const guest = await localCall<LocalGuest>("guest");
-      storeNativeSession(guest);
-      return guest;
+      const session = { ...guest, isGuest: true };
+      storeNativeSession(session);
+      return session;
     })().finally(() => {
       pendingGuest = null;
     });
@@ -187,15 +246,16 @@ export function connectLocalGuest(): Promise<LocalGuest> {
 export async function signInNativeIdentity(
   identity: Identity,
   name: string,
+  guestToken = "",
+  words = "[]",
 ): Promise<LocalGuest> {
   const actor = await createNativeActor(identity);
-  const result = await actor.loginWithIdentity(name);
+  const result = await readWithDeadline(
+    () => actor.signInAndCarryGuest(name, guestToken, words),
+    30000,
+  );
   if ("err" in result) throw new Error(result.err);
-  storeNativeSession({ token: result.ok, username: name });
-  const username = await localCall<string | null>("getUsernameForSession");
-  if (!username) throw new Error("Identity session could not be verified.");
-  const session = { token: result.ok, username };
-  storeNativeSession(session);
+  const session = { ...result.ok, isGuest: false };
   return session;
 }
 export const localBackend = new Proxy({} as backendInterface, {

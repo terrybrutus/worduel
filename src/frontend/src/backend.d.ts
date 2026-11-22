@@ -174,6 +174,10 @@ export interface GameState {
     isPublic: boolean;
     roomCode: RoomCode;
 }
+export interface Bank {
+    revision: bigint;
+    payload: string;
+}
 export type GuessError = {
     __kind__: "notAWord";
     notAWord: null;
@@ -293,6 +297,7 @@ export interface backendInterface {
     getRematchOffer(originalGameId: GameId): Promise<RematchOffer | null>;
     getSessionGameHistory(token: string): Promise<Array<GameHistoryEntry>>;
     getUsernameForSession(token: string): Promise<string | null>;
+    getWordBank(token: string): Promise<Bank>;
     getWordCount(): Promise<bigint>;
     importLegacyCache(entries: Array<[string, Meaning]>, questions: Array<[string, Quiz]>, day: bigint, dailyAttempts: bigint, monthlyAttempts: bigint): Promise<boolean>;
     importWords(sessionToken: string, words: Array<string>): Promise<{
@@ -322,6 +327,7 @@ export interface backendInterface {
         err: string;
     }>;
     provisionIdentityAdmin(username: string, identity: Principal): Promise<AuthResult>;
+    putWordBank(token: string, revision: bigint, payload: string): Promise<Bank>;
     recordResult(token: string, win: boolean, opponentName: string, outcome: Variant_win_draw_loss): Promise<AuthResult>;
     register(username: string, password: string): Promise<RegisterResult>;
     registerGuest(): Promise<{
@@ -347,6 +353,17 @@ export interface backendInterface {
         err: string;
     }>;
     resetPlayerPassword(token: string, username: string, newPassword: string): Promise<AuthResult>;
+    signInAndCarryGuest(requestedUsername: string, guestToken: string, localWords: string): Promise<{
+        __kind__: "ok";
+        ok: {
+            token: string;
+            username: string;
+            guestProgress: string;
+        };
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     submitGuess(sessionToken: string, gameId: GameId, word: string): Promise<GuessResultV2>;
     validateGuessWord(word: string): Promise<boolean>;
     validateGuessWordDebug(word: string): Promise<WordValidationDebug>;

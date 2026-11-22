@@ -206,6 +206,11 @@ type CreateGameResult =
          roomCode: RoomCode;
        };
  };
+type Bank =
+ record {
+   payload: text;
+   revision: nat;
+ };
 type AuthResult =
  variant {
    err: text;
@@ -227,6 +232,7 @@ type AcceptRematchResult =
    ok: record {newGameId: GameId;};
  };
 service : {
+  _initialize_access_control: () -> ();
   acceptRematch: (sessionToken: text, originalGameId: GameId) ->
    (AcceptRematchResult);
   addWord: (sessionToken: text, word: text) -> (variant {
@@ -272,6 +278,7 @@ service : {
   getRematchOffer: (originalGameId: GameId) -> (opt RematchOffer) query;
   getSessionGameHistory: (token: text) -> (vec GameHistoryEntry) query;
   getUsernameForSession: (token: text) -> (opt text) query;
+  getWordBank: (token: text) -> (Bank) query;
   getWordCount: () -> (nat) query;
   importLegacyCache: (entries: vec record {
                                      text;
@@ -310,6 +317,7 @@ service : {
     });
   provisionIdentityAdmin: (username: text, identity: principal) ->
    (AuthResult);
+  putWordBank: (token: text, revision: nat, payload: text) -> (Bank);
   recordResult: (token: text, win: bool, opponentName: text, outcome:
    variant {
      draw;
@@ -337,6 +345,16 @@ service : {
     });
   resetPlayerPassword: (token: text, username: text, newPassword: text) ->
    (AuthResult);
+  signInAndCarryGuest: (requestedUsername: text, guestToken: text,
+   localWords: text) ->
+   (variant {
+      err: text;
+      ok: record {
+            guestProgress: text;
+            token: text;
+            username: text;
+          };
+    });
   submitGuess: (sessionToken: text, gameId: GameId, word: text) ->
    (GuessResultV2);
   validateGuessWord: (word: text) -> (bool) query;
